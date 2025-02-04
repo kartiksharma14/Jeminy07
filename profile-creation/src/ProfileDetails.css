@@ -1,0 +1,162 @@
+/* General Styles */
+.profilePage {
+  background-color: #f9f9f9;
+  padding: 40px;
+  font-family: Arial, sans-serif;
+}
+
+.profile-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+/* Profile Photo Section */
+.profile-photo-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.photo-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 10px solid #ddd;
+  background-color: #f0f0f0;
+}
+
+.upload-button {
+  display: none;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.photo-wrapper:hover .upload-button {
+  display: block;
+}
+
+/* Details Section */
+.details-section {
+  flex: 2;
+  padding: 10px 20px;
+}
+
+.fullname {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.last-updated {
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 20px;
+}
+
+.horizontal-line {
+  border: none;
+  height: 1px;
+  background-color: #ddd;
+  margin: 20px 0;
+}
+
+.info-sections {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.info-left,
+.info-right {
+  flex: 1;
+}
+
+.vertical-line {
+  width: 1px;
+  background-color: #ddd;
+  height: auto;
+  align-self: stretch;
+}
+
+.info-left p,
+.info-right p {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.icon {
+  margin-right: 10px;
+  color: #4caf50;
+}
+
+/* Editable Fields Section */
+.editable-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.editable-field input {
+  padding: 8px;
+  font-size: 16px;
+  width: 100%;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.editable-field span {
+  font-size: 16px;
+  color: #555;
+  margin-right: 10px;
+}
+
+.edit-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 5px;
+}
+
+.edit-button:hover {
+  background-color: #0056b3;
+}
+
+.save-button button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.save-button button:hover {
+  background-color: #0056b3;
+}

@@ -1,0 +1,191 @@
+/* IT Skills Section */
+.itSkills {
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  .card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .widgetHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .widgetTitle {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .profileComScore {
+    font-size: 14px;
+    color: #007bff;
+  }
+  
+  .addButton {
+    background-color: transparent;
+    color: #007bff;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .addButton:hover {
+    color: #0056b3;
+    transform: scale(1.05);
+  }
+  
+  .widgetCont {
+    margin-top: 16px;
+  }
+  
+  .empty {
+    font-size: 14px;
+    color: #888888;
+    line-height: 1.5;
+  }
+  
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    color: #333333;
+    font-size: 24px;
+    cursor: pointer;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    transition: color 0.3s ease;
+  }
+  
+  .close-btn:hover {
+    color: #007bff;
+  }
+  
+  h2 {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555555;
+    display: block;
+    margin-bottom: 8px;
+  }
+  
+  .input {
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333333;
+    transition: all 0.3s ease;
+    background: #f9f9f9;
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: #007bff;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .cancel-btn {
+    background: none;
+    color: #666666;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .cancel-btn:hover {
+    color: #333333;
+  }
+  
+  .save-btn {
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .save-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .modal-content {
+      max-width: 90%;
+      padding: 20px;
+    }
+  
+    .form-actions {
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .cancel-btn,
+    .save-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+  

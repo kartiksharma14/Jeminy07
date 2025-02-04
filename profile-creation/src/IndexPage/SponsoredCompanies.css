@@ -1,0 +1,435 @@
+/* src/components/SponsoredCompanies/SponsoredCompanies.css */
+
+/* Root Variables for Consistency */
+:root {
+    --N800: #121224;
+    --N600: #717B9E;
+    --N700: #474D6A;
+    --N500: #979EC2;
+    --N400: #E7E7F1;
+    --N100: #fff;
+    --P100: #275DF5;
+  }
+  
+  /* Container Styles */
+  #standard-collection-wdgt {
+    padding: 60px 20px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeInSection 1.5s ease-in-out;
+  }
+  
+  @keyframes fadeInSection {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .standard-collection-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 1120px; /* Fixed width as per provided CSS */
+    max-width: 100%; /* Ensure responsiveness */
+  }
+  
+  .standard-collection-title {
+    text-align: center;
+    font-weight: 900;
+    font-size: 24px;
+    line-height: 31px;
+    color: var(--N800, #121224);
+    margin-bottom: 20px;
+  }
+  
+  /* Filter Chips Section */
+  .filter-sec {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .filter-chips-wrap.fold-fil {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: hidden;
+    max-height: 42px;
+    position: relative;
+    transition: max-height 0.5s ease-out;
+    max-width: calc(100% - 100px); /* Adjusted as needed */
+  }
+  
+  .filter-chips-wrap.expanded {
+    max-height: 1000px; /* Large enough to show all filters */
+  }
+  
+  .filter-chips {
+    background: var(--N100, #fff);
+    border: 1px solid var(--N500, #979EC2);
+    border-radius: 100px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 15px;
+    color: var(--N700, #474D6A);
+    padding: 6px 12px;
+    margin-right: 14px;
+    margin-bottom: 14px;
+    display: inline-block;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px; /* Prevent overly long labels */
+  }
+  
+  .filter-chips.sel-filter {
+    background: var(--N400, #E7E7F1);
+    border: 1px solid var(--N800, #121224);
+    font-weight: 700;
+    color: var(--N800, #121224);
+  }
+  
+  .filter-chips.x-more {
+    border: none;
+    padding-left: 8px;
+    margin-left: 8px;
+    font-weight: 700;
+    min-width: 90px;
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Company Card Styles */
+  .standard-collection.swiper-wrapper {
+    display: flex;
+    flex-direction: row;
+    background: #fff;
+    border-radius: 4px;
+  }
+  
+  .tuple.standard {
+    padding: 20px;
+    width: 265px;
+    border: 1px solid #E7E7F1;
+    box-shadow: 0px 2px 20px rgba(30, 10, 58, 0.04);
+    border-radius: 16px;
+    margin-left: 10px;
+    max-width: 300px;
+    background-color: #fff;
+    box-shadow: 0px 14px 40px rgba(30, 10, 58, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    overflow: hidden; /* Prevent content overflow */
+  }
+  
+  .tuple.standard:hover {
+    box-shadow: 0px 14px 40px rgba(30, 10, 58, 0.1);
+    transform: translateY(-5px);
+  }
+  
+  .tuple.standard.row-2 {
+    margin-top: unset;
+  }
+  
+  /* Image Section */
+  .imagewrap {
+    border: 1px solid var(--N400, #E7E7F1);
+    border-radius: 8px;
+    height: 50px;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    overflow: hidden; /* Prevent image overflow */
+  }
+  
+  .logoImage {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  /* Content Section */
+  .contentwrap {
+    padding: 12px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1; /* Ensure contentwrap takes available space */
+  }
+  
+  .main-4.title {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 20px;
+    color: var(--N800, #121224);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    height: 20px; /* Ensure consistent height */
+  }
+  
+  .compName.ellipsis.right-arrow {
+    text-decoration: none;
+    color: inherit;
+    padding-right: 0px;
+  }
+  
+  .compName.ellipsis.right-arrow:after {
+    display: none;
+  }
+  
+  /* Additional Details Section */
+  .additionalDetails {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    margin-top: 12px;
+    gap: 5px;
+  }
+  
+  .star {
+    position: relative;
+    top: 0px;
+  }
+  
+  .rating {
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 11px;
+    color: var(--N600, #717B9E);
+  }
+  
+  .reviews {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--N600, #717B9E);
+  }
+  
+  /* Tags Section */
+  .tagswrap {
+    margin-top: 12px;
+    max-height: 53px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: hidden; /* Prevent tags from overflowing */
+  }
+  
+  .cardtag {
+    padding: 4px 8px;
+    margin: 0px;
+    margin-right: 8px;
+    border: 1px solid var(--N400, #E7E7F1);
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--N700, #474D6A);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px; /* Limit tag width */
+  }
+  
+  /* View All Companies Link */
+  .view-all-comp {
+    border: 1px solid var(--P100, #275DF5);
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 20px;
+    color: var(--P100, #275DF5);
+    padding: 10px 20px;
+    align-self: center;
+    text-decoration: none;
+    transition: background 0.3s ease, border 0.3s ease;
+  }
+  
+  .view-all-comp:hover {
+    background: rgba(239, 237, 255, 0.4);
+    border: 1px solid #4777FE;
+  }
+  
+  /* Swiper Slider Styles */
+  .standard-swiper-wrap {
+    position: relative;
+  }
+  
+  .swiper-container.swiper-standard-widget {
+    position: static;
+  }
+  
+  .swiper-slide {
+    padding: 22px 0 36px 0;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Swiper Navigation Buttons */
+  .swiper-button-next,
+  .swiper-button-prev {
+    border: 1px solid #EAF1F5;
+    padding: 19px;
+    border-radius: 100%;
+    background-size: 9px 14px;
+    background-color: #fff;
+    margin-top: -27px;
+    height: 40px;
+    width: 40px;
+    cursor: pointer;
+  }
+  
+  .swiper-button-prev {
+    left: -25px;
+  }
+  
+  .swiper-button-next {
+    right: -24px;
+  }
+  
+  .swiper-button-disabled {
+    display: none;
+  }
+  
+  /* Swiper Pagination Dots */
+  .swiper-pagination-bullet {
+    background: var(--N500, #979EC2);
+    opacity: 0.7;
+  }
+  
+  .swiper-pagination-bullet-active {
+    background: var(--N800, #121224);
+    opacity: 1;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .standard-collection-main {
+      width: 100%;
+    }
+  
+    .standard-collection-title {
+      font-size: 18px;
+      line-height: 24px;
+    }
+  
+    .filter-chips-wrap.fold-fil {
+      max-width: calc(100% - 80px); /* Adjusted from 100px for better responsiveness */
+      gap: 8px;
+    }
+  
+    .filter-chips {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+  
+    .swiper-slide {
+      padding: 20px 0 30px 0;
+    }
+  
+    .tuple.standard {
+      padding: 12px;
+      height: 214px; /* Maintain consistent height */
+    }
+  
+    .main-4.title {
+      font-size: 16px;
+      line-height: 20px;
+      height: 20px;
+    }
+  
+    .view-all-comp {
+      font-size: 15px;
+      line-height: 19px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .filter-sec {
+      flex-direction: column;
+      gap: 8px;
+    }
+  
+    .filter-chips-wrap.fold-fil {
+      max-width: 100%;
+      justify-content: center;
+    }
+  
+    .standard-collection.swiper-wrapper {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+    }
+  
+    .tuple.standard {
+      padding: 12px;
+      height: 214px; /* Maintain consistent height */
+    }
+  
+    .logoImage {
+      height: 60px;
+    }
+  
+    .main-4.title {
+      font-size: 16px;
+      line-height: 20px;
+      height: 20px;
+    }
+  
+    .view-all-comp {
+      font-size: 15px;
+      line-height: 19px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .filter-chips {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+  
+    .tuple.standard {
+      padding: 10px;
+      height: 214px; /* Maintain consistent height */
+    }
+  
+    .logoImage {
+      height: 50px;
+    }
+  
+    .main-4.title {
+      font-size: 15px;
+      line-height: 19px;
+      height: 20px;
+    }
+  
+    .view-all-comp {
+      font-size: 15px;
+      line-height: 19px;
+    }
+  }
+  
+  /* Accessibility: Visible Focus States */
+  .filter-chips:focus,
+  .tuple.standard:focus,
+  .view-all-comp:focus {
+    outline: 2px solid #2d9cdb;
+    outline-offset: 2px;
+  }
+  

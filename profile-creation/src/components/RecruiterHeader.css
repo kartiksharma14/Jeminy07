@@ -1,0 +1,210 @@
+/* General Header Styles */
+.recruiter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 100;
+}
+
+.recruiter-logo {
+    height: 40px;
+    cursor: pointer;
+}
+
+.recruiter-header-center {
+    display: flex;
+    gap: 30px;
+    margin-left: 10px;
+}
+
+.nav-item-container {
+    position: relative;
+}
+
+.nav-title {
+    cursor: pointer;
+    font-weight: 500;
+    color: #333;
+    transition: color 0.2s;
+    font-size: 15px;
+}
+
+.nav-title:hover {
+    color: #0073b1;
+}
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 5px); /* Slight spacing from the parent */
+    left: 0;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 0;
+    z-index: 1000; /* Ensures dropdown stays on top */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+}
+.nav-item-container:hover .dropdown,
+.profile-container:hover .profile-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown a,
+.profile-dropdown a {
+    display: block;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown a:hover,
+.profile-dropdown a:hover {
+    background-color: #f5f5f5;
+    color: #0073b1;
+}
+
+/* Search Bar */
+.search-bar-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 25px;
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-width: 350px;
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.search-wrapper:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+}
+
+/* Search Input */
+.search-input {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: #333;
+    padding: 5px 10px;
+}
+
+/* Search Button */
+.search-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0073b1;
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    height: 36px;
+    width: 36px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.search-button:hover {
+    background-color: #005a8d;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-button svg {
+    width: 20px;
+    height: 20px;
+    fill: #ffffff;
+}
+
+/* Profile Section */
+.profile-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between image and name */
+}
+
+.profile-image {
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    object-fit: cover; /* Ensures proper scaling of the image */
+    border: 1px solid #ddd;
+    transition: box-shadow 0.2s ease;
+}
+
+.profile-image:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.profile-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap; /* Prevents wrapping */
+}
+
+/* Profile Dropdown Styling */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 8px); /* Positioned below the profile trigger */
+    right: 0;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 0;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+    min-width: 180px;
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-dropdown a:hover {
+    background-color: #f5f5f5;
+    color: #0073b1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

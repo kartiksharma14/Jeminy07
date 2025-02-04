@@ -1,0 +1,190 @@
+/* src/components/JobSearchForm/JobSearchForm.css */
+
+.qsbWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: var(--font-family, "Satoshi", sans-serif);
+    padding: 40px 20px; /* Increased padding for better spacing */
+    background-color: #ffffff; /* White background for a clean look */
+  }
+  
+  .qsb {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    background-color: #f9f9f9;
+    border-radius: 12px; /* Rounded corners for a modern feel */
+    padding: 15px 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  }
+  
+  .searchIcon {
+    width: 28px; /* Slightly larger for better visibility */
+    height: 28px;
+    margin-right: 20px;
+  }
+  
+  .qsbInputs {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    width: 80%;
+    gap: 15px; /* Consistent spacing between input groups */
+  }
+  
+  .inputGroup {
+    position: relative;
+    flex: 1;
+  }
+  
+  .suggestor-input,
+  .ddInput {
+    width: 85%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .suggestor-input:focus,
+  .ddInput:focus {
+    border-color: #0073b1; /* Primary color on focus */
+    box-shadow: 0 0 0 3px rgba(0, 115, 177, 0.2); /* Focus shadow */
+    outline: none;
+  }
+  
+  .pipe {
+    width: 1px;
+    background-color: #e0e0e0;
+    height: 40px;
+    margin: 0 10px;
+  }
+  
+  .dropdownMainContainer {
+    position: relative;
+  }
+  
+  .dropArrowDD {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 12px;
+    color: #888;
+  }
+  
+  .dropDownPrimaryContainer {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 298px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: none; /* Hidden by default */
+    z-index: 1000;
+    max-height: 200px; /* Limiting height for overflow */
+    overflow-x: hidden;
+  }
+  
+  .dropdownMainContainer:hover .dropDownPrimaryContainer {
+    display: block;
+  }
+  
+  .dropdownContainer {
+    width: 100%;
+  }
+  
+  .dropdownPrimary {
+    min-width: 166px;
+    width: 100%;
+    padding: 10px;
+  }
+  
+  .dropdownItem {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .dropdownItem:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .qsbSubmit {
+    background-color: #0073b1;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .qsbSubmit:hover {
+    background-color: #005f8a;
+    transform: translateY(-2px);
+  }
+  
+  .qsbSubmit:active {
+    transform: translateY(0);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 992px) {
+    .qsb {
+      padding: 12px 20px;
+    }
+  
+    .searchIcon {
+      width: 24px;
+      height: 24px;
+      margin-right: 15px;
+    }
+  
+    .qsbSubmit {
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .qsb {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 15px;
+    }
+  
+    .qsbInputs {
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .pipe {
+      display: none;
+    }
+  
+    .qsbSubmit {
+      width: 100%;
+      align-self: center;
+    }
+  
+    .dropDownPrimaryContainer {
+      position: static;
+      box-shadow: none;
+      border: none;
+    }
+  
+    .dropdownPrimary {
+      box-shadow: none;
+    }
+  }
+  

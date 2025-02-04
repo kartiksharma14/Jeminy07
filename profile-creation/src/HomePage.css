@@ -1,0 +1,31 @@
+.dashboard .user-details-inner.fixed {
+    width: 240px;
+    position: relative;
+    top: 42px;
+}
+
+.dashboard .left-section, .dashboard .right-section {
+    width: 240px;
+    position: relative;
+    margin-top: 30px;
+}
+
+.dashboard .user-details-inner {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard .tabs-ul {
+    padding-left: 0;
+    list-style-type: none;
+}
+
+.dashboard .tabs-li {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+.dashboard .tabs-li.highlighted {
+    background-color: #f0f0f0;
+}

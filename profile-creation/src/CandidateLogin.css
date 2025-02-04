@@ -1,0 +1,217 @@
+/* === Candidate Login Page Styling === */
+.candidate-login {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Content Section */
+  .content {
+    display: flex;
+    gap: 20px;
+  }
+  
+  /* Left Pane */
+  .sticky-wrapper-leftPaneStick {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+  }
+  
+  .sticky-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .sticky-container:hover {
+    transform: translateY(-5px);
+  }
+  
+  .static-list img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .static-list h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #275df5;
+    text-align: center;
+  }
+  
+  .static-list ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .static-list ul li {
+    margin-bottom: 12px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    color: #555;
+  }
+  
+  .static-list ul li::before {
+    content: "✔";
+    color: #275df5;
+    margin-right: 8px;
+  }
+  
+  /* Right Pane */
+  .right-container {
+    flex: 2;
+  }
+  
+  .right-pane {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+  }
+  
+  /* Form Fields */
+  .formField {
+    margin-bottom: 25px;
+  }
+  
+  .formField label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #444;
+  }
+  
+  .formField input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    font-size: 15px;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .formField input:focus {
+    border-color: #275df5;
+    box-shadow: 0 0 8px rgba(39, 93, 245, 0.3);
+    outline: none;
+  }
+  
+  /* Remember Me & Forgot Password */
+  .checkboxField-pass {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  
+  .remember-me input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #275df5;
+    cursor: pointer;
+  }
+  
+  .forgot-password-link {
+    font-size: 14px;
+    color: #275df5;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .forgot-password-link:hover {
+    color: #1e4ed4;
+    text-decoration: underline;
+  }
+  
+  /* Submit Button */
+  .submitbtn {
+    width: 100%;
+    background-color: #275df5;
+    color: #fff;
+    padding: 14px 0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .submitbtn:hover {
+    background-color: #1e4ed4;
+    transform: translateY(-2px);
+  }
+  
+  /* Registration Link */
+  .registerLink {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .registerLink p {
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .registerLink a {
+    color: #275df5;
+    font-weight: bold;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .registerLink a:hover {
+    color: #1e4ed4;
+    text-decoration: underline;
+  }
+  
+  /* Footer Section */
+  .footer-login  {
+    margin-top: 40px;
+    text-align: center;
+    padding: 20px 0;
+    border-top: 1px solid #ddd;
+    background-color: #f8f9fa;
+  }
+  
+  .footer-login ul {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 0;
+    list-style: none;
+    flex-direction: row;
+  }
+  
+  .footer-login ul li a {
+    color: #275df5;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  
+  .footer-login ul li a:hover {
+    text-decoration: underline;
+  }
+  
+  .footer-login p {
+    font-size: 12px;
+    color: #777;
+    margin-top: 10px;
+  }
+  

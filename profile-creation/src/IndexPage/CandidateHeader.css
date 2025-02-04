@@ -1,0 +1,379 @@
+/* -----------------------------
+   FONT-FACE RULES
+------------------------------ */
+@font-face {
+    font-display: swap;
+    font-family: Satoshi;
+    font-style: normal;
+    font-weight: 400;
+    src: url(https://static.naukimg.com/s/0/0/c/fonts/static/satoshi/KFIAZD4RUMEZIYV6FQ3T3GP5PDBDB6JY.woff2) format("woff2");
+  }
+  @font-face {
+    font-display: swap;
+    font-family: Satoshi;
+    font-style: normal;
+    font-weight: 500;
+    src: url(https://static.naukimg.com/s/0/0/c/fonts/static/satoshi/7AHDUZ4A7LFLVFUIFSARGIWCRQJHISQP.woff2) format("woff2");
+  }
+  @font-face {
+    font-display: swap;
+    font-family: Satoshi;
+    font-style: normal;
+    font-weight: 700;
+    src: url(https://static.naukimg.com/s/0/0/c/fonts/static/satoshi/GHM6WVH6MILNYOOCXHXB5GTSGNTMGXZR.woff2) format("woff2");
+  }
+  @font-face {
+    ascent-override: 102.23%;
+    descent-override: 24.29%;
+    font-display: swap;
+    font-family: "Satoshi Fallback";
+    font-style: normal;
+    font-weight: 400;
+    line-gap-override: 10.12%;
+    size-adjust: 98.8%;
+    src: local("Arial");
+  }
+  @font-face {
+    ascent-override: 99.15%;
+    descent-override: 23.56%;
+    font-display: swap;
+    font-family: "Satoshi Fallback";
+    font-style: normal;
+    font-weight: 500;
+    line-gap-override: 9.82%;
+    size-adjust: 101.86%;
+    src: local("Arial");
+  }
+  @font-face {
+    ascent-override: 103.72%;
+    descent-override: 24.65%;
+    font-display: swap;
+    font-family: "Satoshi Fallback";
+    font-style: normal;
+    font-weight: 700;
+    line-gap-override: 10.27%;
+    size-adjust: 97.38%;
+    src: local("Arial Bold");
+  }
+  
+  /* -----------------------------
+     BASE STYLES
+  ------------------------------ */
+  .nI-gNb-foremp.nI-gNb-menuItems {
+    list-style-type: none;
+  }
+  .nI-gNb-header,
+  button,
+  input {
+    font-family: Satoshi, "Satoshi Fallback", sans-serif;
+    font-weight: 400;
+  }
+  
+  .nI-gNb-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    background-color: #fff;
+    height: 72px;
+    z-index: 99;
+    box-shadow: none;
+    transition: box-shadow 0.1s ease-out;
+  }
+  
+  .nI-gNb-header--scrolled {
+    box-shadow: 0 6px 12px rgba(30, 10, 58, 0.04);
+  }
+  
+  .nI-gNb-header__placeholder {
+    position: absolute;
+    width: 100%;
+    height: 72px;
+    transition: height 0.25s ease-out 0.15s;
+  }
+  
+  .nI-gNb-header__wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 1120px;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* -----------------------------
+     LOGO
+  ------------------------------ */
+  .nI-gNb-header__logo {
+    top: -1px !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  .nI-gNb-header__logo img {
+    height: 60px;
+    width: 100%;
+    margin-right: 88px;
+  }
+  
+  /* -----------------------------
+     NAV MENUS
+  ------------------------------ */
+  .nI-gNb-menus {
+    display: flex;
+    list-style: none;
+    margin-top : 40px;
+    padding: 0;
+  }
+  .for{
+    margin-top: 25px;
+  }
+  
+  .nI-gNb-menuItems {
+    text-decoration: none;
+    position: relative;
+    margin-right: 28px;
+    padding-bottom: 25px;
+  }
+  
+  .nI-gNb-menuItems__anchorDropdown {
+    text-decoration: none;
+    color: #979ec2;
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    padding-right: 32px;
+    transition: color 0.2s ease;
+  }
+  
+  .nI-gNb-menuItems__anchorDropdown:hover {
+    color: #0073b1;
+  }
+  
+  .nI-gNb-dropdown {
+    opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    display: flex; /* Arrange dropdown groups horizontally */
+  }
+  
+  .nI-gNb-menuItems:hover .nI-gNb-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    display: flex;
+  }
+  
+  .nI-gNb-dropdownMenuGroup {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
+    border-right: 1px solid #e0e0e0;
+  }
+  
+  .nI-gNb-dropdownMenuGroup:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+  
+  .nI-gNb-header1__headerAnchor {
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+    color: #474d6a;
+    text-decoration: none;
+  }
+  
+  .nI-gNb-dropdownMenuGroup a {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    padding: 6px 0;
+    transition: color 0.2s;
+  }
+  
+  .nI-gNb-dropdownMenuGroup a:hover {
+    color: #0073b1;
+  }
+  
+  /* -----------------------------
+     LOGIN / REGISTER
+  ------------------------------ */
+  .nI-gNb-log-reg {
+    display: flex;
+    align-items: center;
+    margin-left: auto; /* Push to the right */
+  }
+  
+  .nI-gNb-lg-rg__login,
+  .nI-gNb-lg-rg__register {
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 14px;
+    margin-left: 10px;
+    border-radius: 30px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  .nI-gNb-lg-rg__login {
+    color: #0073b1;
+    border: 1px solid #0073b1;
+  }
+  
+  .nI-gNb-lg-rg__login:hover {
+    background-color: #0073b1;
+    color: #fff;
+  }
+  
+  .nI-gNb-lg-rg__register {
+    background-color: #ff6200;
+    color: #fff;
+  }
+  
+  .nI-gNb-lg-rg__register:hover {
+    background-color: #e55a00;
+  }
+  
+  /* -----------------------------
+     FOR EMPLOYERS 
+  ------------------------------ */
+  .nI-gNb-foremp {
+    position: relative; /* Ensure dropdown is positioned correctly */
+    margin-left: 28px;
+  }
+  
+  .nI-gNb-menuItems__anchorDropdown .nI-gNb-menuIcon {
+    margin-left: 5px;
+  }
+  
+  .nI-gNb-foremp .nI-gNb-dropdown {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    display: flex; /* Arrange dropdown groups horizontally */
+  }
+  
+  .nI-gNb-foremp:hover .nI-gNb-dropdown {
+    display: flex;
+  }
+  
+  .nI-gNb-foremp .nI-gNb-dropdownMenuGroup {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
+    border-right: 1px solid #e0e0e0;
+  }
+  
+  .nI-gNb-foremp .nI-gNb-dropdownMenuGroup:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+  
+  .nI-gNb-foremp .nI-gNb-dropdownMenuGroup a {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    padding: 6px 0;
+    transition: color 0.2s;
+  }
+  
+  .nI-gNb-foremp .nI-gNb-dropdownMenuGroup a:hover {
+    color: #0073b1;
+  }
+  
+  /* -----------------------------
+     RESPONSIVENESS
+  ------------------------------ */
+  @media (max-width: 1200px) {
+    .nI-gNb-header__wrapper {
+      width: 100%;
+      padding: 0 10px;
+    }
+    .nI-gNb-menus {
+      margin-left: 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .nI-gNb-header__wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+      height: auto;
+      padding: 10px;
+    }
+  
+    .nI-gNb-menus {
+      flex-direction: column;
+      width: 100%;
+    }
+  
+    .nI-gNb-menuItems {
+      margin-right: 0;
+      padding-bottom: 10px;
+    }
+  
+    .nI-gNb-dropdown {
+      flex-direction: column;
+      width: 100%;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 10px 0;
+    }
+  
+    .nI-gNb-dropdownMenuGroup {
+      border-right: none;
+      padding-right: 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+  
+    .nI-gNb-dropdownMenuGroup:last-child {
+      border-bottom: none;
+    }
+  
+    .nI-gNb-log-reg {
+      margin-left: 0;
+      margin-top: 10px;
+    }
+  
+    .nI-gNb-foremp {
+      position: static;
+      margin-left: 0;
+      margin-top: 10px;
+    }
+  
+    .nI-gNb-foremp .nI-gNb-dropdown {
+      flex-direction: column;
+      width: 100%;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 10px 0;
+    }
+  
+    .nI-gNb-foremp .nI-gNb-dropdownMenuGroup {
+      border-right: none;
+      padding-right: 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+  
+    .nI-gNb-foremp .nI-gNb-dropdownMenuGroup:last-child {
+      border-bottom: none;
+    }
+  }
+  

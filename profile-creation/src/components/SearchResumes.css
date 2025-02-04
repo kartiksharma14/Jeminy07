@@ -1,0 +1,255 @@
+/* Layout */
+.search-resumes-layout {
+    display: flex;
+    gap: 24px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 24px;
+    background: #f8f9fa;
+    color: #333;
+  }
+  
+  /* Search Section */
+  .search-section {
+    flex: 3;
+    background: white;
+    padding: 24px;
+    border: 1px solid #e3e6e8;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .search-resume-heading {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: #333;
+    text-align: left;
+  }
+  
+  /* Form Section */
+  .form-box {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .form-field {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .field-label {
+    font-weight: 600;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    color: #555;
+  }
+  
+  .input-box {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+  
+  .input-box:focus {
+    border-color: #007bff;
+    background-color: #f7f9fc;
+    outline: none;
+  }
+  
+  /* Checkbox */
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #555;
+    margin-top: 10px;
+  }
+  
+  /* Experience and Salary Range */
+  .experience-range,
+  .salary-range {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .separator {
+    font-size: 18px;
+    color: #888;
+  }
+  
+  /* Expandable Sections */
+  .expandable-section {
+    margin-top: 24px;
+  }
+  
+  .collapser {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    transition: color 0.3s ease;
+  }
+  
+  .collapser:hover {
+    color: #007bff;
+  }
+  
+  .expand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; /* Increase size for modern look */
+    height: 36px;
+    border-radius: 50%; /* Circle shape */
+    cursor: pointer;
+  }
+
+  
+  .expand-icon.expanded {
+    transform: rotate(180deg); /* Rotate for expanded state */
+  }
+  
+  .icon-svg {
+    fill: #6c757d; /* Neutral gray for SVG path */
+    width: 20px; /* Scales SVG for better visuals */
+    height: 20px;
+  }
+  
+  
+  
+  .collapsible-content {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-top: 16px;
+    border: 1px solid #ddd;
+    color: #333;
+  }
+  
+  /* Tag Selection */
+  .modern-tag-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  
+  .tag {
+    padding: 10px 16px;
+    font-size: 14px;
+    background: #fff;
+    color: #555;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .tag:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+  
+  .tag.selected {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+  
+  /* Search Action Box */
+  .search-action-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 20px 24px;
+    border: 1px solid #e3e6e8;
+    border-radius: 16px;
+    margin-top: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    bottom: 0;
+  }
+  
+  /* Search Button */
+  .search-button-resume {
+    padding: 12px 24px;
+    background-color: #007bff;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .search-button-resume:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Recent Searches Section */
+  .recent-searches {
+    flex: 1;
+    background: white;
+    border: 1px solid #e3e6e8;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .recent-searches-heading {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: #333;
+  }
+  
+  .recent-searches-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .recent-searches-list li {
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    color: #555;
+  }
+  
+  .actions button {
+    padding: 0; /* Remove padding */
+    margin-right: 12px;
+    background: none; /* Remove background */
+    color: #007bff; /* Blue text color */
+    border: none; /* Remove border */
+    border-radius: 0; /* Remove border radius */
+    cursor: pointer; /* Pointer cursor for clickable effect */
+    text-decoration: none; /* Underline to indicate it's clickable */
+    font-size: 14px; /* Adjust font size for better readability */
+    transition: color 0.3s ease; /* Smooth transition for color change */
+  }
+  
+  .actions button:hover {
+    color: #0056b3; /* Darker blue on hover */
+    text-decoration: none; /* Remove underline on hover for a clean look */
+  }
+  
+  
+  

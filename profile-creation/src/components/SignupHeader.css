@@ -1,0 +1,33 @@
+/* === Signup Header Styling === */
+.signup-header {
+  background-color: white;
+  border-bottom: 1px solid #ddd;
+}
+
+.signup-header .content {
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 25px;
+}
+
+.signup-header img {
+  height: 60px;
+}
+
+.signup-header span {
+  font-size: 14px;
+  color: #333;
+}
+
+.signup-header a {
+  text-decoration: none;
+  color: #0073b1;
+  font-weight: bold;
+}
+
+.signup-header a:hover {
+  text-decoration: underline;
+  color: #005582;
+}

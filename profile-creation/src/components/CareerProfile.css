@@ -1,0 +1,97 @@
+.career-profile {
+    margin: 20px 0;
+  }
+  
+  .card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .widgetHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .widgetTitle {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333333;
+  }
+  
+  .widgetSubTitle {
+    font-size: 14px;
+    color: #777777;
+    margin-top: 8px;
+  }
+  
+  .editButton {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .editButton:hover {
+    color: #0056b3;
+    transform: scale(1.1);
+  }
+  
+  .widgetCont {
+    margin-top: 16px;
+  }
+  
+  .hori-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .profile-item {
+    flex: 1 1 calc(50% - 20px); /* Two columns */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+  }
+  
+  .desc .link {
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .desc .link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .hori-list {
+      flex-direction: column;
+      gap: 15px;
+    }
+  
+    .profile-item {
+      flex: 1 1 100%;
+    }
+  }
+  

@@ -1,0 +1,543 @@
+.container {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+    margin: 20px auto; /* Space around the entire container */
+    padding: 40px;
+    max-width: 1200px; /* Limit the width for better readability */
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header {
+    background: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #275df5;
+    transition: color 0.3s ease;
+  }
+  
+  .header a:hover {
+    color: #1e4ed4;
+  }
+  
+  .content {
+    background-color: #f8f9fa;
+    display: flex;
+    padding: 40px 20px;
+    gap: 40px; /* Space between the left and right panes */
+  }
+  
+  .sticky-wrapper-leftPaneStick {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+  }
+  
+  .sticky-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .sticky-container:hover {
+    transform: translateY(-5px);
+  }
+  
+  .static-list img {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+  }
+  
+  .static-list img:hover {
+    transform: scale(1.05);
+  }
+  
+  .static-list h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #275df5;
+    text-align: center;
+  }
+  
+  .static-list ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .static-list ul li {
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    color: #555;
+  }
+  
+  .static-list ul li:before {
+    content: "✔";
+    color: #275df5;
+    margin-right: 10px;
+  }
+  
+  .right-container {
+    flex: 2;
+  }
+  
+  .right-pane {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 40px; /* Spacious padding for a clean layout */
+  }
+  
+  .formField {
+    margin-bottom: 25px; /* Increased spacing between form fields */
+  }
+  
+  .formField label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #555;
+  }
+  
+  .formField .__inner {
+    display: flex;
+  }
+  
+  .formField input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+    font-size: 15px;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .formField input:focus {
+    border-color: #275df5;
+    box-shadow: 0 0 6px rgba(39, 93, 245, 0.5);
+  }
+  
+  .formField .helper-text {
+    font-size: 13px;
+    color: #888;
+    margin-top: 8px;
+  }
+  
+ .radioWrap {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.optionWrap {
+  width: 48%;
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+
+.optionWrap:hover {
+  border-color: #275df5;
+  background-color: #f0f4ff;
+  transform: translateY(-3px);
+}
+
+.optionWrap.selected {
+  border-color: #275df5;
+  background-color: #e8effe;
+}
+
+.iconWrap img {
+  width: 40px;
+  height: 40px;
+  transition: transform 0.3s ease;
+}
+
+.optionWrap:hover .iconWrap img {
+  transform: scale(1.1);
+}
+
+.textWrap h2 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #275df5;
+  margin: 0 0 5px;
+}
+
+.textWrap p {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+}
+
+.formField.userType {
+  margin-top: 20px;
+}
+
+.formField.userType label {
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: block;
+  color: #555;
+}
+
+  .submitWrap {
+    margin-top: 30px;
+    text-align: center;
+  }
+  
+  .submitbtn {
+    background-color: #275df5;
+    color: #fff;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .submitbtn:hover {
+    background-color: #1e4ed4;
+    transform: translateY(-2px);
+  }
+  
+  footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    background: f8f9fa;
+    border-top: 1px solid #ddd;
+  }
+  
+  footer ul {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    list-style: none;
+    padding: 0;
+    flex-direction: row;
+  }
+  
+  footer ul li {
+    font-size: 14px;
+  }
+  
+  footer ul li a {
+    color: #275df5;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  footer ul li a:hover {
+    color: #1e4ed4;
+  }
+  
+  footer p {
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+  }
+  
+  .registerWrapper {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .registerWrapper .formWrapper .formTag .formField {
+    padding-right: 20px;
+    position: relative;
+  }
+  
+  .registerWrapper .formWrapper {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .candidate-signup .content {
+    padding: 20px;
+    gap: 20px;
+  }
+  
+  .candidate-signup .right-container {
+    flex: 2;
+  }
+  
+  .candidate-signup .helper-text {
+    font-size: 13px;
+    color: #888;
+    margin-top: 8px;
+  }
+  .resume-upload-container {
+    background: #f9f9f9;
+    padding: 20px;
+    border: 1px dashed #ddd;
+    border-radius: 10px;
+    margin-top: 20px;
+    text-align: center;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .resume-upload-container:hover {
+    border-color: #275df5;
+    box-shadow: 0 4px 12px rgba(39, 93, 245, 0.2);
+  }
+  
+  .resume-upload-container .labelClass {
+    font-size: 16px;
+    font-weight: bold;
+    color: #275df5;
+    margin-bottom: 15px;
+    display: block;
+  }
+  
+  .resume-upload {
+    margin-top: 10px;
+  }
+  
+  .resume-upload .uploadResume {
+    background-color: #275df5;
+    color: #fff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .resume-upload .uploadResume:hover {
+    background-color: #1e4ed4;
+    transform: translateY(-2px);
+  }
+  
+  .resume-upload .uploadAction {
+    display: none;
+  }
+  
+  .narrowFormats {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #888;
+  }
+  
+  .info {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #555;
+  }
+  .locationWrapper {
+    background: #f9f9f9;
+    padding: 20px;
+    border: 1px dashed #ddd;
+    border-radius: 10px;
+    margin-top: 20px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .locationWrapper:hover {
+    border-color: #275df5;
+    box-shadow: 0 4px 12px rgba(39, 93, 245, 0.2);
+  }
+  
+  .locationWrapper .labelClass {
+    font-size: 16px;
+    font-weight: bold;
+    color: #275df5;
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .locationWrapper input {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    background: #f8f9fa;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .locationWrapper input:focus {
+    border-color: #275df5;
+    box-shadow: 0 0 8px rgba(39, 93, 245, 0.3);
+  }
+  
+  .__assitive {
+    font-size: 13px;
+    color: #888;
+    margin-top: 8px;
+  }
+  
+  .initialLocation-section {
+    margin-top: 15px;
+  }
+  
+  .initialLocation-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10px;
+    display: block;
+  }
+  
+  .chip {
+    display: inline-block;
+    background: #e8effe;
+    color: #275df5;
+    padding: 8px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    margin: 5px 5px 0 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .chip:hover {
+    background-color: #d0e0fd;
+    transform: translateY(-2px);
+  }
+  .checkboxLabel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .checkbox {
+    margin-left: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+/* Specific Styling for Checkbox Field */
+.checkboxField {
+  display: flex;
+  align-items: normal;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* Text for Checkbox */
+.checkboxField .checkboxText {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Checkbox Styles */
+.checkboxField .checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #275df5; /* Modern styling for checkbox */
+  border: 1px solid #ddd;
+  border-radius: 4px; /* Optional for rounded checkboxes */
+}
+/* Modal Overlay */
+.otp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+/* Modal Content */
+.otp-modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+/* Close Modal Button */
+.close-modal {
+  margin-top: 20px;
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.close-modal:hover {
+  background-color: #e53935;
+}
+
+/* OTP Input Field */
+.otp-modal-content input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.otp-modal-content input:focus {
+  border-color: #275df5;
+  box-shadow: 0 0 6px rgba(39, 93, 245, 0.5);
+}
+
+/* OTP Submit Button */
+.otp-modal-content button {
+  width: 100%;
+  padding: 12px;
+  background-color: #275df5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.otp-modal-content button:hover {
+  background-color: #1e4ed4;
+}
+
+/* Error Message */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}

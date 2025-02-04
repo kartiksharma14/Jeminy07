@@ -1,0 +1,128 @@
+/* Main Container Layout */
+.main-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px; /* Space between sidebar and right content */
+    padding: 20px;
+  }
+  
+  /* Sidebar Styles */
+  .sidebar {
+    flex: 0 0 25%; /* Fixed width for the sidebar */
+    max-width: 300px;
+  }
+  
+  /* Resume Section Styles */
+  .resume-section {
+    flex: 1; /* Take up the remaining space */
+  }
+  
+  /* Resume Card Styles */
+  .resume-card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin: 15px 0;
+    font-family: 'Poppins', sans-serif;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .resume-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #222;
+  }
+  
+  .cvPreview {
+    margin-bottom: 20px;
+  }
+  
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .left {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .truncate {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .updateOn {
+    font-size: 14px;
+    color: #777;
+  }
+  
+  .icon-wrap {
+    cursor: pointer;
+    color: #007bff;
+    margin-left: 10px;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .icon-wrap:hover {
+    color: #0056b3;
+    transform: scale(1.1);
+  }
+  
+  .upload-section {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .fileUpload {
+    display: none;
+  }
+  
+  .upload-btn {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .upload-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+  }
+  
+  .format {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #777;
+  }
+  
+  @media (max-width: 768px) {
+    .main-container {
+      flex-direction: column;
+    }
+  
+    .sidebar {
+      width: 100%;
+    }
+  
+    .resume-section {
+      width: 100%;
+    }
+  }
+  

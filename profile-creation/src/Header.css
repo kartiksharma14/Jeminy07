@@ -1,0 +1,78 @@
+/* Header Container */
+.header-candidate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: white;
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* Left Section: Logo */
+.header-left .logo {
+  height: 40px;
+  width: auto;
+  transition: transform 0.2s;
+}
+
+.header-left .logo:hover {
+  transform: scale(1.1);
+}
+
+/* Center Section: Navigation and Search */
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  justify-content: center;
+}
+
+.jobs-link {
+  font-size: 16px;
+  color: black;
+  text-decoration: none;
+  margin-right: 15px;
+  transition: color 0.3s;
+}
+
+.jobs-link:hover {
+  color: #007bff;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 300px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: white;
+  color: #f0f0f0;
+  transition: box-shadow 0.3s;
+}
+
+.search-box:focus {
+  outline: none;
+  box-shadow: 0 0 5px #007bff;
+}
+
+/* Right Section: Profile Icon */
+.profile-icon-placeholder {
+  height: 36px;
+  width: 36px;
+  border-radius: 50%;
+  background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNdN9iSAU7808-QMjArLwqvXVONI9MXmK7Mw');
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.2s;
+}
+
+.profile-icon-placeholder:hover {
+  transform: scale(1.1);
+}

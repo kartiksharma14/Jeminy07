@@ -1,0 +1,222 @@
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* Modal Content */
+  .modal-content.employment-modal {
+    background: #fff;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    max-height: 90vh;
+  
+    /* Hide Scrollbar */
+    -ms-overflow-style: none; /* IE */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .modal-content.employment-modal::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+  
+  /* Close Button */
+  .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #333;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .close-btn:hover {
+    color: #007bff;
+  }
+  
+  /* Input Group */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%; /* Full width container */
+    box-sizing: border-box; /* Ensures padding is included in width */
+  }
+  
+  .input-group label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 4px;
+  }
+  
+  .input-group input[type="text"],
+  .input-group textarea,
+  .input-group select {
+    width: 100%;
+    padding: 12px 0;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    max-width: 100%; /* Prevents overflow */
+  }
+  
+  .input-group input[type="text"]:focus,
+  .input-group textarea:focus,
+  .input-group select:focus {
+    border-color: #007bff;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+  }
+  
+  .input-group input[type="text"]::placeholder,
+  .input-group textarea::placeholder {
+    color: #aaa;
+    font-style: italic;
+  }
+  
+  /* Modern Dropdowns */
+  .experience-input select,
+  .date-input select {
+    flex: 1; /* Distributes space evenly */
+    padding: 12px 14px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%23007bff"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px 16px;
+    padding-right: 36px; /* Space for dropdown arrow */
+  }
+  
+  .experience-input select:focus,
+  .date-input select:focus {
+    border-color: #007bff;
+  }
+  
+  /* Experience Input (Years and Months in One Line) */
+  .experience-input {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Date Input (Year and Month in One Line) */
+  .date-input {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Modern Radio Buttons */
+  .radio-group {
+    display: flex;
+    justify-content: flex-start;
+    gap: 30px; /* Space between Yes/No */
+    align-items: center;
+  }
+  
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .radio-group input[type="radio"] {
+    accent-color: #007bff; /* Modern styling */
+    width: 16px;
+    height: 16px;
+  }
+  
+  /* Footer Buttons */
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+  
+  .save-btn,
+  .cancel-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .save-btn {
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  .save-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .cancel-btn {
+    background-color: #f5f5f5;
+    color: #333;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #e0e0e0;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .modal-content.employment-modal {
+      width: 95%;
+      max-height: 85vh;
+      padding: 20px;
+    }
+  
+    .radio-group {
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .experience-input,
+    .date-input {
+      flex-direction: column; /* Stack vertically on smaller screens */
+      gap: 10px;
+    }
+  
+    .salary-input {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+  

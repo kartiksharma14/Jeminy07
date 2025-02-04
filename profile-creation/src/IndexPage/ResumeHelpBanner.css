@@ -1,0 +1,99 @@
+/* src/components/ResumeHelpBanner/ResumeHelpBanner.css */
+
+.resumeHelpBanner {
+    background-color: #ffffff; /* Clean white background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 2s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .bannerContent {
+    max-width: 800px;
+    text-align: center;
+    color: var(--text-color);
+    background-color: #ffffff; /* White background for content */
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px var(--shadow-color); /* Subtle shadow for depth */
+  }
+  
+  .bannerTitle {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  
+  .bannerSubtitle {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 30px;
+  }
+  
+  .bannerButton {
+    display: inline-block;
+    padding: 14px 28px;
+    background-color: var(--primary-color); /* Vibrant Orange */
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 25px;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .bannerButton:hover {
+    background-color: var(--button-hover-color); /* Darker Orange on hover */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .bannerButton:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .bannerButton:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .resumeHelpBanner {
+      padding: 60px 15px;
+    }
+  
+    .bannerContent {
+      max-width: 90%;
+      padding: 30px;
+    }
+  
+    .bannerTitle {
+      font-size: 2rem;
+    }
+  
+    .bannerSubtitle {
+      font-size: 1rem;
+    }
+  
+    .bannerButton {
+      padding: 12px 24px;
+      font-size: 0.9rem;
+    }
+  }
+  

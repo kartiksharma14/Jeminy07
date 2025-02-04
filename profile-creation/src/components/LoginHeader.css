@@ -1,0 +1,30 @@
+.login-header {
+    background-color: white;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .login-header .content {
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 25px;
+  }
+  
+  .login-header img {
+    height: 60px;
+  }
+  
+  .login-header span {
+    font-size: 14px;
+  }
+  
+  .login-header a {
+    text-decoration: none;
+    color: #0073b1;
+  }
+  
+  .login-header a:hover {
+    text-decoration: underline;
+  }
+  

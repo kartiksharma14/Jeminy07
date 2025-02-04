@@ -1,0 +1,108 @@
+/* Recruiter Footer Styles */
+.recruiter-footer {
+    background-color: #ffffff; /* Clean white background */
+    border-top: 1px solid #e5e5e5; /* Subtle top border */
+    padding: 20px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05); /* Soft shadow for elevation */
+    font-family: 'Arial', sans-serif;
+}
+
+.recruiter-footer .footer-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    align-items: center;
+}
+
+/* Left Section: Logo and Social Links */
+.recruiter-footer .footer-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.recruiter-footer .footer-logo {
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.recruiter-footer .footer-logo-img {
+    height: 45px;
+    width: auto;
+}
+
+.recruiter-footer .footer-social-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+.recruiter-footer .social-link {
+    color: #888; /* Neutral gray for icons */
+    font-size: 20px;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.recruiter-footer .social-link:hover {
+    color: #0073b1; /* Highlight hover color */
+    transform: scale(1.1); /* Slight zoom for hover */
+}
+
+/* Right Section: Columns */
+.recruiter-footer .footer-right {
+    display: flex;
+    gap: 50px;
+}
+
+.recruiter-footer .footer-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.recruiter-footer .footer-column h4 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.recruiter-footer .footer-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recruiter-footer .footer-column li {
+    margin-bottom: 6px;
+}
+
+.recruiter-footer .footer-column a {
+    color: #555; /* Soft gray for links */
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.recruiter-footer .footer-column a:hover {
+    color: #0073b1; /* Highlight hover color */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .recruiter-footer .footer-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .recruiter-footer .footer-right {
+        margin-top: 20px;
+        flex-direction: column;
+        gap: 30px;
+    }
+}

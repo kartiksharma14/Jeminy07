@@ -1,0 +1,111 @@
+/* Accomplishments Section */
+.accomplishments {
+    margin: 20px 0;
+  }
+  
+  .card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .widgetHead {
+    margin-bottom: 20px;
+  }
+  
+  .widgetTitle {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333333;
+  }
+  
+  .widgetSubTitle {
+    font-size: 14px;
+    color: #777777;
+    margin-top: 8px;
+  }
+  
+  .widgetCont {
+    margin-top: 20px;
+  }
+  
+  .acm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .acm-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    flex-direction: row;
+  }
+  
+  .acm-list-item:hover {
+    background-color: #f9f9f9;
+    border-color: #007bff;
+  }
+  
+  .acm-content {
+    width: 100%;
+  }
+  
+  .acm-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+  }
+  
+  .acm-description {
+    font-size: 14px;
+    color: #555555;
+    margin-top: 5px;
+  }
+  
+  .addButton {
+    background-color: transparent;
+    color: #007bff;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .addButton:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .widgetHead {
+      text-align: center;
+    }
+  
+    .acm-list {
+      gap: 15px;
+    }
+  
+    .acm-list-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .addButton {
+      width: 100%;
+      text-align: center;
+      margin-top: 10px;
+    }
+  }
+  
