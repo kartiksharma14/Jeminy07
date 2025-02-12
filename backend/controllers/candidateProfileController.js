@@ -12,6 +12,7 @@ const Projects = require("../models/projects");
 const keyskills = require("../models/keyskills");
 const itSkills = require("../models/itSkills");
 const JobPost = require('../models/jobPost');
+const { JobApplication } = require('../models/jobApplications');
 const { Op, Sequelize } = require("sequelize");
 const cities = require('../data/cities.json');
 
@@ -926,9 +927,12 @@ exports.searchByKeyword = async (req, res) => {
       where: {
         [Sequelize.Op.or]: [
           // CandidateProfile table columns
-          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', `%${keyword.toLowerCase()}%`),
-          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('email')), 'LIKE', `%${keyword.toLowerCase()}%`),
-          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('phone')), 'LIKE', `%${keyword.toLowerCase()}%`),
+          /*Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', `%${keyword.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('email')), 'LIKE', `%${keyword.toLowerCase()}%`),*/
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', '%100%'),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', '%100%'),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.phone')), 'LIKE', '%100%'),
+          //Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('phone')), 'LIKE', `%${keyword.toLowerCase()}%`),
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('location')), 'LIKE', `%${keyword.toLowerCase()}%`),
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('fresher_experience')), 'LIKE', `%${keyword.toLowerCase()}%`),
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('availability_to_join')), 'LIKE', `%${keyword.toLowerCase()}%`),
@@ -1085,6 +1089,11 @@ exports.searchByKeyword = async (req, res) => {
           model: itSkills, // Add itSkills model
           required: false,
           attributes: ['itskills_id', 'itskills_name', 'itskills_proficiency']
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
         }
       ],
     });
@@ -1210,11 +1219,18 @@ exports.searchCandidateByEmployment = async (req, res) => {
     }
 
     const candidates = await CandidateProfile.findAll({
-      include: [{
+      include: [
+        {
         model: EmploymentDetails,
         where: whereClause,
         required: true
-      }]
+      },
+      {
+        model: Signin,
+        attributes: ['name', 'email'],
+        required: true,
+      }
+    ]
     });
 
     if (candidates.length === 0) {
@@ -1261,7 +1277,12 @@ exports.searchCandidateByGender = async (req, res) => {
         { model: EmploymentDetails, required: false },
         { model: Projects, required: false },
         { model: itSkills, required: false },
-        { model: keyskills, required: false }
+        { model: keyskills, required: false },
+        {
+          model: Signin, // Include the Signin model
+          attributes: ['name', 'email'], // Specify the fields you want to include
+          required: true // Ensure that only candidates with signin data are returned
+        }
       ]
     });
 
@@ -1302,11 +1323,18 @@ exports.searchCandidateBySalary = async (req, res) => {
     }
 
     const candidates = await CandidateProfile.findAll({
-      include: [{
+      include: [
+        {
         model: EmploymentDetails,
         where: whereClause,
         required: true
-      }]
+      },
+      {
+        model: Signin,
+        attributes: ['name', 'email'],
+        required: true,
+      }
+    ]
     });
 
     res.status(200).json({
@@ -1325,13 +1353,20 @@ exports.searchCandidateByNoticePeriod = async (req, res) => {
     const { notice_period } = req.query;
 
     const candidates = await CandidateProfile.findAll({
-      include: [{
+      include: [
+        {
         model: EmploymentDetails,
         where: {
           notice_period: { [Sequelize.Op.lte]: notice_period }
         },
         required: true
-      }]
+      },
+      {
+        model: Signin,
+        attributes: ['name', 'email'],
+        required: true,
+      }
+    ]
     });
 
     res.status(200).json({
@@ -1357,7 +1392,12 @@ exports.searchCandidateByDisability = async (req, res) => {
         { model: EmploymentDetails, required: false },
         { model: Projects, required: false },
         { model: itSkills, required: false },
-        { model: keyskills, required: false }
+        { model: keyskills, required: false },
+        {
+          model: Signin, // Include the Signin model
+          attributes: ['name', 'email'], // Specify the fields you want to include
+          required: true // Ensure that only candidates with signin data are returned
+        }
       ]
     });
 
@@ -1407,6 +1447,11 @@ exports.searchCandidateByItSkills = async (req, res) => {
         {
           model: keyskills,  // Make sure this matches your model name
           required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
         }
       ],
       attributes: {
@@ -1520,6 +1565,11 @@ exports.searchCandidateByExcludingKeyword = async (req, res) => {
         {
           model: keyskills,
           required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
         }
       ]
     });
@@ -1582,6 +1632,7 @@ exports.searchCandidateByExcludingKeyword = async (req, res) => {
     });
   }
 };
+
 exports.searchCandidateByActiveIn = async (req, res) => {
   try {
     // Extract 'days' from query
@@ -1613,6 +1664,11 @@ exports.searchCandidateByActiveIn = async (req, res) => {
         { model: Projects, required: false },
         {model: keyskills, required: false},
         {model: itSkills, required: false},
+        {
+          model: Signin, // Include the Signin model
+          attributes: ['name', 'email'], // Specify the fields you want to include
+          required: true // Ensure that only candidates with signin data are returned
+        }
       ],
     });
 
@@ -2228,6 +2284,8 @@ exports.searchJobs = async (req, res) => {
   }
 };
 
+
+// Candidate applies for a job
 exports.applyForJob = async (req, res) => {
     try {
         const candidate_id = req.user.candidate_id; // Extracted from token
