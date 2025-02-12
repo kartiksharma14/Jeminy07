@@ -2227,3 +2227,27 @@ exports.searchJobs = async (req, res) => {
     });
   }
 };
+
+exports.applyForJob = async (req, res) => {
+    try {
+        const candidate_id = req.user.candidate_id; // Extracted from token
+        const { job_id } = req.params;
+
+        // Check if job exists
+        const jobExists = await JobPost.findByPk(job_id);
+        if (!jobExists) return res.status(404).json({ message: "Job not found" });
+
+        // Check if already applied
+        const existingApplication = await JobApplication.findOne({ where: { candidate_id, job_id } });
+        if (existingApplication) {
+            return res.status(400).json({ message: "Already applied to this job" });
+        }
+
+        // Apply for the job
+        const application = await JobApplication.create({ candidate_id, job_id });
+        res.status(201).json({ message: "Application submitted", job_id, application_id: application.application_id });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
