@@ -1,39 +1,193 @@
-// routes/recruiterRoutes.js
-const express = require('express');
+const OTP = require("../models/otp");
+const TemporaryUsers = require("../models/temporaryUsers");
+const User = require("../models/user");
+
+const express = require("express");
+const { verifyToken } = require("../middleware/authMiddleware");
+const { applyForJob } = require('../controllers/candidateProfileController');
+const  authenticateToken  = require("../middleware/recruiterMiddleware");
+console.log("authenticateToken:", authenticateToken);
+const cities = require('../data/cities.json');
+
+// Import all controller functions
+const {
+  getUserDetails,
+  updateUserDetails,
+  getCandidatesByExperience,
+  searchCandidatesByCity,
+  searchByKeyword,
+  searchCandidateByEducation,
+  searchCandidateByEmployment,
+  searchCandidateByGender,
+  searchCandidateBySalary,
+  searchCandidateByNoticePeriod,
+  searchCandidateByDisability,
+  searchCandidateByItSkills,
+  searchCandidateByActiveIn,
+  searchCandidateByExcludingKeyword,
+  searchCandidates,
+  // New controller functions for education, employment, projects, keyskills, and IT skills
+  addEducationRecord,
+  updateEducationRecord,
+  deleteEducationRecord,
+  addEmploymentRecord,
+  updateEmploymentRecord,
+  deleteEmploymentRecord,
+  addProjectRecord,
+  updateProjectRecord,
+  deleteProjectRecord,
+  addKeyskillsRecord,
+  updateKeyskillsRecord,
+  deleteKeyskillsRecord,
+  addITSkillsRecord,
+  updateITSkillsRecord,
+  deleteITSkillsRecord,
+  searchJobsByLocation,
+  searchJobsByIndustry,
+  searchJobsBySalary,
+  searchJobsByExperience,
+  searchJobsByEmploymentType,
+  searchJobsByCompany,
+  //searchJobsBySkills,
+  searchJobsByITSkills,
+  searchJobsByKeySkills,
+  searchJobsByDesignation,
+  searchJobsByEducation,
+  searchJobs
+} = require("../controllers/candidateProfileController");
+
+console.log("searchCandidatesByCity:", searchCandidatesByCity);
+console.log("All imported functions:", {
+  getUserDetails,
+  updateUserDetails,
+  getCandidatesByExperience,
+  searchCandidatesByCity,
+  searchByKeyword
+});
+
 const router = express.Router();
-const recruiterController = require('../controllers/recruiterController');
-const authenticateToken = require('../middleware/recruiterMiddleware');
-const recruiterMiddleware = require('../middleware/recruiterMiddleware');
+
+// ==================== Search Routes ====================
+
+// Search cities
+router.get("/search-cities", verifyToken, async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    if (!search) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required"
+      });
+    }
+
+    const filteredCities = cities.cities
+      .filter(city => 
+        city.City.toLowerCase().includes(search.toLowerCase())
+      )
+      .map(city => ({
+        city: city.City,
+        state: city.State,
+        district: city.District
+      }))
+      .slice(0, 10);
+
+    res.json({
+      success: true,
+      data: filteredCities
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error searching cities",
+      error: error.message
+    });
+  }
+});
 
 
-const { addQuestions, updateQuestions,  deleteQuestions} = require('../controllers/recruiterController');
-  
+// Candidates Search 
+router.get('/search-by-city', authenticateToken, searchCandidatesByCity);
+router.get('/candidates/search/keyword', authenticateToken, searchByKeyword);
+router.get('/candidates/search/education', authenticateToken, searchCandidateByEducation);
+router.get('/candidates/search/employment', authenticateToken, searchCandidateByEmployment);
+router.get('/candidates/search/gender', authenticateToken, searchCandidateByGender);
+router.get('/candidates/search/salary', authenticateToken, searchCandidateBySalary);
+router.get('/candidates/search/notice-period', authenticateToken, searchCandidateByNoticePeriod);
+router.get('/candidates/search/disability', authenticateToken, searchCandidateByDisability);
+router.get('/candidates/search/it-skills', authenticateToken, searchCandidateByItSkills);
+router.get('/candidates/search-by-active-in', authenticateToken, searchCandidateByActiveIn);
+router.get('/candidates/search-by-excluding-keyword', authenticateToken, searchCandidateByExcludingKeyword);
+router.get("/candidates/experience/range", authenticateToken, getCandidatesByExperience);
+router.get("/candidates/search", authenticateToken, searchCandidates);
 
-// POST: Recruiter Sign-In (OTP Send)
-router.post('/signin', recruiterController.recruiterSignin);
+// ==================== User Details Routes ====================
 
-// POST: Verify OTP
-router.post('/verify-otp', recruiterController.verifyRecruiterOtp);
+// Get user details
+router.get("/user-details/:candidate_id", verifyToken, getUserDetails);
+// Update user details
+router.patch("/update-user/:candidate_id", verifyToken, updateUserDetails);
 
-// Route to create a new job post
-router.post('/jobs', authenticateToken, recruiterController.createJobPost);
+// ==================== Education Routes ====================
 
-// Route to update job status (active/inactive)
-router.patch('/jobs/:job_id', authenticateToken,  recruiterController.updateJobPost);
+// Add education record
+router.post("/education/:candidate_id", verifyToken, addEducationRecord);
+// Update education record
+router.patch("/education/:record_id", verifyToken, updateEducationRecord);
+// Delete education record
+router.delete("/education/:record_id", verifyToken, deleteEducationRecord);
 
-// Route to delete a job post
-router.delete('/jobs/:job_id', authenticateToken, recruiterController.deleteJobPost);
+// ==================== Employment Routes ====================
 
-// Route to get all job posts
-router.get('/jobs', authenticateToken, recruiterController.getAllJobs);
+// Add employment record
+router.post("/employment/:candidate_id", verifyToken, addEmploymentRecord);
+// Update employment record
+router.patch("/employment/:record_id", verifyToken, updateEmploymentRecord);
+// Delete employment record
+router.delete("/employment/:record_id", verifyToken, deleteEmploymentRecord);
 
-// GET: Get questions for a specific job
-/*router.get('/jobs/:job_id/questions', authenticateToken, recruiterController.getQuestions);
+// ==================== Projects Routes ====================
 
-router.post('/jobs/questions', addQuestions);
+// Add project record
+router.post("/projects/:candidate_id", verifyToken, addProjectRecord);
+// Update project record
+router.patch("/projects/:record_id", verifyToken, updateProjectRecord);
+// Delete project record
+router.delete("/projects/:record_id", verifyToken, deleteProjectRecord);
 
-router.patch('/questions/:question_id', updateQuestions);
+// ==================== Keyskills Routes ====================
 
-router.delete('/questions/:question_id', deleteQuestions);*/
+// Add keyskills record
+router.post('/keyskills/:candidate_id', verifyToken, addKeyskillsRecord);
+// Update keyskills record
+router.patch('/keyskills/:record_id', verifyToken, updateKeyskillsRecord);
+// Delete keyskills record
+router.delete('/keyskills/:record_id', verifyToken, deleteKeyskillsRecord);
+// ==================== IT Skills Routes ====================
+
+// Add IT skills record
+router.post('/itskills/:candidate_id', verifyToken, addITSkillsRecord);
+// Update IT skills record
+router.patch('/itskills/:record_id', verifyToken, updateITSkillsRecord);
+// Delete IT skills record
+router.delete('/itskills/:record_id', verifyToken, deleteITSkillsRecord);
+
+
+// Job Search Routes
+router.get('/jobs/search/location', verifyToken, searchJobsByLocation);
+router.get('/jobs/search/industry', verifyToken, searchJobsByIndustry);
+router.get('/jobs/search/salary', verifyToken, searchJobsBySalary);
+router.get('/jobs/search/experience', verifyToken, searchJobsByExperience);
+router.get('/jobs/search/employment-type', verifyToken, searchJobsByEmploymentType);
+router.get('/jobs/search/company', verifyToken, searchJobsByCompany);
+router.get('/jobs/search/key-skills', verifyToken, searchJobsByKeySkills);
+router.get('/jobs/search/it-skills', verifyToken, searchJobsByITSkills);
+router.get('/jobs/search/designation', verifyToken, searchJobsByDesignation);
+router.get('/jobs/search/education', verifyToken, searchJobsByEducation);
+router.get('/jobs/search', verifyToken, searchJobs);
+
+// Candidate applies for a job
+router.post('/apply/:job_id', verifyToken, applyForJob);
 
 module.exports = router;
