@@ -8,11 +8,12 @@ import PropTypes from "prop-types";
 
 const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
   const [skills, setSkills] = useState([]);
+  const [initialSkills, setInitialSkills] = useState([]); // store original skills for comparison
+  const [skillRecords, setSkillRecords] = useState([]);   // full keyskills objects from GET
   const [inputSkill, setInputSkill] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [userId, setUserId] = useState(null);
-
 
   const firstInputRef = useRef(null); // For focus management
 
@@ -38,7 +39,7 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
     }
   };
 
-  // Fetch existing key skills when modal opens
+  // Fetch candidate profile (which now includes keyskills as an array)
   useEffect(() => {
     if (isOpen) {
       decodeToken();
@@ -48,64 +49,68 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
 
   useEffect(() => {
     if (userId && isOpen) {
-      const fetchKeySkills = async () => {
+      const fetchCandidateProfile = async () => {
         try {
           const response = await axiosInstance.get(
             `/candidate-profile/user-details/${userId}`
           );
-
           const data = response.data.data;
-
-          if (data && data.key_skills) {
-            // Handle null by converting to empty array and splitting by comma
-            setSkills(
-              data.key_skills
-                ? data.key_skills.split(",").map((skill) => skill.trim())
-                : []
+          if (data && data.keyskills && Array.isArray(data.keyskills)) {
+            // Extract the keyskills names for display
+            const skillsArray = data.keyskills.map(
+              (item) => item.keyskillsname
             );
+            setSkills(skillsArray);
+            setInitialSkills(skillsArray);
+            // Save the full records (to get keyskills_id when deleting)
+            setSkillRecords(data.keyskills);
           } else {
-            setSkills([]); // Ensure skills is an empty array if null
+            setSkills([]);
+            setInitialSkills([]);
+            setSkillRecords([]);
           }
         } catch (err) {
-          console.error("Error fetching key skills:", err);
-          setError("Failed to fetch key skills.");
+          console.error("Error fetching candidate profile:", err);
+          setError("Failed to fetch candidate profile.");
         }
       };
 
-      fetchKeySkills();
+      fetchCandidateProfile();
     }
   }, [userId, isOpen]);
 
-
+  // Focus the first input when modal opens
   useEffect(() => {
     if (isOpen && firstInputRef.current) {
       firstInputRef.current.focus();
     }
   }, [isOpen]);
 
+  // Handle adding a skill (on Enter key press)
   const handleSkillAddition = (e) => {
     if (e.key === "Enter" && inputSkill.trim()) {
       e.preventDefault(); // Prevent form submission
-
       const newSkill = inputSkill.trim();
       if (!skills.includes(newSkill)) {
         setSkills((prev) => [...prev, newSkill]);
       }
-
       setInputSkill(""); // Clear input field after adding
     }
   };
 
+  // Handle adding a suggested skill when clicked
   const handleSuggestedSkillClick = (skill) => {
     if (!skills.includes(skill)) {
-      setSkills((prev) => [...prev, skill]); // Append skill to state
+      setSkills((prev) => [...prev, skill]);
     }
   };
-  
+
+  // Handle removing a skill from the UI list
   const handleSkillRemoval = (skillToRemove) => {
     setSkills((prev) => prev.filter((skill) => skill !== skillToRemove));
   };
 
+  // When the user clicks "Save", process additions (POST) and removals (DELETE)
   const handleSave = async () => {
     setError("");
     setSuccessMessage("");
@@ -115,53 +120,53 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
       return;
     }
 
-    // Fetch current skills before saving (to append instead of replace)
-    let existingSkills = [];
-    try {
-      const response = await axiosInstance.get(
-        `/candidate-profile/user-details/${userId}`
-      );
-      if (response.data.data.key_skills) {
-        existingSkills = response.data.data.key_skills
-          .split(",")
-          .map((skill) => skill.trim());
+    // Determine skills to add and to remove
+    const skillsToAdd = skills.filter((skill) => !initialSkills.includes(skill));
+    const skillsToRemove = initialSkills.filter(
+      (skill) => !skills.includes(skill)
+    );
+
+    // Process additions: POST each new skill
+    for (let skill of skillsToAdd) {
+      try {
+        const payload = { keyskillsname: skill };
+        const response = await axiosInstance.post(`/keyskills/${userId}`, payload);
+        console.log("✅ Skill added:", response.data);
+      } catch (err) {
+        console.error("Error adding skill:", err);
+        setError(`Failed to add skill: ${skill}`);
+        return; // Optionally exit on error or continue with next skill
       }
-    } catch (err) {
-      console.error("Error fetching existing key skills:", err);
     }
 
-    // Merge existing skills with new ones (avoid duplicates)
-    const mergedSkills = Array.from(new Set([...existingSkills, ...skills]));
-
-    // Convert to comma-separated string for API patch request
-    const skillsString = mergedSkills.join(", ");
-
-    const payload = {
-      key_skills: skillsString, // Use "key_skills" to match API schema
-    };
-
-    try {
-      const response = await axiosInstance.patch(
-        `/candidate-profile/update-user/${userId}`,
-        payload
+    // Process removals: DELETE each removed skill by locating its record via keyskills_id
+    for (let skill of skillsToRemove) {
+      const record = skillRecords.find(
+        (rec) => rec.keyskillsname === skill
       );
-
-      console.log("✅ Key skills updated:", response.data);
-      setSuccessMessage("Key skills updated successfully!");
-
-      // Refresh key skills in the parent component
-      if (refreshKeySkills && typeof refreshKeySkills === "function") {
-        refreshKeySkills();
+      if (record) {
+        try {
+          const response = await axiosInstance.delete(
+            `/keyskills/${record.keyskills_id}`
+          );
+          console.log("❌ Skill deleted:", response.data);
+        } catch (err) {
+          console.error("Error deleting skill:", err);
+          setError(`Failed to delete skill: ${skill}`);
+          return;
+        }
       }
-
-      // Close modal after success
-      setTimeout(() => {
-        toggleModal();
-      }, 1500);
-    } catch (err) {
-      console.error("❌ Error updating key skills:", err);
-      setError("Failed to update key skills.");
     }
+
+    setSuccessMessage("Key skills updated successfully!");
+    // Optionally refresh key skills in the parent component
+    if (refreshKeySkills && typeof refreshKeySkills === "function") {
+      refreshKeySkills();
+    }
+    // Close modal after a short delay
+    setTimeout(() => {
+      toggleModal();
+    }, 1500);
   };
 
   return isOpen ? (
@@ -200,7 +205,6 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
               onKeyDown={handleSkillAddition}
               ref={firstInputRef}
             />
-
             <button type="submit" className="add-btn">
               Add
             </button>
@@ -230,44 +234,43 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
         </div>
 
         <div className="suggested-skills">
-  <p>Suggested Skills:</p>
-  <div className="suggested-list">
-    {[
-      "Java",
-      "SQL",
-      "Angular",
-      "JavaScript",
-      "Python",
-      "AWS",
-      "React.Js",
-      "HTML",
-      "REST",
-      "CSS",
-    ].map((skill) => (
-      <span
-        key={skill}
-        className="suggested-skill-tag"
-        onClick={() => handleSuggestedSkillClick(skill)} // ✅ Corrected function call
-      >
-        {skill}{" "}
-        <span
-          className="add-symbol"
-          style={{
-            cursor: "pointer",
-            marginLeft: "5px",
-            color: "green",
-            fontWeight: "bold",
-          }}
-          aria-label={`Add ${skill}`}
-          role="button"
-        >
-          +
-        </span>
-      </span>
-    ))}
-  </div>
-</div>
-
+          <p>Suggested Skills:</p>
+          <div className="suggested-list">
+            {[
+              "Java",
+              "SQL",
+              "Angular",
+              "JavaScript",
+              "Python",
+              "AWS",
+              "React.Js",
+              "HTML",
+              "REST",
+              "CSS",
+            ].map((skill) => (
+              <span
+                key={skill}
+                className="suggested-skill-tag"
+                onClick={() => handleSuggestedSkillClick(skill)}
+              >
+                {skill}{" "}
+                <span
+                  className="add-symbol"
+                  style={{
+                    cursor: "pointer",
+                    marginLeft: "5px",
+                    color: "green",
+                    fontWeight: "bold",
+                  }}
+                  aria-label={`Add ${skill}`}
+                  role="button"
+                >
+                  +
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
 
         {/* Modal Footer */}
         <div className="modal-footer">
@@ -283,7 +286,6 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
   ) : null;
 };
 
-// Define PropTypes for better type checking
 KeySkillsModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   toggleModal: PropTypes.func.isRequired,

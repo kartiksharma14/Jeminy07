@@ -12,6 +12,7 @@ import PrivateRoute from "./PrivateRoute";
 import HomePage from "./Homepage";
 import CandidateMain from "./IndexPage/CandidateMain";
 import CandidatesList from "./components/CandidatesList";
+import FetchedUser from "./components/FetchedUser";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/recruiter/signup" element={<RecruiterSignup />} />
             <Route path="/homepage" element={<HomePage/>}/>
             <Route path="/candidates" element={<CandidatesList />} />
+            <Route path="/candidate/:id" element={<FetchedUser />} />
 
             {/* Protected Routes */}
             <Route

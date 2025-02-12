@@ -214,4 +214,97 @@
     color: #777;
     margin-top: 10px;
   }
+  .formWrapper h2{
+    display: none;
+  }
+/* Mobile Optimization for Candidate Login Page (Header, Footer & Register Link Visible) */
+@media (max-width: 768px) {
+  /* Hide left sticky pane to focus on primary content */
+  .sticky-wrapper-leftPaneStick {
+    display: none;
+  }
   
+  /* Stack content vertically and reduce spacing */
+  .content {
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px;
+  }
+  
+  /* Optimize header (if present) for mobile */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 15px;
+  }
+  
+  .header a {
+    font-size: 16px;
+  }
+  
+  /* Adjust the right container and pane for better spacing */
+  .right-container {
+    padding: 10px;
+  }
+  
+  .right-pane {
+    padding: 20px;
+  }
+  
+  /* Enhance form field readability and touch interaction */
+  .formField input {
+    font-size: 16px;
+    padding: 10px;
+  }
+  
+  /* Improve submit button tap area */
+  .submitbtn {
+    font-size: 18px;
+    padding: 12px 0;
+  }
+  
+  /* Stack the 'Remember Me' and 'Forgot Password' elements vertically */
+  .checkboxField-pass {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  /* Adjust the form wrapper headings: hide less critical text and show key heading */
+  .formWrapper p,
+  .formWrapper h1 {
+    display: none;
+  }
+  
+  .formWrapper h2 {
+    display: block !important;
+    font-size: 18px;
+  }
+  
+  /* Ensure the registration link is visible */
+  .registerLink {
+    display: block !important;
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .registerLink p,
+  .registerLink a {
+    display: inline-block;
+    font-size: 14px;
+    color: #275df5;
+  }
+  
+  /* Optimize the footer to remain visible and user-friendly */
+  .footer-login {
+    padding: 10px 0;
+  }
+  
+  .footer-login ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .footer-login p {
+    font-size: 12px;
+  }
+}

@@ -541,3 +541,89 @@
   margin-top: 10px;
   text-align: center;
 }
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  /* Container adjustments for smaller screens */
+  .container {
+    margin: 10px;
+    padding: 20px;
+    max-width: 80%;
+  }
+  
+  /* Header: Stack items vertically and reduce padding */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 15px;
+  }
+  
+  .header a {
+    font-size: 14px;
+  }
+  
+  /* Content: Change flex layout to column and adjust spacing */
+  .content {
+    flex-direction: column;
+    padding: 20px 10px;
+    gap: 20px;
+  }
+  
+  /* If the left pane isn’t needed to be sticky, disable sticky positioning */
+  .sticky-wrapper-leftPaneStick {
+    position: static;
+    top: auto;
+    margin-bottom: 20px;
+  }
+  
+  /* Reduce padding in sticky container */
+  .sticky-container {
+    padding: 20px;
+  }
+  
+  /* Right pane: Reduce padding for better fit on mobile */
+  .right-pane {
+    padding: 20px;
+  }
+  
+  /* Option fields: Stack radio/option choices vertically and use full width */
+  .radioWrap {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .optionWrap {
+    width: 80%;
+  }
+  
+  /* Footer: Adjust padding and stack links vertically */
+  footer {
+    padding: 10px;
+  }
+  
+  footer ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  /* Registration form: Ensure forms are responsive */
+  .registerWrapper {
+    padding: 20px;
+  }
+  
+  .registerWrapper .formWrapper {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+  
+  /* Candidate signup adjustments (if applicable) */
+  .candidate-signup .content {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  /* Modal: Make modal content width responsive */
+  .otp-modal-content {
+    width: 90%;
+    padding: 20px;
+  }
+}

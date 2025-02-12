@@ -160,3 +160,121 @@
 .save-button button:hover {
   background-color: #0056b3;
 }
+/* Container for the input and suggestions */
+.location-input-wrapper {
+  position: relative;
+}
+
+/* Style the location input */
+.location-input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* Suggestions dropdown styling */
+.suggestions-list {
+  position: absolute;
+  top: 100%; /* Directly below the input */
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Each suggestion item */
+.suggestions-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+/* Hover effect for suggestions */
+.suggestions-list li:hover {
+  background-color: #f0f0f0;
+}
+
+
+@media (max-width: 768px) {
+  /* Reduce overall page padding */
+  .profilePage {
+    padding: 20px;
+  }
+  
+  /* Stack the profile container vertically */
+  .profile-container {
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  /* Add spacing below the photo section */
+  .profile-photo-section {
+    margin-bottom: 20px;
+  }
+  
+  /* Scale down the photo wrapper and photo border */
+  .photo-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .profile-photo {
+    border-width: 5px;
+  }
+  
+  /* Center and reduce padding in the details section */
+  .details-section {
+    padding: 0 10px;
+    text-align: center;
+  }
+  
+  /* Adjust heading and text sizes */
+  .fullname {
+    font-size: 20px;
+  }
+  
+  .last-updated {
+    font-size: 12px;
+  }
+  
+  /* Stack info sections vertically and reduce gap */
+  .info-sections {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  /* Hide the vertical line on mobile */
+  .vertical-line {
+    display: none;
+  }
+  
+  .info-left p,
+  .info-right p {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  /* Adjust editable fields for a smaller viewport */
+  .editable-field input,
+  .editable-field span {
+    font-size: 14px;
+  }
+  
+  .edit-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .save-button button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}

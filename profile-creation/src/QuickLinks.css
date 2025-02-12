@@ -709,4 +709,154 @@
   color: #888;
   font-size: 0.9em;
 }
+@media (max-width: 768px) {
+  /* Main Container Adjustments */
+  .main-container {
+    flex-direction: column;
+    margin: 15px;
+    gap: 15px;
+  }
+  
+  /* Sidebar Adjustments */
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+    position: static;  /* Remove sticky positioning on mobile */
+    padding: 15px;
+  }
+  
+  /* Resume Section Adjustments */
+  .resume-section {
+    width: 100%;
+  }
+  
+  /* Quick Links & Collection Adjustments */
+  .card.quickLink ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .collection-header {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .collection-item {
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  
+  .action-link {
+    font-size: 13px;
+  }
+  
+  /* Resume Card Adjustments */
+  .resume-card {
+    padding: 16px;
+    margin-bottom: 15px;
+  }
+  
+  .title {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .cvPreview {
+    margin-bottom: 20px;
+  }
+  
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .truncate {
+    font-size: 16px;
+  }
+  
+  .updateOn {
+    font-size: 12px;
+  }
+  
+  .icon-wrap {
+    font-size: 13px;
+  }
+  
+  /* Upload Section Adjustments */
+  .uploadCont {
+    padding: 12px;
+    margin-top: 15px;
+    flex-direction: column;
+  }
+  
+  .uploadBtn section {
+    gap: 10px;
+  }
+  
+  .dummyUploadNew,
+  .dummyUploadNewCTA,
+  .format.typ-14Medium {
+    font-size: 13px;
+  }
+  
+  /* Headline Section Adjustments */
+  .headline-section {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    margin-top: 15px;
+  }
+  
+  .headline-text p {
+    font-size: 13px;
+  }
+  
+  .edit-btn,
+  .add-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  /* Modal Adjustments */
+  .modal-content {
+    width: 95%;
+    padding: 16px;
+  }
+  
+  .close-btn {
+    top: 10px;
+    right: 10px;
+    font-size: 1.2em;
+  }
+  
+  /* Skills Input and Tags Adjustments */
+  .skills-input textarea {
+    min-height: 80px;
+    font-size: 14px;
+  }
+  
+  .suggested-skills {
+    gap: 8px;
+  }
+  
+  .skill-tag {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  
+  /* Additional QuickLinks Responsive Adjustments */
+  .quickLink .collection-item {
+    margin-bottom: 8px;
+  }
+  
+  .quickLink .action-link {
+    font-size: 0.9em;
+  }
+  
+  /* Content Section Adjustments (from QuickLinks.css) */
+  .content-section {
+    padding: 15px;
+  }
+}
 

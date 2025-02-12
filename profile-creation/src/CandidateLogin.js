@@ -115,6 +115,7 @@ function CandidateLogin() {
             <div className="loginWrapper">
               <div className="formWrapper">
                 <h1>Candidate Login</h1>
+                <h2>Login to Jeminy</h2>
                 <p>Access the best jobs and career opportunities</p>
 
                 {/* Error Message */}
