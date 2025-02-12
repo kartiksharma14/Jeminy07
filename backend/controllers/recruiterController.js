@@ -71,7 +71,7 @@ exports.verifyRecruiterOtp = async (req, res) => {
         const token = jwt.sign(
             { recruiter_id: recruiter.recruiter_id, email: recruiter.email },
             JWT_SECRET,
-            { expiresIn: '240h' }
+            { expiresIn: '720h' }
         );
 
         // Cleanup temporary recruiter and OTP entries
