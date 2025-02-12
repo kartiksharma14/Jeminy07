@@ -228,7 +228,7 @@ module.exports = {
           email: user.email 
         },
         process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: '720h' }
       );
 
       res.status(200).json({
