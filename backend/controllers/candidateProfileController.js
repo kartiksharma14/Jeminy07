@@ -1865,7 +1865,7 @@ exports.searchCandidateByActiveIn = async (req, res) => {
 };
 
 
-exports.searchCandidates = async (req, res) => {
+/*exports.searchCandidates = async (req, res) => {
   try {
     const {
       // Experience filter
@@ -2038,7 +2038,7 @@ exports.searchCandidates = async (req, res) => {
       error: error.message
     });
   }
-};
+};*/
 
 
 
@@ -2075,6 +2075,171 @@ exports.searchJobsByLocation = async (req, res) => {
     });
   }
 };
+
+exports.searchCandidates = async (req, res) => {
+  try {
+    const {
+      min_experience,
+      max_experience,
+      location,
+      education_level,
+      university,
+      course,
+      specialization,
+      coursestart_year,
+      courseend_year,
+      current_employment,
+      employment_type,
+      current_company_name,
+      current_job_title,
+      notice_period,
+      min_salary,
+      max_salary,
+      gender,
+      differently_abled,
+      skills,
+      keyword,
+      exclude_keyword,
+      active_days
+    } = req.query;
+
+    let whereClause = {};
+    let employmentWhereClause = {};
+    let educationWhereClause = {};
+    let itSkillsWhereClause = {};
+
+    if (min_experience || max_experience) {
+      employmentWhereClause.experience_in_year = {};
+      if (min_experience) employmentWhereClause.experience_in_year[Op.gte] = parseFloat(min_experience);
+      if (max_experience) employmentWhereClause.experience_in_year[Op.lte] = parseFloat(max_experience);
+    }
+
+    if (location) whereClause.location = { [Op.like]: `%${location}%` };
+
+    if (education_level) educationWhereClause.education_level = { [Op.like]: `%${education_level}%` };
+    if (university) educationWhereClause.university = { [Op.like]: `%${university}%` };
+    if (course) educationWhereClause.course = { [Op.like]: `%${course}%` };
+    if (specialization) educationWhereClause.specialization = { [Op.like]: `%${specialization}%` };
+    if (coursestart_year) educationWhereClause.coursestart_year = coursestart_year;
+    if (courseend_year) educationWhereClause.courseend_year = courseend_year;
+
+    if (current_employment) employmentWhereClause.current_employment = current_employment;
+    if (employment_type) employmentWhereClause.employment_type = { [Op.like]: `%${employment_type}%` };
+    if (current_company_name) employmentWhereClause.current_company_name = { [Op.like]: `%${current_company_name}%` };
+    if (current_job_title) employmentWhereClause.current_job_title = { [Op.like]: `%${current_job_title}%` };
+    if (notice_period) employmentWhereClause.notice_period = { [Op.like]: `%${notice_period}%` };
+
+    if (min_salary || max_salary) {
+      employmentWhereClause.current_salary = {};
+      if (min_salary) employmentWhereClause.current_salary[Op.gte] = parseFloat(min_salary);
+      if (max_salary) employmentWhereClause.current_salary[Op.lte] = parseFloat(max_salary);
+    }
+
+    if (gender) whereClause.gender = { [Op.like]: `%${gender}%` };
+    if (differently_abled) whereClause.differently_abled = { [Op.like]: `%${differently_abled}%` };
+    if (skills) itSkillsWhereClause.itskills_name = { [Op.like]: `%${skills}%` };
+
+    if (active_days) {
+      const activeDate = new Date();
+      activeDate.setDate(activeDate.getDate() - parseInt(active_days));
+      whereClause.profile_last_updated = { [Op.gte]: activeDate };
+    }
+
+    if (keyword) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${keyword}%` } },
+        { email: { [Op.like]: `%${keyword}%` } },
+        { phone: { [Op.like]: `%${keyword}%` } },
+        { location: { [Op.like]: `%${keyword}%` } },
+        { resume_headline: { [Op.like]: `%${keyword}%` } },
+        { profile_summary: { [Op.like]: `%${keyword}%` } }
+      ];
+    }
+
+    if (exclude_keyword) {
+      whereClause.profile_summary = {
+        [Op.or]: [
+          { [Op.notLike]: `%${exclude_keyword}%` },
+          { [Op.is]: null }
+        ]
+      };
+    }
+
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: Object.keys(employmentWhereClause).length > 0 ? employmentWhereClause : undefined,
+          required: Object.keys(employmentWhereClause).length > 0
+        },
+        {
+          model: Education,
+          where: Object.keys(educationWhereClause).length > 0 ? educationWhereClause : undefined,
+          required: Object.keys(educationWhereClause).length > 0
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          where: Object.keys(itSkillsWhereClause).length > 0 ? itSkillsWhereClause : undefined,
+          required: Object.keys(itSkillsWhereClause).length > 0
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // 🔥 **Calculate Total Experience**
+    const formattedCandidates = candidates.map(candidate => {
+      let totalYears = 0;
+      let totalMonths = 0;
+
+      if (candidate.EmploymentDetails && candidate.EmploymentDetails.length > 0) {
+        candidate.EmploymentDetails.forEach(emp => {
+          totalYears += emp.experience_in_year || 0;
+          totalMonths += emp.experience_in_months || 0;
+        });
+
+        // Convert months into years
+        totalYears += Math.floor(totalMonths / 12);
+        totalMonths = totalMonths % 12;
+      }
+
+      return {
+        ...candidate.toJSON(),
+        total_experience: `${totalYears} years ${totalMonths} months`
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      data: formattedCandidates
+    });
+
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates',
+      error: error.message
+    });
+  }
+};
+
+
+
 
 // Search jobs by industry
 exports.searchJobsByIndustry = async (req, res) => {
