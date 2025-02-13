@@ -204,6 +204,39 @@ exports.deleteEmploymentRecord = async (req, res) => {
   }
 };
 
+
+const calculateTotalExperience = async (candidateId) => {
+  try {
+    const employmentRecords = await EmploymentDetails.findAll({
+      where: { candidate_id: candidateId },
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('experience_in_year')), 'total_years'],
+        [sequelize.fn('SUM', sequelize.col('experience_in_months')), 'total_months']
+      ],
+      raw: true
+    });
+
+    let totalYears = Number(employmentRecords[0].total_years) || 0;
+    let totalMonths = Number(employmentRecords[0].total_months) || 0;
+
+    // Convert excess months to years
+    if (totalMonths >= 12) {
+      const additionalYears = Math.floor(totalMonths / 12);
+      totalYears += additionalYears;
+      totalMonths = totalMonths % 12;
+    }
+
+    return {
+      total_years: totalYears,
+      total_months: totalMonths
+    };
+  } catch (error) {
+    console.error('Error calculating total experience:', error);
+    throw error;
+  }
+};
+
+
 // ==================== Projects Handlers ====================
 
 // POST - Add new project record
@@ -490,8 +523,152 @@ exports.deleteITSkillsRecord = async (req, res) => {
 };
 
 
-//Get User Details function
+
 exports.getUserDetails = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+
+    if (!candidate_id) {
+      return res.status(400).json({ error: "Candidate ID is required" });
+    }
+
+    const [signinData, profileData, educationData, employmentData, projectsData, keyskillsData, itskillsData] = await Promise.all([
+      Signin.findOne({
+        where: { candidate_id },
+        attributes: ["candidate_id", "name", "email", "phone", "resume"],
+      }),
+      CandidateProfile.findOne({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      }),
+      Education.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        order: [['courseend_year', 'DESC']]
+      }),
+      EmploymentDetails.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        order: [['joining_date', 'DESC']]
+      }),
+      Projects.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        order: [['project_end_date', 'DESC']]
+      }),
+      keyskills.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      }),
+      itSkills.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      })
+    ]);
+
+    if (!signinData) {
+      if (res) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+      throw new Error("Candidate not found");
+    }
+
+    // Calculate total experience from employment records
+    const totalExperience = employmentData.reduce((acc, emp) => {
+      return {
+        years: acc.years + (emp.experience_in_year || 0),
+        months: acc.months + (emp.experience_in_months || 0)
+      };
+    }, { years: 0, months: 0 });
+
+    // Adjust months if they exceed 12
+    if (totalExperience.months >= 12) {
+      totalExperience.years += Math.floor(totalExperience.months / 12);
+      totalExperience.months = totalExperience.months % 12;
+    }
+
+    // Safe date formatting function
+    const formatDate = (date) => {
+      if (!date) return null;
+      // If it's already a string in YYYY-MM-DD format, return as is
+      if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return date.split('T')[0];
+      }
+      // If it's a Date object or can be converted to one
+      try {
+        const d = new Date(date);
+        if (d.toString() === 'Invalid Date') return null;
+        return d.toISOString().split('T')[0];
+      } catch {
+        return null;
+      }
+    };
+
+    // Format the data with all relationships
+    const combinedData = {
+      ...signinData.get({ plain: true }),
+      ...(profileData ? profileData.get({ plain: true }) : {}),
+      profile_last_updated: profileData?.profile_last_updated
+        ? formatDate(profileData.profile_last_updated)
+        : null,
+      total_experience: {
+        years: totalExperience.years,
+        months: totalExperience.months,
+        formatted: `${totalExperience.years} years ${totalExperience.months} months`
+      },
+      education: educationData.map(edu => ({
+        ...edu.get({ plain: true }),
+        coursestart_year: edu.coursestart_year,
+        courseend_year: edu.courseend_year
+      })),
+      employment: employmentData.map(emp => ({
+        ...emp.get({ plain: true }),
+        joining_date: formatDate(emp.joining_date)
+      })),
+      projects: projectsData.map(proj => ({
+        ...proj.get({ plain: true }),
+        project_start_date: formatDate(proj.project_start_date),
+        project_end_date: formatDate(proj.project_end_date)
+      })),
+      keyskills: keyskillsData.map(skill => skill.get({ plain: true })),
+      itskills: itskillsData.map(skill => skill.get({ plain: true }))
+    };
+
+    // If called as middleware, return the data
+    if (!res) return combinedData;
+
+    // If called as endpoint, send response
+    return res.status(200).json({
+      message: "Candidate profile fetched successfully",
+      data: combinedData,
+    });
+  } catch (error) {
+    console.error("Error fetching candidate details:", error);
+    if (res) {
+      return res.status(500).json({
+        error: "An error occurred while fetching candidate details",
+        details: error.message,
+      });
+    }
+    throw error;
+  }
+};
+
+
+//Get User Details function
+/*exports.getUserDetails = async (req, res) => {
   try {
     const { candidate_id } = req.params;
 
@@ -612,7 +789,7 @@ exports.getUserDetails = async (req, res) => {
     }
     throw error;
   }
-};
+};*/
 
 
 exports.updateUserDetails = async (req, res) => {
