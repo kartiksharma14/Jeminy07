@@ -25,6 +25,9 @@ const QuickLinks = () => {
   const [error, setError] = useState("");
   const [userId, setUserId] = useState(null);
   const [fileUploaded, setFileUploaded] = useState(false);
+  const [employmentRecords, setEmploymentRecords] = useState([]);
+  const [selectedEmploymentRecord, setSelectedEmploymentRecord] = useState(null);
+  const [employmentActionType, setEmploymentActionType] = useState("add"); // "add", "edit", or "delete"
 
   // Suggested skills (if needed for other purposes)
   const suggestedSkills = [
@@ -45,29 +48,7 @@ const QuickLinks = () => {
     setEmploymentModalOpen((prev) => !prev);
   };
 
-  const toggleKeySkillsModal = () => {
-    setKeySkillsModalOpen((prev) => !prev);
-  };
-
-  const toggleResumeHeadlineModal = () => {
-    setResumeHeadlineModalOpen((prev) => !prev);
-  };
-
   // Refresh functions to re-fetch the profile
-  const refreshEmploymentDetails = () => {
-    fetchUserProfile(userId);
-    console.log("Employment details refreshed.");
-  };
-
-  const refreshKeySkills = () => {
-    fetchUserProfile(userId);
-    console.log("Key skills refreshed.");
-  };
-
-  const refreshResumeHeadline = () => {
-    fetchUserProfile(userId);
-    console.log("Resume headline refreshed.");
-  };
 
   // Add a new skill if it ends with a "+" in the input
   const addSkill = (skill) => {
@@ -124,6 +105,11 @@ const QuickLinks = () => {
       } else {
         setSkills([]);
       }
+      if (user.employment && Array.isArray(user.employment)) {
+        setEmploymentRecords(user.employment);
+      } else {
+        setEmploymentRecords([]);
+      }
 
       // Employment details are now managed in EmploymentModal.
     } catch (err) {
@@ -131,11 +117,52 @@ const QuickLinks = () => {
       console.error(err);
     }
   };
+  const refreshEmploymentDetails = () => {
+    fetchUserProfile(userId);
+    console.log("Employment details refreshed.");
+  };
+
+  const refreshKeySkills = () => {
+    fetchUserProfile(userId);
+    console.log("Key skills refreshed.");
+  };
+
+  const refreshResumeHeadline = () => {
+    fetchUserProfile(userId);
+    console.log("Resume headline refreshed.");
+  };
+
+  // Handlers to set the modal mode and selected record
+  const handleAdd = () => {
+    setSelectedEmploymentRecord(null);
+    setEmploymentActionType("add");
+    setEmploymentModalOpen(true);
+  };
+
+  const handleEdit = (record) => {
+    setSelectedEmploymentRecord(record);
+    setEmploymentActionType("edit");
+    setEmploymentModalOpen(true);
+  };
+
+  const handleDelete = (record) => {
+    setSelectedEmploymentRecord(record);
+    setEmploymentActionType("delete");
+    setEmploymentModalOpen(true);
+  };
+
+  const toggleKeySkillsModal = () => {
+    setKeySkillsModalOpen((prev) => !prev);
+  };
+
+  const toggleResumeHeadlineModal = () => {
+    setResumeHeadlineModalOpen((prev) => !prev);
+  };
 
   return (
     <div className="main-container">
       {/* Sidebar Section */}
-      <div className="sidebar">
+      <div className="sidebar-cad">
         <div className="card quickLink">
           <ul className="collection">
             <li className="collection-header">Quick Links</li>
@@ -274,12 +301,71 @@ const QuickLinks = () => {
           </div>
         </div>
 
-        {/* Employment Section */}
-        <div id="employment-section" className="resume-card">
-          <div className="title">Employment</div>
-          <div className="headline-section">
-            <p>Click the button below to view and edit your employment details.</p>
-            <button className="add-btn" onClick={toggleEmploymentModal}>Edit Employment</button>
+ {/* Employment Section (Display as provided) */}
+ <div id="employment-section" className="employment-section">
+          <div className="card">
+            <div className="widgetHead">
+              <span className="widgetTitle-cad typ-16Bold">Employment</span>
+              <span
+                className="add no-outline typ-16Bold"
+                id="add-employment"
+                tabIndex="0"
+                onClick={handleAdd}
+              >
+                Add employment
+              </span>
+            </div>
+            <div className="widgetCont">
+              {employmentRecords.length > 0 ? (
+                employmentRecords.map((record) => (
+                  <div key={record.employment_id} className="row emp-list">
+                    <div className="item title typ-14Bold">
+                      <span className="truncate emp-desg" title={record.current_job_title}>
+                        {record.current_job_title || "N/A"}
+                      </span>
+                      <span
+                        className="edit icon typ-14Medium"
+                        tabIndex="0"
+                        onClick={() => handleEdit(record)}
+                      >
+                      edit
+                      </span>
+                    </div>
+                    <div className="item">
+                      <span className="truncate typ-14Medium emp-org" title={record.current_company_name}>
+                        {record.current_company_name || "N/A"}
+                      </span>
+                    </div>
+                    <div className="item experienceType typ-14Regular">
+                      <span className="truncate expType">
+                        {record.employment_type || "N/A"}
+                      </span>
+                      <span className="ver-line"></span>
+                      <span className="truncate">
+                        {record.joining_date ? record.joining_date.substring(0, 10) : "N/A"} to{" "}
+                        {record.current_employment === "Yes" ? "Present" : "N/A"}
+                      </span>
+                    </div>
+                    <div className="item emp-notice-prd typ-14Medium">
+                      {record.notice_period ? `${record.notice_period} days Notice Period` : "N/A"}
+                    </div>
+                    <div className="item prefill emp-desc typ-14Medium">
+                      <div>{record.job_profile || "N/A"}</div>
+                    </div>
+                    <div className="keyskillList item typ-14Medium">
+                      <span className="keySkillHeading">Top 5 key skills:</span>
+                      <span className="txt-col-n6">{record.skill_used || "N/A"}</span>
+                    </div>
+                    <div className="record-actions">
+                      <button onClick={() => handleEdit(record)}>Edit</button>
+                      <button onClick={() => handleDelete(record)}>Delete</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p>No employment records found.</p>
+              )}
+            </div>
           </div>
         </div>
 

@@ -82,16 +82,178 @@
     color: #0056b3;
     text-decoration: underline;
   }
+  .desiredProfileForm {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in-out;
+    position: relative;
+  }
   
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .hori-list {
-      flex-direction: column;
-      gap: 15px;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
     }
-  
-    .profile-item {
-      flex: 1 1 100%;
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
   
+  /* Modal Header */
+  .desiredProfileForm .editHeader {
+    margin-bottom: 20px;
+  }
+  
+  .desiredProfileForm .editHeader .widgetTitle.mb5 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 5px;
+  }
+  
+  .desiredProfileForm .editHeader .widgetDesc {
+    font-size: 14px;
+    color: #777;
+  }
+  
+  /* Form Rows & Fields */
+  .desiredProfileForm .row {
+    margin-bottom: 16px;
+  }
+  
+  .desiredProfileForm .input-field {
+    margin-bottom: 8px;
+  }
+  
+  .desiredProfileForm .input-field .lbl {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+  }
+  
+  .desiredProfileForm .input-field input[type="text"],
+  .desiredProfileForm .input-field select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+  }
+  
+  .desiredProfileForm .input-field input[type="text"]:focus,
+  .desiredProfileForm .input-field select:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  .desiredProfileForm .erLbl {
+    color: #f5222d;
+    font-size: 13px;
+    margin-top: 4px;
+    display: block;
+  }
+  
+  /* Form Actions */
+  .desiredProfileForm .action {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .desiredProfileForm .cancel-btn {
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  
+  .desiredProfileForm .cancel-btn:hover {
+    color: #0056b3;
+  }
+  
+  .desiredProfileForm .btn-dark-ot {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .desiredProfileForm .btn-dark-ot:hover {
+    background-color: #555;
+  }
+  
+ /* Modal Overlay – covers the whole screen */
+.profileEditDrawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none; /* Toggle via JS (add .active class to show) */
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.profileEditDrawer.active {
+  display: flex;
+}
+
+/* Centered Drawer/Form */
+.desiredProfileForm {
+  background-color: var(--card-bg);  /* white background */
+  border-radius: var(--border-radius);
+  padding: 24px;
+  max-width: 500px;      /* Fixed maximum width */
+  width: 90%;            /* Responsive width */
+  max-height: 90vh;      /* Allow some vertical breathing room */
+  overflow-y: auto;      /* Scroll if content is taller than the viewport */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Optional: Style the close/cross icon (if used inside the drawer) */
+.profileEditDrawer .crossLayer {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  cursor: pointer;
+}
+
+.profileEditDrawer .crossLayer .icon {
+  font-size: 24px;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+.profileEditDrawer .crossLayer .icon:hover {
+  color: var(--primary-hover);
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -110,7 +110,7 @@ const ProfileDetails = () => {
       location: validLocation?.trim() || "",
       phone: mobile?.trim() || "",
       availability_to_join: availability?.trim() || "",
-      resume: 100,
+      resume: 200,
       fresher_experience: fresher,
     };
     const apiUrl = `http://localhost:5000/api/candidate-profile/update-user/${userId}`;

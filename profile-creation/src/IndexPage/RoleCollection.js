@@ -16,109 +16,109 @@ function RoleCollection() {
       id: 1,
       name: "Full Stack Developer",
       jobCount: "18.7K+ Jobs",
-      link: "https://www.naukri.com/full-stack-developer-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 2,
       name: "Mobile / App Developer",
       jobCount: "2.9K+ Jobs",
-      link: "https://www.naukri.com/mobile-application-development-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 3,
       name: "Front End Developer",
       jobCount: "4.8K+ Jobs",
-      link: "https://www.naukri.com/front-end-developer-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 4,
       name: "DevOps Engineer",
       jobCount: "2.8K+ Jobs",
-      link: "https://www.naukri.com/devops-engineer-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 5,
       name: "Engineering Manager",
       jobCount: "1.4K+ Jobs",
-      link: "https://www.naukri.com/engineering-manager-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 6,
       name: "Technical Lead",
       jobCount: "10K+ Jobs",
-      link: "https://www.naukri.com/technical-lead-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 7,
       name: "Automation Test Engineer",
       jobCount: "2.7K+ Jobs",
-      link: "https://www.naukri.com/automation-test-engineer-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 8,
       name: "Cyber Security",
       jobCount: "618 Jobs",
-      link: "https://www.naukri.com/cyber-security-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 9,
       name: "Technical Architect",
       jobCount: "4.8K+ Jobs",
-      link: "https://www.naukri.com/technical-architect-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 10,
       name: "Business Analyst",
       jobCount: "4.5K+ Jobs",
-      link: "https://www.naukri.com/business-analyst-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 11,
       name: "Data Scientist",
       jobCount: "1.2K+ Jobs",
-      link: "https://www.naukri.com/data-scientist-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 12,
       name: "Program Manager - Technology / IT",
       jobCount: "534 Jobs",
-      link: "https://www.naukri.com/technical-program-manager-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 13,
       name: "Product Manager",
       jobCount: "969 Jobs",
-      link: "https://www.naukri.com/product-manager-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 14,
       name: "UI / UX Designer",
       jobCount: "1.6K+ Jobs",
-      link: "https://www.naukri.com/ui-ux-designer-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 15,
       name: "Research Analyst",
       jobCount: "149 Jobs",
-      link: "https://www.naukri.com/research-analyst-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 16,
       name: "Branch Manager",
       jobCount: "376 Jobs",
-      link: "https://www.naukri.com/branch-manager-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 17,
       name: "Functional Consultant",
       jobCount: "4K+ Jobs",
-      link: "https://www.naukri.com/functional-consultant-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
     {
       id: 18,
       name: "Chartered Accountant (CA)",
       jobCount: "949 Jobs",
-      link: "https://www.naukri.com/chartered-accountant-jobs?src=popular_roles_homepage_srch",
+      link: "",
     },
   ];
 
@@ -149,9 +149,9 @@ function RoleCollection() {
         {/* Left Section */}
         <div className="left-section">
           <img
-            src="https://static.naukimg.com/s/0/0/i/role-collection-ot.png"
+            src="https://img.freepik.com/free-vector/human-resources-managers-doing-professional-staff-research-with-magnifier-human-resources-hr-team-work-headhunter-service-concept-illustration_335657-2061.jpg?t=st=1739505113~exp=1739508713~hmac=e5c953877f19a600c59cfd16786ce808d532b85bf893c7f47f8bc416d426daca&w=900"
             className="role-img"
-            alt="naukri role-collection"
+            alt=" role-collection"
             height="175"
             width="389"
           />
@@ -208,7 +208,7 @@ function RoleCollection() {
       {/* View All Companies Link */}
       <a
         className="view-all-comp"
-        href="https://www.naukri.com/allcompanies?searchType=premiumLogo&title=Featured+companies+actively+hiring&branding=%257B%2522pagename%2522%253A%2522ni-desktop-premium-viewAll%2522%257D&pageNo=1&qcount=47"
+        href=""
         target="_blank"
         rel="noopener noreferrer"
       >

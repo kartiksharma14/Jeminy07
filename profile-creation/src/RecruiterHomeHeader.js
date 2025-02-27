@@ -1,9 +1,9 @@
 import React from "react";
-import "./LoginHeader.css"; // Optional: Add custom styles
+import "./RecruiterHomeHeader.css"; // Optional: Add custom styles
 
-function LoginHeader() {
+function RecruiterHomeHeader() {
   return (
-    <header className="login-header">
+    <header className="recruiter-home-header">
       <div className="content">
         <a href="https://www.stl.tech">
           <img
@@ -20,4 +20,4 @@ function LoginHeader() {
   );
 }
 
-export default LoginHeader;
+export default RecruiterHomeHeader;

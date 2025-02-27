@@ -1,7 +1,6 @@
 import React from 'react';
 import CandidateHeader from './CandidateHeader';
 import JobSearchBanner from './JobSearchBanner';
-import JobSearchForm from './JobSearchForm';
 import ResumeHelpBanner from './ResumeHelpBanner';
 import TrendingJobs from './TrendingJobs';
 import IndustryWidget from './IndustryWidget';
@@ -16,7 +15,6 @@ const CandidateMain = () => {
       {/* Components will be added later */}
       <CandidateHeader /> 
       <JobSearchBanner/>
-      <JobSearchForm/>
       <ResumeHelpBanner/>
       <TrendingJobs />
       <IndustryWidget/>

@@ -114,6 +114,12 @@ footer ul {
 .footer-column ul li a:hover {
   color: #007bff;
 }
+.nI-gNb-heading-f {
+  font-size: 16px;
+  font-weight: bold;
+  color:black;
+  margin-right: 10px;
+}
 @media (max-width: 768px) {
   /* Adjust overall footer container */
   .footer {

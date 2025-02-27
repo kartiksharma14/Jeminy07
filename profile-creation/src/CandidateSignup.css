@@ -541,6 +541,7 @@
   margin-top: 10px;
   text-align: center;
 }
+
 /* Mobile Optimization */
 @media (max-width: 768px) {
   /* Container adjustments for smaller screens */

@@ -1,24 +1,24 @@
 import React from 'react';
-import './Footer.css'; // Make sure to add appropriate CSS for styling
+import './RecruiterHomeFooter.css';
 
-const Footer = () => {
+const RecruiterHomeFooter = () => {
   return (
-    <footer className="footer">
-      <div className="footer-container">
-        {/* Left Section: Logo and New Social Links */}
-        <div className="footer-left">
-          <a href="https://stl.tech" className="footer-logo">
+    <footer className="recruiter-home-footer">
+      <div className="recruiter-home-footer-container">
+        {/* Left Section: Logo and Social Links */}
+        <div className="recruiter-home-footer-left">
+          <a href="https://stl.tech" className="recruiter-home-footer-logo">
             <img
               src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
               alt="STL Logo"
-              className="footer-logo-img"
+              className="recruiter-home-footer-logo-img"
             />
           </a>
-          {/* New Social Media Block (below the logo) */}
+          {/* Connect with us block */}
           <div className="nI-gNb-followus">
-            <a className="nI-gNb-heading-f" title="Connect with us">
+            <span className="nI-gNb-heading" title="Connect with us">
               Connect with us
-            </a>
+            </span>
             <a
               target="_blank"
               rel="noopener noreferrer"
@@ -83,8 +83,8 @@ const Footer = () => {
         </div>
 
         {/* Right Section: Navigation Links */}
-        <div className="footer-right">
-          <div className="footer-column">
+        <div className="recruiter-home-footer-right">
+          <div className="recruiter-home-footer-column">
             <h4>About</h4>
             <ul>
               <li>
@@ -116,7 +116,7 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-          <div className="footer-column">
+          <div className="recruiter-home-footer-column">
             <h4>Support</h4>
             <ul>
               <li>
@@ -148,7 +148,7 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-          <div className="footer-column">
+          <div className="recruiter-home-footer-column">
             <h4>Legal</h4>
             <ul>
               <li>
@@ -177,4 +177,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default RecruiterHomeFooter;

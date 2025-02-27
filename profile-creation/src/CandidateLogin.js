@@ -96,7 +96,7 @@ function CandidateLogin() {
           <div className="sticky-container">
             <div className="static-list">
               <img
-                src="https://github.com/kartiksharma14/photos/blob/main/white-boy.a0d2814a.png?raw=true"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQBwLMlmjmhZYPLzY0xLCdXSeZvh4lNgedQNQ&s"
                 alt="Profile Illustration"
               />
               <h2>Why Login?</h2>

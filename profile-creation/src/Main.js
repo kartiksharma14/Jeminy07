@@ -8,7 +8,8 @@ import CandidateSignup from "./CandidateSignup";
 import RecruiterLogin from "./RecruiterLogin";
 import RecruiterSignup from "./RecruiterSignup";
 import { AuthProvider } from "./AuthProvider";
-import PrivateRoute from "./PrivateRoute";
+import PrivateRouteCandidate from "./PrivateRouteCandidate";
+import PrivateRouteRecruiter from "./PrivateRouteRecruiter";
 import HomePage from "./Homepage";
 import CandidateMain from "./IndexPage/CandidateMain";
 import CandidatesList from "./components/CandidatesList";
@@ -20,40 +21,62 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<CandidateMain/>}/>
+            {/* 🔓 Public Routes */}
+            <Route path="/" element={<CandidateMain />} />
             <Route path="/candidate/login" element={<CandidateLogin />} />
             <Route path="/candidate/signup" element={<CandidateSignup />} />
             <Route path="/recruiter/login" element={<RecruiterLogin />} />
             <Route path="/recruiter/signup" element={<RecruiterSignup />} />
-            <Route path="/homepage" element={<HomePage/>}/>
-            <Route path="/candidates" element={<CandidatesList />} />
-            <Route path="/candidate/:id" element={<FetchedUser />} />
 
-            {/* Protected Routes */}
+            {/* 🔒 Protected Routes for Candidates */}
             <Route
               path="/home"
               element={
-                <PrivateRoute children={<>
+                <PrivateRouteCandidate>
                   <CandidateProfile />
-                </>}>
-                </PrivateRoute>
+                </PrivateRouteCandidate>
               }
             />
             <Route
+              path="/homepage"
+              element={
+                <PrivateRouteCandidate>
+                  <HomePage />
+                </PrivateRouteCandidate>
+              }
+            />
+
+            {/* 🔒 Protected Routes for Recruiters */}
+            <Route
               path="/recruiter"
               element={
-                
+                <PrivateRouteRecruiter>
                   <RecruiterPage />
-              
+                </PrivateRouteRecruiter>
               }
             />
             <Route
               path="/search-resumes"
               element={
-                
+                <PrivateRouteRecruiter>
                   <SearchResumesPage />
-                
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/candidates"
+              element={
+                <PrivateRouteRecruiter>
+                  <CandidatesList />
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/candidate/:id"
+              element={
+                <PrivateRouteRecruiter>
+                  <FetchedUser />
+                </PrivateRouteRecruiter>
               }
             />
           </Routes>

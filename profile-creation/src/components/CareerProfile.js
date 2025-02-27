@@ -25,7 +25,7 @@ const CareerProfile = () => {
   // Basic error handling & userId
   const [error, setError] = useState("");
   const [userId, setUserId] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // ---------------------------
   // 2) Decode token & fetch
@@ -120,7 +120,7 @@ const CareerProfile = () => {
 
       console.log("✅ Career profile updated successfully");
       alert("Career profile saved!");
-      setIsEditing(false);
+      setIsModalOpen(false);
     } catch (err) {
       console.error("❌ Error saving career profile:", err);
       setError("Failed to save career profile.");
@@ -145,22 +145,13 @@ const CareerProfile = () => {
     <div className="career-profile card">
       <div className="widgetHead">
         <span className="widgetTitle typ-16Bold">Career profile</span>
-        {!isEditing && (
+        {!isModalOpen && (
           <button
             className="editButton"
             aria-label="Edit Career Profile"
-            onClick={() => setIsEditing(true)}
+            onClick={() => setIsModalOpen(true)}
           >
             Edit
-          </button>
-        )}
-        {isEditing && (
-          <button
-            className="editButton"
-            aria-label="Save Career Profile"
-            onClick={handleSave}
-          >
-            Save
           </button>
         )}
       </div>
@@ -173,7 +164,7 @@ const CareerProfile = () => {
       </div>
 
       {/* VIEW MODE */}
-      {!isEditing && (
+      {!isModalOpen && (
         <div className="widgetCont">
           <div className="hori-list">
             <div className="profile-item">
@@ -270,73 +261,129 @@ const CareerProfile = () => {
         </div>
       )}
 
-      {/* EDIT MODE */}
-      {isEditing && (
-        <div className="widgetCont">
-          <div className="hori-list">
-            <div className="profile-item">
-              <label>Current industry</label>
-              <input
-                type="text"
-                name="current_industry"
-                value={career.current_industry}
-                onChange={handleChange}
-              />
+     {/* Modal for Editing Career Profile */}
+     {isModalOpen && (
+        <div className="profileEditDrawer active">
+          <div className="desiredProfileForm  lbpadding">
+            <div className="editHeader">
+              <div>
+                <span className="widgetTitle mb5">Career profile</span>
+              </div>
+              <div>
+                <div className="widgetDesc">
+                  Add details about your current and preferred job profile. This
+                  helps us personalise your job recommendations.
+                </div>
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Department</label>
-              <input
-                type="text"
-                name="department"
-                value={career.department}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">Current industry</span>
+                <input
+                  type="text"
+                  name="current_industry"
+                  value={career.current_industry}
+                  onChange={handleChange}
+                  placeholder="Enter current industry"
+                />
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Desired job type</label>
-              <input
-                type="text"
-                name="desired_job_type"
-                value={career.desired_job_type}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">Department</span>
+                <input
+                  type="text"
+                  name="department"
+                  value={career.department}
+                  onChange={handleChange}
+                  placeholder="Enter department"
+                />
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Desired employment type</label>
-              <input
-                type="text"
-                name="desired_employment_type"
-                value={career.desired_employment_type}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">Desired job type</span>
+                <input
+                  type="text"
+                  name="desired_job_type"
+                  value={career.desired_job_type}
+                  onChange={handleChange}
+                  placeholder="Enter desired job type"
+                />
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Preferred shift</label>
-              <input
-                type="text"
-                name="preferred_shift"
-                value={career.preferred_shift}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">
+                  Desired employment type
+                </span>
+                <input
+                  type="text"
+                  name="desired_employment_type"
+                  value={career.desired_employment_type}
+                  onChange={handleChange}
+                  placeholder="Enter desired employment type"
+                />
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Preferred work location</label>
-              <input
-                type="text"
-                name="preferred_work_location"
-                value={career.preferred_work_location}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">Preferred shift</span>
+                <input
+                  type="text"
+                  name="preferred_shift"
+                  value={career.preferred_shift}
+                  onChange={handleChange}
+                  placeholder="Enter preferred shift"
+                />
+              </div>
             </div>
-            <div className="profile-item">
-              <label>Expected salary</label>
-              <input
-                type="text"
-                name="expected_salary"
-                value={career.expected_salary}
-                onChange={handleChange}
-              />
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">
+                  Preferred work location
+                </span>
+                <input
+                  type="text"
+                  name="preferred_work_location"
+                  value={career.preferred_work_location}
+                  onChange={handleChange}
+                  placeholder="Enter preferred work location"
+                />
+              </div>
             </div>
+            <div className="row">
+              <div className="input-field col s12">
+                <span className="lbl required-field">Expected salary</span>
+                <input
+                  type="text"
+                  name="expected_salary"
+                  value={career.expected_salary}
+                  onChange={handleChange}
+                  placeholder="Enter expected salary"
+                />
+              </div>
+            </div>
+            <div className="row mb0">
+              <div className="col s12 action">
+                <a
+                  className="cancel-btn"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </a>
+                <button
+                  className="btn-dark-ot"
+                  type="button"
+                  onClick={handleSave}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="crossLayer" onClick={() => setIsModalOpen(false)}>
+            <span className="icon">CrossLayer</span>
           </div>
         </div>
       )}
