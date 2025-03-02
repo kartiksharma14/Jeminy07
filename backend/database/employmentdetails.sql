@@ -9,6 +9,8 @@ USE candidateprofile;
     current_company_name VARCHAR(255),
     current_job_title VARCHAR(255),
     joining_date DATE,
+    end_date DATE ,
+    currently_working TINYINT(1) DEFAULT 0,
     current_salary DECIMAL(10, 2),
     skill_used TEXT,
     job_profile TEXT,
@@ -18,3 +20,7 @@ USE candidateprofile;
     FOREIGN KEY (candidate_id) REFERENCES candidate_profile(candidate_id)
 );
 SELECT * FROM employmentdetails; 
+
+ALTER TABLE employmentdetails
+ADD COLUMN end_date DATE ,
+ADD COLUMN currently_working TINYINT(1) DEFAULT 0;
