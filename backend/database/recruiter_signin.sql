@@ -5,7 +5,8 @@ CREATE TABLE recruiter_signin (
     name VARCHAR(255),
     email VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
-    level VARCHAR(50),
-    designation VARCHAR(100)
+    admin_id INT,
+    FOREIGN KEY (admin_id) REFERENCES admin(admin_id) 
 );
 SELECT * FROM recruiter_signin; 
+SELECT password FROM recruiter_signin WHERE email = 'recruiter@example.com';
