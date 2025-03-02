@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../db');
+const Recruiter = require('./recruiterSignin'); // Ensure correct relative path
 
 const JobPost = sequelize.define('JobPost', {
   job_id: {
@@ -8,44 +9,73 @@ const JobPost = sequelize.define('JobPost', {
     primaryKey: true,
     allowNull: false,
   },
-  job_title: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
+  recruiter_id: { 
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+        model: 'recruiter_signin',
+        key: 'recruiter_id'
+    }
   },
-  location: {
+  jobTitle: {
     type: DataTypes.STRING(255),
-    allowNull: true,
+    allowNull: false,
   },
-  job_highlights: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  employment_type: {
+  employmentType: {
     type: DataTypes.STRING(100),
-    allowNull: true,
+    allowNull: false,
   },
-  key_skills: {
+  keySkills: {
     type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  it_skills: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  education_level: {
-    type: DataTypes.TEXT,
-    allowNull: true,
+    allowNull: false,
+    get() {
+      const value = this.getDataValue('keySkills');
+      return value ? JSON.parse(value) : [];
+    },
+    set(val) {
+      this.setDataValue('keySkills', JSON.stringify(val));
+    }
   },
   department: {
-    type: DataTypes.TEXT,
-    allowNull: true,
+    type: DataTypes.STRING(255),
+    allowNull: false,
   },
-  role_category: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  work_mode: {
+  workMode: {
     type: DataTypes.STRING(50),
+    allowNull: false,
+  },
+  locations: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
+  industry: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  diversityHiring: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  },
+  jobDescription: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  multipleVacancies: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  },
+  companyName: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  companyInfo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  companyAddress: {
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   min_salary: {
@@ -64,50 +94,10 @@ const JobPost = sequelize.define('JobPost', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
-  candidate_industry: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  diversity_hiring: {
-    type: DataTypes.BOOLEAN,
-    allowNull: true,
-  },
-  job_description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  no_of_vacancy: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-  company_name: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  company_address: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  company_website: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  about_company: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  schedule_job_refresh: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
   job_creation_date: {
     type: DataTypes.DATE,
     allowNull: true,
     defaultValue: DataTypes.NOW,
-  },
-  expiry_in_days: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
   },
   is_active: {
     type: DataTypes.BOOLEAN,
@@ -115,8 +105,11 @@ const JobPost = sequelize.define('JobPost', {
     defaultValue: true,
   },
 }, {
-  tableName: 'job_post',
-  timestamps: false,
+  tableName: 'job_posts',
+  timestamps: true,
 });
+
+JobPost.belongsTo(Recruiter, { foreignKey: 'recruiter_id', onDelete: 'CASCADE' });
+Recruiter.hasMany(JobPost, { foreignKey: 'recruiter_id' });
 
 module.exports = JobPost;
