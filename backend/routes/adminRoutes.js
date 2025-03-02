@@ -1,19 +1,19 @@
 const express = require('express');
-const adminController = require('../controllers/adminController');
-const { verifyAdmin } = require('../middleware/adminMiddleware');
-
 const router = express.Router();
+const adminController = require('../controllers/adminController');
+const adminAuth = require('../middleware/adminAuth'); // Middleware to verify JWT
 
-//Create Recruiter
-router.post('/createRecruiter', verifyAdmin, adminController.createRecruiter);
-router.patch('/editRecruiter/:recruiter_id', verifyAdmin, adminController.editRecruiter);
-router.delete('/deleteRecruiter/:recruiter_id', verifyAdmin, adminController.deleteRecruiter);
-router.get('/getAllRecruiters', verifyAdmin, adminController.getAllRecruiters);
+// Public Routes
+router.post('/signup', adminController.signup);
+router.post('/verify-otp', adminController.verifyOtp); // OTP verification route
+router.post('/signin', adminController.signin);
 
-//Create Candidate
-router.post('/createCandidate', verifyAdmin, adminController.createCandidate);
-router.delete('/deleteCandidate/:candidate_id', verifyAdmin, adminController.deleteCandidate);
-router.patch('/editCandidate/:candidate_id', verifyAdmin, adminController.editCandidateProfile);
-router.get('/getAllCandidates', verifyAdmin, adminController.getAllCandidates);
+// Protected Routes (require JWT authentication)
+router.post('/recruiters', adminAuth, adminController.createRecruiter);
+//router.put('/jobs/:jobId/approve', adminAuth, adminController.approveJob);
+router.patch('/jobs/:jobId/approve', adminAuth, adminController.approveJob);
+router.put('/jobs/:jobId/edit', adminAuth, adminController.editJob);
+router.get('/jobs/approved', adminAuth, adminController.getApprovedJobs);
+router.get('/jobs/pending', adminAuth, adminController.getPendingJobs);
 
 module.exports = router;
