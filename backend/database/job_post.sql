@@ -31,6 +31,10 @@ ALTER TABLE job_posts ADD COLUMN recruiter_id INT NOT NULL;
 ALTER TABLE job_posts
 ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
 ADD COLUMN approvedBy INT NULL;  -- Stores admin ID who approved it (NULL if pending)
+ALTER TABLE job_posts
+ADD COLUMN rejectedBy INT NULL AFTER approvedBy,
+ADD COLUMN rejection_reason VARCHAR(255) NULL AFTER rejectedBy;
+
 
 SELECT * FROM job_posts; 
 
