@@ -143,27 +143,6 @@ exports.createRecruiter = async (req, res) => {
   };
   
 
-// Approve Job
-exports.approveJob = async (req, res) => {
-  const { jobId } = req.params;
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const job = await JobPost.findByPk(jobId);
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-
-    if (job.status === "approved") {
-        return res.status(400).json({ success: false, message: "Job post is already approved" });
-    }
-
-    job.status = 'approved';
-    job.approvedBy = adminId;
-    await job.save();
-    res.status(200).json({ message: 'Job approved successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 // Edit Job
 exports.editJob = async (req, res) => {
@@ -183,33 +162,6 @@ exports.editJob = async (req, res) => {
   }
 };
 
-// Get Approved Job History
-exports.getApprovedJobs = async (req, res) => {
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const jobs = await JobPost.findAll({
-      where: { approvedBy: adminId, status: 'approved' },
-      include: [{ model: Recruiter, attributes: ['email'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Get Pending Job History
-exports.getPendingJobs = async (req, res) => {
-  try {
-    const jobs = await JobPost.findAll({
-      where: { status: 'pending' },
-      include: [{ model: Recruiter, attributes: ['email'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 // Bulk Data Upload 
 const transporter = nodemailer.createTransport({
@@ -290,5 +242,162 @@ exports.bulkUploadCandidates = async (req, res) => {
   } catch (error) {
     console.error("Error processing file:", error);
     return res.status(500).json({ message: "Error processing file" });
+  }
+};
+
+
+// Get All Pending Jobs for Approval
+exports.getPendingJobs = async (req, res) => {
+  try {
+    const jobs = await JobPost.findAll({
+      where: { status: 'pending' },
+      include: [{ model: Recruiter, attributes: ['email'] }],
+    });
+    res.status(200).json(jobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Approve a Job
+exports.approveJob = async (req, res) => {
+  const { jobId } = req.params;
+  const adminId = req.admin.id; // Admin ID from JWT token
+
+  try {
+    const job = await JobPost.findByPk(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.status === "approved") {
+        return res.status(400).json({ success: false, message: "Job post is already approved" });
+    }
+
+    job.status = 'approved';
+    job.approvedBy = adminId; // Use the correct field name
+    await job.save();
+
+    res.status(200).json({ message: 'Job approved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Reject a Job
+exports.rejectJob = async (req, res) => {
+  const { jobId } = req.params;
+  const adminId = req.admin.id; // Admin ID from JWT token
+  const { rejectionReason } = req.body; // Optional rejection reason
+
+  try {
+    const job = await JobPost.findByPk(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.status === "rejected") {
+        return res.status(400).json({ success: false, message: "Job post is already rejected" });
+    }
+
+    job.status = 'rejected';
+    job.rejectedBy = adminId; // Use the correct field name
+    job.rejection_reason = rejectionReason || 'No reason provided';
+    await job.save();
+
+    res.status(200).json({ message: 'Job rejected successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get All Approved Jobs by Admin
+exports.getApprovedJobs = async (req, res) => {
+  const adminId = req.admin.id; // Admin ID from JWT token
+
+  try {
+    const jobs = await JobPost.findAll({
+      where: { approvedBy: adminId, status: 'approved' },
+      include: [{ model: Recruiter, attributes: ['email'] }],
+    });
+    res.status(200).json(jobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get All Rejected Jobs by Admin
+exports.getRejectedJobs = async (req, res) => {
+  const adminId = req.admin.id; // Admin ID from JWT token
+
+  try {
+    const jobs = await JobPost.findAll({
+      where: { rejectedBy: adminId, status: 'rejected' },
+      include: [{ model: Recruiter, attributes: ['email'] }],
+    });
+    res.status(200).json(jobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get Job by ID
+exports.getJobById = async (req, res) => {
+  const { jobId } = req.params;
+
+  try {
+    const job = await JobPost.findByPk(jobId, {
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+    });
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    res.status(200).json(job);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get All Jobs
+exports.getAllJobs = async (req, res) => {
+  try {
+    const jobs = await JobPost.findAll({
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+      order: [['createdAt', 'DESC']]
+    });
+    
+    res.status(200).json(jobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete Job
+exports.deleteJob = async (req, res) => {
+  const { jobId } = req.params;
+
+  try {
+    const job = await JobPost.findByPk(jobId);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    await job.destroy();
+    res.status(200).json({ message: 'Job deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get All Recruiters
+exports.getRecruiters = async (req, res) => {
+  try {
+    const recruiters = await Recruiter.findAll({
+      attributes: ['recruiter_id', 'name', 'email']
+
+    });
+    
+    res.status(200).json(recruiters);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
