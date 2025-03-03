@@ -25,12 +25,17 @@ router.post('/signin', adminController.signin);
 
 // Protected Routes (require JWT authentication)
 router.post('/recruiters', adminAuth, adminController.createRecruiter);
-//router.put('/jobs/:jobId/approve', adminAuth, adminController.approveJob);
 router.patch('/jobs/:jobId/approve', adminAuth, adminController.approveJob);
 router.put('/jobs/:jobId/edit', adminAuth, adminController.editJob);
 router.get('/jobs/approved', adminAuth, adminController.getApprovedJobs);
 router.get('/jobs/pending', adminAuth, adminController.getPendingJobs);
-
+router.get('/jobs/:jobId', adminAuth, adminController.getJobById);
+router.get('/jobs', adminAuth, adminController.getAllJobs);
+router.delete('/jobs/:jobId', adminAuth, adminController.deleteJob);
+router.patch('/jobs/:jobId/reject', adminAuth, adminController.rejectJob);
+//Get all jobs rejected by the admin
+router.get('/jobs/rejected', adminAuth, adminController.getRejectedJobs);
+router.get('/recruiters', adminAuth, adminController.getRecruiters);
 // Route: Admin uploads bulk candidates via CSV/Excel
 router.post('/upload-candidates', adminAuth, upload.single('file'), adminController.bulkUploadCandidates);
 
