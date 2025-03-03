@@ -104,6 +104,27 @@ const JobPost = sequelize.define('JobPost', {
     allowNull: true,
     defaultValue: true,
   },
+
+  status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    allowNull: false,
+    defaultValue: 'pending',
+  },
+  approvedBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Only used when approved
+    field: 'approvedBy', // Explicitly map to the database column
+  },
+  rejectedBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Only used when rejected
+    field: 'rejectedBy', // Explicitly map to the database column
+  },
+  rejection_reason: {
+    type: DataTypes.STRING,
+    allowNull: true, // Only used when rejected
+  }
+  
 }, {
   tableName: 'job_posts',
   timestamps: true,
