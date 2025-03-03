@@ -1,5 +1,10 @@
+const csvParser = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
+const xlsx = require('xlsx');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/adminModel');
+const Signin = require("../models/user");
 const Recruiter = require('../models/recruiterSignin');
 const Otp = require('../models/otp');
 const JobPost = require('../models/jobpost');
@@ -122,9 +127,6 @@ exports.createRecruiter = async (req, res) => {
 
       console.log(bcrypt); // Log bcrypt to ensure it is defined
   
-      // Hash the password before saving
-      //const hashedPassword = await bcrypt.hash(password, 10);
-  
       // Create the recruiter with associated admin_id
       const recruiter = await Recruiter.create({
         name,
@@ -206,5 +208,87 @@ exports.getPendingJobs = async (req, res) => {
     res.status(200).json(jobs);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Bulk Data Upload 
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USERNAME,
+    pass: process.env.MAIL_PASSWORD,
+  },
+});
+
+exports.bulkUploadCandidates = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const results = [];
+    const filePath = req.file.path;
+
+    fs.createReadStream(filePath)
+      .pipe(csvParser())
+      .on("data", (row) => {
+        results.push(row);
+      })
+      .on("end", async () => {
+        try {
+          const insertedCandidates = [];
+
+          for (let candidate of results) {
+            // Generate a random password (8-10 characters)
+            const plainPassword = Math.random().toString(36).slice(-10);
+
+            // Hash the password before saving to DB
+            const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+            //Store the resume path 
+            const resumePath =
+              candidate.resume && candidate.resume.trim() !== ""
+                ? path.join("uploads/resumes", candidate.resume)
+                : "uploads/resumes/default_resume.pdf"; // Default path if not provided
+
+            // Insert into `signin` table
+            const insertedCandidate = await Signin.create({
+              name: candidate.name,
+              email: candidate.email,
+              phone: candidate.phone,
+              resume: resumePath, // Now handled properly
+              hashed_password: hashedPassword,
+            });
+
+            // Send email with the plain password
+            const mailOptions = {
+              from: process.env.MAIL_DEFAULT_SENDER,
+              to: candidate.email,
+              subject: "Your Account Credentials",
+              text: `Hello ${candidate.name},\n\nYour account has been created successfully.\n\nYour login credentials are:\nEmail: ${candidate.email}\nPassword: ${plainPassword}\n\nPlease change your password after logging in.\n\nBest regards,\nYour Team`,
+            };
+
+            try {
+              await transporter.sendMail(mailOptions);
+              console.log(`Email sent to ${candidate.email}`);
+            } catch (emailError) {
+              console.error(`Error sending email to ${candidate.email}:`, emailError);
+            }
+
+            insertedCandidates.push(insertedCandidate);
+          }
+
+          return res.status(200).json({
+            message: "Candidates uploaded and emails sent successfully",
+            data: insertedCandidates,
+          });
+        } catch (error) {
+          console.error("Error inserting data:", error);
+          return res.status(500).json({ message: "Error inserting candidates" });
+        }
+      });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    return res.status(500).json({ message: "Error processing file" });
   }
 };
