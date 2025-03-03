@@ -10,3 +10,5 @@ CREATE TABLE recruiter_signin (
 );
 SELECT * FROM recruiter_signin; 
 SELECT password FROM recruiter_signin WHERE email = 'recruiter@example.com';
+DELETE FROM recruiter_signin WHERE email = 'piyushrecruiter50@example.com';
+
