@@ -2,6 +2,45 @@ const express = require('express');
 const router = express.Router();
 const recruiterController = require('../controllers/recruiterController');
 const authenticateToken = require('../middleware/recruiterMiddleware');
+const cities = require('../data/cities.json');
+
+// Search cities for recruiters
+router.get("/search-cities", authenticateToken, async (req, res) => {
+    try {
+      const { search } = req.query;
+  
+      if (!search) {
+        return res.status(400).json({
+          success: false,
+          message: "Search query is required"
+        });
+      }
+  
+      const filteredCities = cities.cities
+        .filter(city => 
+          city.City.toLowerCase().includes(search.toLowerCase())
+        )
+        .map(city => ({
+          city: city.City,
+          state: city.State,
+          district: city.District
+        }))
+        .slice(0, 10);
+  
+      res.json({
+        success: true,
+        data: filteredCities
+      });
+  
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Error searching cities",
+        error: error.message
+      });
+    }
+  });
+
 
 router.post('/signin', recruiterController.loginRecruiter);
 router.post('/verify-otp', recruiterController.verifyLoginOtp);
