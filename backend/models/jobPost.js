@@ -134,3 +134,5 @@ JobPost.belongsTo(Recruiter, { foreignKey: 'recruiter_id', onDelete: 'CASCADE' }
 Recruiter.hasMany(JobPost, { foreignKey: 'recruiter_id' });
 
 module.exports = JobPost;
+
+
