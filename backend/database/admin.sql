@@ -11,3 +11,5 @@ DESCRIBE admin;
 
 SELECT * FROM admin;
 INSERT INTO `admin` (`email`, `password`, `name`) VALUES ('admin2@example.com', 'admin123', 'Piyush');
+
+SHOW TABLES;
