@@ -12,8 +12,14 @@ const CandidateProfile = sequelize.define("candidate_profile", {
       key: 'candidate_id'
     }
   },
-  // Remove name and email as they'll come from signin table
-  // Keep phone and resume as they're updatable
+
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true, // Let Sequelize generate a unique primary key
+
+  },
+
   photo: {
     type: DataTypes.BLOB,
     allowNull: true
