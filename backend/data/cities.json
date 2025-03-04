@@ -5961,6 +5961,11 @@
         "District": "South West"
     },
     {
+        "City": "Delhi",
+        "State": "Delhi *",
+        "District": "South West"
+    },
+    {
         "City": "Delhi Municipal Corporation (U)",
         "State": "Delhi *",
         "District": "In all 9 dsitricts"
@@ -8207,6 +8212,11 @@
     },
     {
         "City": "Greater Mumbai",
+        "State": "Maharashtra",
+        "District": "Mumbai (Suburban) and Mumbai"
+    },
+    {
+        "City": "Mumbai",
         "State": "Maharashtra",
         "District": "Mumbai (Suburban) and Mumbai"
     },
