@@ -3,10 +3,7 @@ const router = express.Router();
 const recruiterController = require('../controllers/recruiterController');
 const authenticateToken = require('../middleware/recruiterMiddleware');
 
-// POST: Recruiter Sign-In (OTP Send) - No authentication needed
 router.post('/signin', recruiterController.loginRecruiter);
-
-// POST: Verify OTP - No authentication needed
 router.post('/verify-otp', recruiterController.verifyLoginOtp);
 
 console.log('Controller Object:', recruiterController);
@@ -20,10 +17,17 @@ router.delete('/jobs/draft/:sessionId', authenticateToken, recruiterController.d
 
 // Job Post routes 
 router.post('/jobs', authenticateToken, recruiterController.createJobPost);
-//router.get('/jobs', authenticateToken, recruiterController.getRecruiterJobs);
 router.get('/jobs', authenticateToken, recruiterController.getJobPosts);
-router.get('/jobs/:id', authenticateToken, recruiterController.getJobPostById);
+
 router.put('/jobs/:id', authenticateToken, recruiterController.updateJobPost);
 router.delete('/jobs/:id', authenticateToken, recruiterController.deleteJobPost);
+
+// ✅ New Routes for Fetching Jobs by Status
+router.get("/jobs/status", authenticateToken, recruiterController.getAllJobsWithStatus);
+router.get("/jobs/pending", authenticateToken, recruiterController.getPendingJobs);
+router.get("/jobs/approved", authenticateToken, recruiterController.getApprovedJobs);
+router.get("/jobs/rejected", authenticateToken, recruiterController.getRejectedJobs);
+
+router.get('/jobs/:id', authenticateToken, recruiterController.getJobPostById);
 
 module.exports = router;
