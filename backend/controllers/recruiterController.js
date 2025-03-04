@@ -3,11 +3,12 @@ const RecruiterSignin = require('../models/recruiterSignin');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
-const JobPost = require('../models/jobpost');  // Ensure the correct lowercase file name
+const JobPost = require('../models/jobpost');
 const { JobApplication } = require('../models/jobApplications');
-const TempJobPost = require('../models/TempJobPost'); // Adjust the path if needed
-const { sequelize } = require('../db');  // New import
-const { Op } = require('sequelize'); // Import for operators
+const TempJobPost = require('../models/TempJobPost');
+const { sequelize } = require('../db');
+const { Op } = require('sequelize');
+const cities = require('../data/cities.json');
 
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
@@ -20,8 +21,27 @@ const transporter = nodemailer.createTransport({
 
 const { JWT_SECRET } = process.env;
 
+// Validation function for cities
+function validateCity(cityName) {
+  if (!cityName) return null;
+  
+  // Extract just the city name if format contains a comma
+  const cityToCheck = cityName.split(',')[0].trim().toLowerCase();
+  
+  // Check if the city exists in cities.json
+  const cityFound = cities.cities.find(
+    city => city.City.toLowerCase() === cityToCheck
+  );
+  
+  if (cityFound) {
+    // Return just the city name
+    return cityFound.City;
+  }
+  
+  return null;
+}
+
 // POST: Recruiter Sign-In (Send OTP)
-// Login with admin-provided credentials and send OTP
 exports.loginRecruiter = async (req, res) => {
   const { email, password } = req.body;
 
@@ -73,7 +93,7 @@ exports.loginRecruiter = async (req, res) => {
   }
 };
 
-// Step 2: Verify OTP and generate JWT token
+// Verify OTP and generate JWT token
 exports.verifyLoginOtp = async (req, res) => {
   const { email, otp } = req.body;
   
@@ -192,6 +212,16 @@ exports.createJobFromDraft = async (req, res) => {
             });
         }
 
+        // Validate location against cities.json
+        const validatedLocation = validateCity(jobDraft.locations);
+        if (!validatedLocation) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid location in draft. Please provide a valid city name."
+            });
+        }
+
         // Create the permanent job post
         const newJob = await JobPost.create({
             recruiter_id,
@@ -200,7 +230,7 @@ exports.createJobFromDraft = async (req, res) => {
             keySkills: jobDraft.keySkills,
             department: jobDraft.department,
             workMode: jobDraft.workMode,
-            locations: jobDraft.locations,
+            locations: validatedLocation, // Use the validated location
             industry: jobDraft.industry,
             diversityHiring: jobDraft.diversityHiring,
             jobDescription: jobDraft.jobDescription,
@@ -260,6 +290,16 @@ exports.createJobDraft = async (req, res) => {
             });
         }
 
+        // Validate location against cities.json
+        const validatedLocation = validateCity(locations);
+        if (!validatedLocation) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid location. Please provide a valid city name."
+            });
+        }
+
         // Get the recruiter_id from the authenticated user
         const recruiter_id = req.recruiter.recruiter_id;
         if (!recruiter_id) {
@@ -277,10 +317,24 @@ exports.createJobDraft = async (req, res) => {
         const jobDraft = await TempJobPost.create({
             session_id: sessionId,
             recruiter_id,
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience,
-            created_by: recruiter_id,  // Ensure created_by is also set
+            jobTitle, 
+            employmentType, 
+            keySkills, 
+            department, 
+            workMode, 
+            locations: validatedLocation, // Use the validated location
+            industry,
+            diversityHiring, 
+            jobDescription, 
+            multipleVacancies, 
+            companyName, 
+            companyInfo,
+            companyAddress, 
+            min_salary, 
+            max_salary, 
+            min_experience, 
+            max_experience,
+            created_by: recruiter_id,
             expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
         }, { transaction });
 
@@ -346,11 +400,38 @@ exports.updateJobDraft = async (req, res) => {
             });
         }
 
+        // Validate location against cities.json if location field is being updated
+        let validatedLocation = existingDraft.locations; // Keep existing if not updating
+        if (locations) {
+            validatedLocation = validateCity(locations);
+            if (!validatedLocation) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid location. Please provide a valid city name."
+                });
+            }
+        }
+
         // Update draft
         const updatedDraft = await existingDraft.update({
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience,
+            jobTitle: jobTitle || existingDraft.jobTitle, 
+            employmentType: employmentType || existingDraft.employmentType, 
+            keySkills: keySkills || existingDraft.keySkills, 
+            department: department || existingDraft.department, 
+            workMode: workMode || existingDraft.workMode, 
+            locations: validatedLocation,
+            industry: industry || existingDraft.industry,
+            diversityHiring: diversityHiring !== undefined ? diversityHiring : existingDraft.diversityHiring, 
+            jobDescription: jobDescription || existingDraft.jobDescription, 
+            multipleVacancies: multipleVacancies !== undefined ? multipleVacancies : existingDraft.multipleVacancies, 
+            companyName: companyName || existingDraft.companyName, 
+            companyInfo: companyInfo || existingDraft.companyInfo,
+            companyAddress: companyAddress || existingDraft.companyAddress, 
+            min_salary: min_salary || existingDraft.min_salary, 
+            max_salary: max_salary || existingDraft.max_salary, 
+            min_experience: min_experience !== undefined ? min_experience : existingDraft.min_experience, 
+            max_experience: max_experience !== undefined ? max_experience : existingDraft.max_experience,
             created_by: recruiter_id,
             expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Reset expiry to 24 hours
         }, { transaction });
@@ -451,6 +532,16 @@ exports.createJobPost = async (req, res) => {
             });
         }
 
+        // Validate location against cities.json
+        const validatedLocation = validateCity(locations);
+        if (!validatedLocation) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid location. Please provide a valid city name."
+            });
+        }
+
         // Get the recruiter_id from the authenticated user
         const recruiter_id = req.recruiter.recruiter_id;
         if (!recruiter_id) {
@@ -464,8 +555,23 @@ exports.createJobPost = async (req, res) => {
         // Create the job post
         const newJob = await JobPost.create({
             recruiter_id,
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry, diversityHiring, jobDescription,
-            multipleVacancies, companyName, companyInfo, companyAddress, min_salary, max_salary, min_experience, max_experience,
+            jobTitle, 
+            employmentType, 
+            keySkills, 
+            department, 
+            workMode, 
+            locations: validatedLocation, // Use the validated location
+            industry, 
+            diversityHiring, 
+            jobDescription,
+            multipleVacancies, 
+            companyName, 
+            companyInfo, 
+            companyAddress, 
+            min_salary, 
+            max_salary, 
+            min_experience, 
+            max_experience,
             job_creation_date: new Date(),
             is_active: true,
             status: "pending",  // Set default status to 'pending'
@@ -584,8 +690,25 @@ exports.updateJobPost = async (req, res) => {
             });
         }
         
+        // Check if locations is being updated
+        const { locations } = req.body;
+        let updatedData = { ...req.body };
+        
+        if (locations) {
+            // Validate location against cities.json
+            const validatedLocation = validateCity(locations);
+            if (!validatedLocation) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid location. Please provide a valid city name."
+                });
+            }
+            updatedData.locations = validatedLocation;
+        }
+        
         // Update job post with new data
-        await job.update(req.body, { transaction });
+        await job.update(updatedData, { transaction });
         
         // Commit the transaction
         await transaction.commit();
@@ -668,7 +791,7 @@ exports.getAllJobsWithStatus = async (req, res) => {
 
         const jobs = await JobPost.findAll({
             where: { recruiter_id: recruiterId },
-            attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active"],
+            attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active", "locations"],
             order: [['job_creation_date', 'DESC']]
         });
 
@@ -794,3 +917,5 @@ exports.getRejectedJobs = async (req, res) => {
         });
     }
 };
+
+module.exports = exports;
