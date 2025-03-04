@@ -29,3 +29,5 @@ CREATE TABLE `temp_job_posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SELECT * FROM temp_job_posts;
+
+ALTER TABLE temp_job_posts ADD COLUMN recruiter_id INT NOT NULL AFTER created_by;
