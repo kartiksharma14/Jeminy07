@@ -10,5 +10,7 @@ CREATE TABLE recruiter_signin (
 );
 SELECT * FROM recruiter_signin; 
 SELECT password FROM recruiter_signin WHERE email = 'recruiter@example.com';
-DELETE FROM recruiter_signin WHERE email = 'piyushrecruiter50@example.com';
+DELETE FROM recruiter_signin WHERE email = 'XXXXXXXXX' limit 1;
+ALTER TABLE recruiter_signin
+ADD COLUMN company_name VARCHAR(255);
 
