@@ -115,34 +115,66 @@ exports.signin = async (req, res) => {
 
 // Admin creates recruiter
 exports.createRecruiter = async (req, res) => {
-    const { email, password, name } = req.body;
-    const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token (req.admin.id)
-  
-    try {
-      // Check if recruiter already exists
-      const existingRecruiter = await Recruiter.findOne({ where: { email } });
-      if (existingRecruiter) {
-        return res.status(400).json({ error: 'Recruiter already exists' });
-      }
+  const { email, password, name, company_name } = req.body;
+  const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token
 
-      console.log(bcrypt); // Log bcrypt to ensure it is defined
-  
-      // Create the recruiter with associated admin_id
-      const recruiter = await Recruiter.create({
-        name,
-        email,
-        //password: hashedPassword,
-        password,
-        admin_id: adminId, // Associate the recruiter with the admin
-      });
-  
-      res.status(200).json({ message: 'Recruiter created successfully' });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+  try {
+    // Check if recruiter already exists
+    const existingRecruiter = await Recruiter.findOne({ where: { email } });
+    if (existingRecruiter) {
+      return res.status(400).json({ error: 'Recruiter already exists' });
     }
-  };
-  
+    
+    // Create the recruiter with associated admin_id
+    const recruiter = await Recruiter.create({
+      name: name || 'Recruiter', // Default if name is not provided
+      email,
+      password, // The beforeSave hook will handle password hashing
+      company_name: company_name || null, // Optional company name
+      admin_id: adminId // Associate the recruiter with the admin
+    });
+    
+    // Send email notification to the recruiter
+    const mailOptions = {
+      from: process.env.MAIL_DEFAULT_SENDER || process.env.MAIL_USERNAME,
+      to: email,
+      subject: "Your Recruiter Account Credentials",
+      text: `Hello ${name || 'Recruiter'},
 
+Your recruiter account${company_name ? ` for ${company_name}` : ''} has been created successfully.
+
+Your login credentials are:
+Email: ${email}
+Password: ${password}
+
+Please change your password after logging in for security purposes.
+
+Best regards,
+The Admin Team`
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent to recruiter: ${email}`);
+    } catch (emailError) {
+      console.error(`Error sending email to ${email}:`, emailError);
+      // We still continue as the account creation was successful
+    }
+
+    res.status(200).json({ 
+      message: 'Recruiter created successfully and notification email sent',
+      recruiter: {
+        id: recruiter.recruiter_id,
+        email: recruiter.email,
+        name: recruiter.name,
+        company_name: recruiter.company_name
+      }
+    });
+  } catch (err) {
+    console.error('Error creating recruiter:', err);
+    res.status(500).json({ error: err.message });
+  }
+};  
 
 // Edit Job
 exports.editJob = async (req, res) => {
@@ -298,7 +330,7 @@ exports.rejectJob = async (req, res) => {
 
     job.status = 'rejected';
     job.rejectedBy = adminId; // Use the correct field name
-    job.rejection_reason = rejectionReason || 'No reason provided';
+    job.rejection_reason = rejectionReason || 'Imcomplete details provided';
     await job.save();
 
     res.status(200).json({ message: 'Job rejected successfully' });
