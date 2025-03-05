@@ -1898,7 +1898,53 @@ exports.getJobDraftPreview = async (req, res) => {
     });
   }
 };
-  
+
+// Get all draft jobs for a recruiter
+exports.getAllJobDrafts = async (req, res) => {
+  try {
+    // Get recruiter ID from the token
+    const recruiter_id = req.recruiter.recruiter_id;
+    
+    if (!recruiter_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recruiter ID is required'
+      });
+    }
+    
+    // Fetch all draft jobs for this recruiter
+    // Assuming drafts are stored in TempJobPost while published jobs are in JobPost
+    const draftJobs = await TempJobPost.findAll({
+      where: {
+        recruiter_id: recruiter_id
+      },
+      order: [['updatedAt', 'DESC']]
+    });
+    
+    if (draftJobs.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No draft jobs found'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      count: draftJobs.length,
+      draftJobs: draftJobs
+    });
+  } catch (error) {
+    console.error('Error fetching draft jobs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching draft jobs',
+      error: error.message
+    });
+  }
+};
+
+
+
 // Create a new job from draft
 exports.createJobFromDraft = async (req, res) => {
     const transaction = await sequelize.transaction();
