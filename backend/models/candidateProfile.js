@@ -13,13 +13,6 @@ const CandidateProfile = sequelize.define("candidate_profile", {
     }
   },
 
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true, // Let Sequelize generate a unique primary key
-
-  },
-
   photo: {
     type: DataTypes.BLOB,
     allowNull: true
