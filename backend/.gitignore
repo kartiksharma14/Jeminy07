@@ -1,7 +1,0 @@
-# Node.js specific
-#node_modules/
-#.env
-
-# Other sensitive files (e.g., DB credentials, API keys)
-#secret_config.json
-#logs/
