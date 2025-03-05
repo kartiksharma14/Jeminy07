@@ -53,6 +53,8 @@ router.patch('/jobs/draft', authenticateToken, recruiterController.updateJobDraf
 router.get('/jobs/draft/:sessionId', authenticateToken, recruiterController.getJobDraftPreview);
 router.post('/jobs/publish', authenticateToken, recruiterController.createJobFromDraft);
 router.delete('/jobs/draft/:sessionId', authenticateToken, recruiterController.deleteJobDraft);
+// Get all draft jobs for a recruiter
+router.get('/job-drafts', authenticateToken, recruiterController.getAllJobDrafts);
 
 // Job Post routes 
 router.post('/jobs', authenticateToken, recruiterController.createJobPost);
