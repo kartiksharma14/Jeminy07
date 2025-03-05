@@ -1,0 +1,35 @@
+.recruiter-home-header {
+    background-color: #080320;
+  }
+  
+  .recruiter-home-header .content {
+    background-color: #080320;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 5px;
+  }
+  
+  .recruiter-home-header img {
+    height: 60px;
+  }
+  
+  .recruiter-home-header span {
+    display: none;
+  }
+  
+  .recruiter-home-header a {
+    text-decoration: none;
+    color: #0073b1;
+  }
+  
+  .recruiter-home-header a:hover {
+    text-decoration: underline;
+  }
+  @media (max-width: 768px) {
+    .recruiter-home-header{
+      display: none;
+    }
+    
+  }
+  

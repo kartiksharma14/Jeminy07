@@ -174,7 +174,24 @@
     background-color: #0056b3;
     transform: scale(1.05);
   }
-  
+  .edit-btn{
+      color: #007bff;
+      background-color: transparent;
+      border: none;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s ease;
+  }
+  .delete-btn{
+    color: #d9534f;
+    background-color: transparent;
+    border: none;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
   /* Responsive Design */
   @media (max-width: 768px) {
     .modal-content {

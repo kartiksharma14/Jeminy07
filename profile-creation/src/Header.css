@@ -76,3 +76,42 @@
 .profile-icon-placeholder:hover {
   transform: scale(1.1);
 }
+@media (max-width: 768px) {
+  /* Adjust the header container for smaller screens */
+  .header-candidate {
+    padding: 8px 10px;
+    flex-wrap: wrap; /* Allow elements to wrap if needed */
+  }
+  
+  /* Reduce logo size for a compact look */
+  .header-left .logo {
+    height: 35px;
+  }
+  
+  /* Center section adjustments: stack or wrap navigation/search */
+  .header-center {
+    flex-basis: 100%;
+    justify-content: center;
+    margin-top: 8px;
+    gap: 10px;
+  }
+  
+  /* Slightly reduce the font size and spacing of navigation links */
+  .jobs-link {
+    font-size: 14px;
+    margin-right: 10px;
+  }
+  
+  /* Make the search box responsive */
+  .search-box {
+    max-width: 100%;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  
+  /* Scale down the profile icon for mobile */
+  .profile-icon-placeholder {
+    height: 30px;
+    width: 30px;
+  }
+}

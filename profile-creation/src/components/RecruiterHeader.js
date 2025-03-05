@@ -22,7 +22,7 @@ const RecruiterHeader = () => {
             <div className="recruiter-header-left">
                 <a href="/">
                     <img
-                        src="https://github.com/kartiksharma14/photos/blob/main/STL_GSB_Blue.png?raw=true"
+                        src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
                         alt="Recruiter Logo"
                         className="recruiter-logo"
                     />

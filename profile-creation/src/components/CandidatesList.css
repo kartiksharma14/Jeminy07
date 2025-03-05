@@ -1,52 +1,726 @@
-/* CandidatesList.css */
-.candidates-list-layout {
-    padding: 20px;
-    background-color: #f9f9f9;
-}
-
-.candidates-list-heading {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.error-message {
-    color: red;
-    text-align: center;
-}
-
-.candidates-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.candidate-card {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.candidate-card h3 {
-    margin-top: 0;
+/* ========================
+   Global & Base Styles
+   ======================== */
+   * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa; /* Lighter background */
     color: #333;
+  }
+  
+  /* ========================
+     Page Layout
+     ======================== */
+  .candidates-page-layout {
+    display: flex;
+    min-height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 20px;
+  }
+  
+  /* ========================
+     Sidebar (Filters)
+     ======================== */
+  .sidebar-rec {
+    width: 280px;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .sidebar-rec-heading {
+    font-size: 1.4em;
+    color: #007bff;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  /* Filter Form in Sidebar */
+  .sidebar-rec .filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  /* Form Fields */
+  .sidebar-rec .form-field {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar-rec .field-label {
+    font-size: 0.95em;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .sidebar-rec .input-box {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.95em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: border-color 0.3s ease;
+  }
+  
+  .sidebar-rec .input-box:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  /* Range Box (Experience, Salary, etc.) */
+  .sidebar-rec .range-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .sidebar-rec .separator {
+    font-size: 0.9em;
+    color: #888;
+  }
+  
+  /* Checkbox Field */
+  .sidebar-rec .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* Tag Selection (Active In, Gender, etc.) */
+  .sidebar-rec .tag-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .sidebar-rec .tag {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    border: 1px solid #007bff;
+    border-radius: 20px;
+    color: #007bff;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  .sidebar-rec .tag.selected {
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  /* Collapsible Sections */
+  .sidebar-rec .collapsible-section {
+    border-top: 1px solid #eaeaea;
+    margin-top: 15px;
+    padding-top: 10px;
+  }
+  
+  .sidebar-rec .collapser {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 5px 0;
+  }
+  
+  .sidebar-rec .collapser-header {
+    font-size: 1em;
+    color: #007bff;
+    margin: 0;
+  }
+  
+  .sidebar-rec .expand-icon {
+    width: 20px;
+    height: 20px;
+    fill: #007bff;
+  }
+  
+  .sidebar-rec .collapsible-content {
+    margin-top: 10px;
+    padding-left: 10px;
+  }
+  .reset-button {
+    margin-top: 2px;
+    align-self: flex-start;
+    padding: 12px 16px;
+    background-color:red;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
-
-.candidate-card p {
-    margin: 5px 0;
+  /* Sidebar Buttons */
+  .sidebar-rec .search-button-rec,
+  .sidebar-rec .reset-button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 15px;
+  }
+  
+  .sidebar-rec .search-button-rec {
+    background-color: #007bff;
+    color: #fff;
+    transition: background-color 0.3s ease;
+  }
+  
+  .sidebar-rec .search-button-rec:hover {
+    background-color: #0056b3;
+  }
+  
+  .sidebar-rec .reset-button {
+    background-color: #f44336;
+    color: #fff;
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .sidebar-rec .reset-button:hover {
+    background-color: #d32f2f;
+  }
+  
+  /* ========================
+     Main Content
+     ======================== */
+  .main-content {
+    flex: 1;
+    padding: 0 20px 20px;
+    margin: 20px 20px 20px 0;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+  }
+  
+  /* Top area: search info, total profiles, etc. */
+  .top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid #eaeaea;
+  }
+  
+  .top-bar h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+    font-weight: normal;
+  }
+  
+  .top-bar .top-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .top-bar .top-actions button,
+  .top-bar .top-actions .btn-link {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 0.9em;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+  
+  .top-bar .top-actions button:hover,
+  .top-bar .top-actions .btn-link:hover {
+    background-color: #eaf2ff;
+  }
+  
+  /* Filter Bar within main content (if needed) */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px;
+    border-bottom: 1px solid #eaeaea;
+  }
+  
+  .search-input,
+  .sort-select {
+    padding: 8px 12px;
+    width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+  }
+  
+  /* ========================
+     Candidates List Heading
+     ======================== */
+  .candidates-list-heading {
+    text-align: left;
+    font-size: 1.1em;
+    color: #007bff;
+    margin: 20px 0 10px;
+    padding-left: 15px;
+  }
+  
+  /* ========================
+     Candidate Cards (List View)
+     ======================== */
+  .candidates-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+  }
+  
+  /* Candidate card: more of a row layout to match the screenshot style */
+  .candidate-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    transition: 0.3s ease-in-out;
+    border-left: 4px solid #007bff;
+    width: 100%;
+  }
+  .candidate-card:hover {
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.01);
+  cursor: pointer;
+  }
+  .candidate-info {
+    flex: 1;
+  }
+/* Left Section - Candidate Name + Favorite Button */
+.card-header {
+    display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  }
+  .candidate-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+  .favorite-button {
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .favorite-button:hover {
+    color: #007bff;
+  }
+  .favorite-button.favorited {
+    color: gold;
+  }
+  /* Icons Row */
+  .candidate-info {
+    display: flex;
+    gap: 16px;
+    font-size: 14px;
     color: #555;
-}
-
+  }
+  
+  .candidate-info span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* Paragraph Details (Salary, Location, Experience, etc.) */
+.candidate-card p {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  /* View Profile Button */
 .view-profile-button {
     margin-top: 10px;
-    padding: 8px 12px;
+    align-self: flex-start;
+    padding: 8px 16px;
     background-color: #007bff;
     color: #fff;
     border: none;
     border-radius: 4px;
+    font-size: 0.9rem;
     cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .view-profile-button:hover {
+    background-color: #0056b3;
+  }   
+  /* Right Section: Candidate Avatar (Optional) */
+.candidate-avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 15px;
 }
 
-.view-profile-button:hover {
-    background-color: #0056b3;
+.candidate-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #ccc;
+  margin-bottom: 10px;
+} 
+  
+  .card-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  
+  .card-left .candidate-name {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .card-left .candidate-role {
+    font-size: 0.95em;
+    color: #555;
+    margin: 0;
+  }
+  
+  .card-left {
+    font-size: 0.9em;
+    color: #666;
+    line-height: 1.4em;
+  }
+ /* Candidate Details in a Row */
+.candidate-details {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 15px;
+    line-height: 1.6;
+    flex-direction: column;
+  }
+  
+  .candidate-details p {
+    font-size: 14px;
+  color: #444;
+  }
+  
+ /* Right Sidebar */
+.candidate-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 180px;
+  }
+  .candidate-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    margin-bottom: 8px;
+  }
+  
+  .view-phone-button,
+.view-profile-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    margin-top: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    width: 100%;
+    text-align: center;
 }
+
+.view-phone-button:hover,
+.view-profile-button:hover {
+  background-color: #0056b3;
+}
+
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .candidate-card {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  
+    .candidate-info {
+      justify-content: center;
+    }
+  
+    .candidate-sidebar {
+      margin-top: 12px;
+    }
+  }  
+  /* Right side: avatar or quick actions */
+  .card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .card-right .candidate-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #ccc;
+    object-fit: cover;
+    margin-bottom: 10px;
+  }
+  
+  /* Favorite Button */
+  .favorite-button {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.3s;
+  }
+  
+  .favorite-button:hover {
+    color: #007bff;
+  }
+  
+  .favorite-button.favorited {
+    color: gold;
+  }
+  
+  
+  /* ========================
+     Pagination
+     ======================== */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin: 20px 0;
+  }
+  
+  .pagination-button {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .pagination-button:hover {
+    background-color: #ddd;
+  }
+  
+  .pagination-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .pagination-button.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+  }
+  
+  /* ========================
+     Modal Styles
+     ======================== */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s;
+  }
+  
+  .modal-content {
+    background-color: #fff;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    padding: 20px;
+    position: relative;
+    animation: slideIn 0.3s;
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    cursor: pointer;
+  }
+  
+  /* Modal Header */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .modal-title h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #007bff;
+  }
+  
+  .modal-subtitle {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+  }
+  
+  /* Modal Image */
+  .modal-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    margin: 0 auto 15px;
+    display: block;
+    border-radius: 50%;
+    border: 3px solid #007bff;
+  }
+  
+  .modal-placeholder-image {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #eee;
+    color: #999;
+    border-radius: 50%;
+    border: 3px solid #007bff;
+  }
+  
+  /* Modal Sections */
+  .modal-section {
+    margin-bottom: 20px;
+  }
+  
+  .modal-section h3 {
+    margin-bottom: 8px;
+    color: #007bff;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+  }
+  
+  .education-card,
+  .employment-card,
+  .project-card {
+    background-color: #f9f9f9;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+  }
+  
+  .skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  
+  .skill-badge {
+    background-color: #007bff;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+  }
+  
+  /* Modal Footer */
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+  }
+  
+  .contact-button,
+  .close-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+  }
+  
+  .contact-button {
+    background-color: #28a745;
+  }
+  
+  .contact-button:hover {
+    background-color: #218838;
+  }
+  
+  .close-button {
+    background-color: #6c757d;
+  }
+  
+  .close-button:hover {
+    background-color: #5a6268;
+  }
+  
+  /* Modal Loader */
+  .modal-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  
+  @keyframes slideIn {
+    from { transform: translateY(-20px); }
+    to   { transform: translateY(0); }
+  }
+  

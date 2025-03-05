@@ -6,6 +6,8 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "./IndustryWidget.css"; // Import the corresponding CSS
+import { FaArrowDown, FaArrowRight } from 'react-icons/fa';
+
 
 function IndustryWidget() {
   return (
@@ -40,19 +42,15 @@ function IndustryWidget() {
           <SwiperSlide className="tupple">
             <a
               className="industry-card"
-              href="https://www.naukri.com/mnc-companies-in-india-cat101?title=MNCs+actively+hiring&src=discovery_orgExploreCompanies_homepage_srch"
+              href=""
               title="MNCs"
               target="_blank"
               rel="noopener noreferrer"
             >
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
-                  <span className="industry-name">MNCs</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                <span className="industry-name">MNCs</span>
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">2K+ are actively hiring</span>
@@ -93,7 +91,7 @@ function IndustryWidget() {
           <SwiperSlide className="tupple">
             <a
               className="industry-card"
-              href="https://www.naukri.com/product-companies-in-india-cat106?title=Product+companies+actively+hiring&src=discovery_orgExploreCompanies_homepage_srch"
+              href=""
               title="Product"
               target="_blank"
               rel="noopener noreferrer"
@@ -101,11 +99,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Product</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">1.1K+ are actively hiring</span>
@@ -146,7 +140,7 @@ function IndustryWidget() {
           <SwiperSlide className="tupple">
             <a
               className="industry-card"
-              href="https://www.naukri.com/banking-and-finance-companies-in-india-cat110?title=Banking+%26+Financial+services+companies+actively+hiring&src=discovery_orgExploreCompanies_homepage_srch"
+              href=""
               title="Banking & Finance"
               target="_blank"
               rel="noopener noreferrer"
@@ -154,11 +148,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Banking & Finance</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">376 are actively hiring</span>
@@ -199,7 +189,7 @@ function IndustryWidget() {
           <SwiperSlide className="tupple">
             <a
               className="industry-card"
-              href="https://www.naukri.com/travel-and-hotel-companies-in-india-cat114?title=Travel+%26+Hotel+companies+actively+hiring&src=discovery_orgExploreCompanies_homepage_srch"
+              href=""
               title="Hospitality"
               target="_blank"
               rel="noopener noreferrer"
@@ -207,11 +197,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Hospitality</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">91 are actively hiring</span>
@@ -252,7 +238,7 @@ function IndustryWidget() {
           <SwiperSlide className="tupple">
             <a
               className="industry-card"
-              href="https://www.naukri.com/fintech-and-payments-companies-in-india-cat108?title=Fintech+%26+Payments+companies+actively+hiring&src=discovery_orgExploreCompanies_homepage_srch"
+              href=""
               title="Fintech"
               target="_blank"
               rel="noopener noreferrer"
@@ -260,11 +246,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Fintech</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">127 are actively hiring</span>
@@ -313,11 +295,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">FMCG & Retail</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">139 are actively hiring</span>
@@ -366,11 +344,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Startups</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">550 are actively hiring</span>
@@ -419,11 +393,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Edtech</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">149 are actively hiring</span>
@@ -472,11 +442,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Healthcare</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">590 are actively hiring</span>
@@ -525,11 +491,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Unicorns</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">94 are actively hiring</span>
@@ -578,11 +540,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Internet</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">230 are actively hiring</span>
@@ -631,11 +589,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Manufacturing</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">886 are actively hiring</span>
@@ -684,11 +638,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">Fortune 500</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">114 are actively hiring</span>
@@ -737,11 +687,7 @@ function IndustryWidget() {
               <div className="chip-heading-div">
                 <span className="industry-name-wrapper">
                   <span className="industry-name">B2C</span>
-                  <img
-                    className="arrow-icon"
-                    src="//static.naukimg.com/s/7/0/assets/images/src/widgets/naukri-homepage-industry-wdgt/latest/resources/arrow-one-theme.2dc3b797.svg"
-                    alt="arrow-icon"
-                  />
+                  <FaArrowRight class="arrow-icon" size={20} color="gray" />
                 </span>
               </div>
               <span className="industry-company">2.3K+ are actively hiring</span>

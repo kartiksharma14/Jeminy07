@@ -8,7 +8,7 @@ function Header() {
       <div className="header-left">
         <a href="/">
           <img
-            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.PNG?raw=true"
+            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
             alt="Logo"
             className="logo"
           />

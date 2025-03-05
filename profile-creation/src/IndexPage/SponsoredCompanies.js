@@ -7,6 +7,7 @@ import { Navigation, Pagination, A11y } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import { FaStar } from 'react-icons/fa';
 
 function SponsoredCompanies() {
   // State for selected filter
@@ -30,9 +31,9 @@ function SponsoredCompanies() {
   ];
 
   // Sample data for sponsored companies (Ensure all companies up to id: 23 are included)
-// src/components/SponsoredCompanies/SponsoredCompanies.js
+  // src/components/SponsoredCompanies/SponsoredCompanies.js
 
-const companies = [
+  const companies = [
     {
       id: 1,
       name: 'Perforce',
@@ -40,7 +41,7 @@ const companies = [
       rating: 3.8,
       reviews: '12 reviews',
       tags: ['Software Product', 'Foreign MNC'],
-      link: 'https://www.naukri.com/perforce-overview-5206384?src=standardLogo',
+      link: '',
     },
     {
       id: 2,
@@ -49,7 +50,7 @@ const companies = [
       rating: 3.7,
       reviews: '4.3K+ reviews',
       tags: ['Manufacturing', 'Fortune500', 'Indian MNC', 'B2B'],
-      link: 'https://www.naukri.com/cyient-overview-1030122?src=standardLogo',
+      link: '',
     },
     {
       id: 3,
@@ -58,7 +59,7 @@ const companies = [
       rating: 3.9,
       reviews: '1.4K+ reviews',
       tags: ['B2B', 'Internet', 'Software Product', 'Financial Services', 'Analytics / KPO / Research'],
-      link: 'https://www.naukri.com/factset-overview-4595261?src=standardLogo',
+      link: '',
     },
     {
       id: 4,
@@ -67,7 +68,7 @@ const companies = [
       rating: null, // No rating available
       reviews: '21 reviews',
       tags: ['Real Estate'],
-      link: 'https://www.naukri.com/dlf-services-overview-4665617?src=standardLogo',
+      link: '',
     },
     {
       id: 5,
@@ -76,7 +77,7 @@ const companies = [
       rating: 4.0,
       reviews: '145 reviews',
       tags: ['Fortune Global 500', 'Pharmaceutical & Life Sciences', 'Work-Life Balance'],
-      link: 'https://www.naukri.com/cardinal-health-overview-4673837?src=standardLogo',
+      link: '',
     },
     {
       id: 6,
@@ -85,7 +86,7 @@ const companies = [
       rating: null,
       reviews: '6 reviews',
       tags: ['B2B', 'Foreign MNC', 'Industrial Equipment / Machinery'],
-      link: 'https://www.naukri.com/bomag-india-private-limited-overview-6965063?src=standardLogo',
+      link: '',
     },
     {
       id: 7,
@@ -94,7 +95,7 @@ const companies = [
       rating: 3.9,
       reviews: '1.6K+ reviews',
       tags: ['B2C', 'Public', 'Corporate', 'Automobile', 'Fortune India 500'],
-      link: 'https://www.naukri.com/spark-minda-overview-3891958?src=standardLogo',
+      link: '',
     },
     {
       id: 8,
@@ -103,7 +104,7 @@ const companies = [
       rating: 3.5,
       reviews: '60 reviews',
       tags: ['Financial Services'],
-      link: 'https://www.naukri.com/lloyds-technology-centre-overview-4702913?src=standardLogo',
+      link: '',
     },
     {
       id: 9,
@@ -112,7 +113,7 @@ const companies = [
       rating: 3.7,
       reviews: '37.6K+ reviews',
       tags: ['Fortune500', 'Forbes Global 2000', 'Indian MNC', 'IT Services & Consulting'],
-      link: 'https://www.naukri.com/infosys-overview-13832?src=standardLogo',
+      link: '',
     },
     {
       id: 10,
@@ -121,7 +122,7 @@ const companies = [
       rating: 3.7,
       reviews: '9.4K+ reviews',
       tags: ['BPM / BPO', 'TOP', 'B2B', 'Indian MNC'],
-      link: 'https://www.naukri.com/infosys-bpm-overview-191386?src=standardLogo',
+      link: '',
     },
     {
       id: 11,
@@ -130,7 +131,7 @@ const companies = [
       rating: 3.8,
       reviews: '692 reviews',
       tags: ['B2B', 'Private', 'Service', 'Foreign MNC', 'IT Services & Consulting'],
-      link: 'https://www.naukri.com/encora-overview-49980?src=standardLogo',
+      link: '',
     },
     {
       id: 12,
@@ -139,7 +140,7 @@ const companies = [
       rating: 3.9,
       reviews: '1.7K+ reviews',
       tags: ['IT Services & Consulting', 'Foreign MNC', 'Conglomerate', 'Highly Rated by Women', 'B2B'],
-      link: 'https://www.naukri.com/sopra-steria-overview-1931748?src=standardLogo',
+      link: '',
     },
     {
       id: 13,
@@ -148,7 +149,7 @@ const companies = [
       rating: 3.4,
       reviews: '818 reviews',
       tags: ['IT Services & Consulting', 'Engineering & Construction', 'Private', 'B2B'],
-      link: 'https://www.naukri.com/innova-solutions-overview-778182?src=standardLogo',
+      link: '',
     },
     {
       id: 14,
@@ -157,7 +158,7 @@ const companies = [
       rating: 4.3,
       reviews: '414 reviews',
       tags: ['Insurance', 'Indian MNC', 'Job Security', 'Work-Life Balance'],
-      link: 'https://www.naukri.com/allianz-services-private-limited-overview-3595564?src=standardLogo',
+      link: '',
     },
     {
       id: 15,
@@ -166,7 +167,7 @@ const companies = [
       rating: 3.3,
       reviews: '988 reviews',
       tags: ['Analytics / KPO / Research', 'Foreign MNC', 'B2B'],
-      link: 'https://www.naukri.com/r-systems-international-overview-3832032?src=standardLogo',
+      link: '',
     },
     {
       id: 16,
@@ -175,7 +176,7 @@ const companies = [
       rating: 3.7,
       reviews: '992 reviews',
       tags: ['Software Product', 'Analytics / KPO / Research', 'Foreign MNC'],
-      link: 'https://www.naukri.com/opentext-overview-4656015?src=standardLogo',
+      link: '',
     },
     {
       id: 17,
@@ -184,7 +185,7 @@ const companies = [
       rating: 4.1,
       reviews: '2.6K+ reviews',
       tags: ['B2B', 'Public', 'Foreign MNC', 'Electrical Equipment'],
-      link: 'https://www.naukri.com/abb-overview-9400?src=standardLogo',
+      link: '',
     },
     {
       id: 18,
@@ -193,7 +194,7 @@ const companies = [
       rating: 3.9,
       reviews: '802 reviews',
       tags: ['Foreign MNC', 'Biotech & Life sciences', 'Clinical Research / Contract Research'],
-      link: 'https://www.naukri.com/thermo-fisher-scientific-overview-526200?src=standardLogo',
+      link: '',
     },
     {
       id: 19,
@@ -202,7 +203,7 @@ const companies = [
       rating: 3.7,
       reviews: '528 reviews',
       tags: ['Software Product', 'Content Development / Language', 'Foreign MNC'],
-      link: 'https://www.naukri.com/lionbridge-overview-121138?src=standardLogo',
+      link: '',
     },
     {
       id: 20,
@@ -211,7 +212,7 @@ const companies = [
       rating: 3.8,
       reviews: '1K+ reviews',
       tags: ['IT Services & Consulting', 'Service', 'Foreign MNC', 'B2B', 'TOP'],
-      link: 'https://www.naukri.com/altimetrik-overview-2978732?src=standardLogo',
+      link: '',
     },
     {
       id: 21,
@@ -220,7 +221,7 @@ const companies = [
       rating: 3.8,
       reviews: '1.3K+ reviews',
       tags: ['IT Services & Consulting'],
-      link: 'https://www.naukri.com/epam-systems-overview-4592441?src=standardLogo',
+      link: '',
     },
     {
       id: 22,
@@ -229,7 +230,7 @@ const companies = [
       rating: null,
       reviews: '29 reviews',
       tags: ['Software Product', 'Foreign MNC'],
-      link: 'https://www.naukri.com/backbase-overview-5059810?src=standardLogo',
+      link: '',
     },
     {
       id: 23,
@@ -238,10 +239,10 @@ const companies = [
       rating: 3.9,
       reviews: '1.3K+ reviews',
       tags: ['B2B', 'Fortune Global 500', 'Textile & Apparel', 'Retail', 'Highly Rated by Women'],
-      link: 'https://www.naukri.com/tesco-overview-24010?src=standardLogo',
+      link: '',
     },
   ];
-  
+
 
   // Function to handle filter selection
   const handleFilterClick = (filter) => {
@@ -374,11 +375,7 @@ const companies = [
                           {company.rating !== null && (
                             <>
                               <span className="star">
-                                <img
-                                  src="//static.naukimg.com/s/7/0/assets/images/node_modules/@naukri-ui-dev/premiumstandardads/component/assets/star.0f830ab5.svg"
-                                  alt="rating"
-                                  className="starImage"
-                                />
+                                <FaStar color="gold" size={16} />
                               </span>
                               <span className="rating">{company.rating}</span>
                             </>
@@ -407,7 +404,7 @@ const companies = [
         {/* View All Companies Link */}
         <a
           className="view-all-comp"
-          href="https://www.naukri.com/allcompanies?searchType=standardLogo&title=Sponsored+companies&branding=%257B%2522pagename%2522%253A%2522ni-desktop-standard-viewAll%2522%257D&pageNo=1&qcount=47"
+          href=""
           target="_blank"
           rel="noopener noreferrer"
         >

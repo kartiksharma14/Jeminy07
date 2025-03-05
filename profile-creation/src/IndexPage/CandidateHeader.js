@@ -1,4 +1,5 @@
 import React from "react";
+import { FaChevronDown } from "react-icons/fa"; // Import the icon
 import "./CandidateHeader.css";
 
 function CandidateHeader() {
@@ -13,12 +14,12 @@ function CandidateHeader() {
         {/* Logo Section */}
         <a
           className="nI-gNb-header__logo nI-gNb-company-logo"
-          href="https://www.naukri.com"
-          alt="Naukri Logo"
+          href="http://localhost:3000/"
+          alt="Jeminy Logo"
         >
           <img
-            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.PNG?raw=true"
-            alt="Naukri Logo"
+            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
+            alt="Jeminy Logo"
           />
         </a>
 
@@ -40,7 +41,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Popular Categories</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://www.naukri.com/it-jobs" title="IT Jobs">
+                    <a href="" title="IT Jobs">
                       <div>IT Jobs</div>
                     </a>
                   </li>
@@ -52,7 +53,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Jobs in Demand</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://www.naukri.com/fresher-jobs" title="Fresher Jobs">
+                    <a href="" title="Fresher Jobs">
                       <div>Fresher Jobs</div>
                     </a>
                   </li>
@@ -64,7 +65,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Jobs by Location</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://www.naukri.com/jobs-in-delhi-ncr" title="Jobs in Delhi">
+                    <a href="" title="Jobs in Delhi">
                       <div>Jobs in Delhi</div>
                     </a>
                   </li>
@@ -88,7 +89,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Explore Categories</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://www.naukri.com/unicorn-companies-in-india-cat102" title="Unicorn">
+                    <a href="" title="Unicorn">
                       <div>Unicorn</div>
                     </a>
                   </li>
@@ -100,7 +101,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Explore Collections</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://www.naukri.com/companies-hiring-in-india" title="Top Companies">
+                    <a href="" title="Top Companies">
                       <div>Top Companies</div>
                     </a>
                   </li>
@@ -147,7 +148,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Resume Writing</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://resume.naukri.com/resume-writing-services" target="_blank" rel="noreferrer" title="Text Resume">
+                    <a href="" target="_blank" rel="noreferrer" title="Text Resume">
                       <div>Text Resume</div>
                     </a>
                   </li>
@@ -159,7 +160,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Find Jobs</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://resume.naukri.com/job-alerts-on-mobile-mail#jobmail" target="_blank" rel="noreferrer" title="Jobs4u">
+                    <a href="" target="_blank" rel="noreferrer" title="Jobs4u">
                       <div>Jobs4u</div>
                     </a>
                   </li>
@@ -171,7 +172,7 @@ function CandidateHeader() {
                     <a className="nI-gNb-header1__headerAnchor">Get Recruiter's Attention</a>
                   </li>
                   <li className="nI-gNb-menuItems">
-                    <a href="https://resume.naukri.com/resume-display" target="_blank" rel="noreferrer" title="Resume Display">
+                    <a href="" target="_blank" rel="noreferrer" title="Resume Display">
                       <div>Resume Display</div>
                     </a>
                   </li>
@@ -208,24 +209,20 @@ function CandidateHeader() {
         <li className="nI-gNb-foremp nI-gNb-menuItems">
           <a className="nI-gNb-menuItems__anchorDropdown">
             <div className="for">
-              For Employers
+              For employers
               <div className="ni-gnb-icn ni-gnb-icn-expand-more nI-gNb-menuIcon"></div>
+              <FaChevronDown className="nI-gNb-menuIcon" />
             </div>
           </a>
           <div className="nI-gNb-dropdown nI-gNb-For employers">
             <ul className="nI-gNb-dropdownMenuGroup">
               <li className="nI-gNb-menuItems">
-                <a href="https://www.naukri.com/recruit/buy-resume-database-access-packages" title="Buy Online">
-                  <div>Buy Online</div>
+                <a href="" title="Buy Online">
+                  <div>Admin Login</div>
                 </a>
               </li>
               <li className="nI-gNb-menuItems">
-                <a href="https://www.naukritalentcloud.com?utmSource=jobseekerGNB" title="Hiring Solutions">
-                  <div>Naukri Talent Cloud</div>
-                </a>
-              </li>
-              <li className="nI-gNb-menuItems">
-                <a href="https://www.naukri.com/recruit/login" title="Employer Login">
+                <a href="./recruiter/login" title="Employer Login">
                   <div>Employer Login</div>
                 </a>
               </li>

@@ -9,14 +9,14 @@ const Footer = () => {
         <div className="footer-left">
           <a href="https://stl.tech" className="footer-logo">
             <img
-              src="https://github.com/kartiksharma14/photos/blob/main/logo%203.PNG?raw=true"
+              src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
               alt="STL Logo"
               className="footer-logo-img"
             />
           </a>
           {/* New Social Media Block (below the logo) */}
           <div className="nI-gNb-followus">
-            <a className="nI-gNb-heading" title="Connect with us">
+            <a className="nI-gNb-heading-f" title="Connect with us">
               Connect with us
             </a>
             <a

@@ -45,12 +45,14 @@
   }
   
   .add-btn {
-    padding: 8px 16px;
-    background-color: #007bff;
+    background-color: transparent;
+    color: var(--primary-color);
     border: none;
-    color: #fff;
-    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
     cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
   }
   
   .add-btn:hover {

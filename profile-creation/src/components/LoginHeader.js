@@ -7,7 +7,7 @@ function LoginHeader() {
       <div className="content">
         <a href="https://www.stl.tech">
           <img
-            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.PNG?raw=true"
+            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
             alt="Jeminy Logo"
           />
         </a>

@@ -11,7 +11,7 @@ const RecruiterFooter = () => {
                         <img
                             alt="STL Logo"
                             className="footer-logo-img"
-                            src="https://github.com/kartiksharma14/photos/blob/main/STL_GSB_Blue.png?raw=true"
+                            src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
                         />
                     </a>
                     <div className="footer-social-links">

@@ -25,18 +25,11 @@ const QuickLinks = () => {
   const [error, setError] = useState("");
   const [userId, setUserId] = useState(null);
   const [fileUploaded, setFileUploaded] = useState(false);
-  const [currentEmployment, setCurrentEmployment] = useState("Not available");
-  const [employmentType, setEmploymentType] = useState("Not available");
-  const [companyName, setCompanyName] = useState("Not available");
-  const [jobTitle, setJobTitle] = useState("Not available");
-  const [joiningDate, setJoiningDate] = useState("Not available");
-  const [currentSalary, setCurrentSalary] = useState("Not available");
-  const [skillUsed, setSkillUsed] = useState(["Not available"]);
-  const [jobProfile, setJobProfile] = useState("Not available");
-  const [noticePeriod, setNoticePeriod] = useState("Not available");
+  const [employmentRecords, setEmploymentRecords] = useState([]);
+  const [selectedEmploymentRecord, setSelectedEmploymentRecord] = useState(null);
+  const [employmentActionType, setEmploymentActionType] = useState("add"); // "add", "edit", or "delete"
 
-
-
+  // Suggested skills (if needed for other purposes)
   const suggestedSkills = [
     "Java",
     "SQL",
@@ -50,32 +43,14 @@ const QuickLinks = () => {
     "CSS",
   ];
 
+  // Toggle modal functions
   const toggleEmploymentModal = () => {
     setEmploymentModalOpen((prev) => !prev);
   };
 
-  const toggleKeySkillsModal = () => {
-    setKeySkillsModalOpen((prev) => !prev);
-  };
+  // Refresh functions to re-fetch the profile
 
-  const toggleResumeHeadlineModal = () => {
-    setResumeHeadlineModalOpen((prev) => !prev);
-  };
-  const refreshEmploymentDetails = () => {
-    fetchUserProfile(userId);  // Re-fetch user profile to update employment details
-    console.log("Employment details refreshed.");
-  };
-
-  const refreshKeySkills = () => {
-    fetchUserProfile(userId);  // Re-fetch user profile to update key skills
-    console.log("Key skills refreshed.");
-  };
-
-  const refreshResumeHeadline = () => {
-    fetchUserProfile(userId);  // Re-fetch user profile to update resume headline
-    console.log("Resume headline refreshed.");
-  };
-
+  // Add a new skill if it ends with a "+" in the input
   const addSkill = (skill) => {
     if (!skills.includes(skill)) {
       setSkills((prev) => [...prev, skill]);
@@ -92,8 +67,7 @@ const QuickLinks = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken"); // Get token from localStorage
-
+    const token = localStorage.getItem("authToken");
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
@@ -109,6 +83,7 @@ const QuickLinks = () => {
     }
   }, []);
 
+  // Updated fetchUserProfile function to use the new keyskills array
   const fetchUserProfile = async (userId) => {
     try {
       const response = await axiosInstance.get(`/candidate-profile/user-details/${userId}`);
@@ -124,65 +99,81 @@ const QuickLinks = () => {
         setResumeHeadline(user.resume_headline);
       }
 
-      if (user.key_skills) {
-        setSkills(user.key_skills.split(",").map((skill) => skill.trim()));
+      // Updated integration: use the new "keyskills" array instead of a comma-separated string
+      if (user.keyskills && Array.isArray(user.keyskills) && user.keyskills.length > 0) {
+        setSkills(user.keyskills.map((skillObj) => skillObj.keyskillsname));
+      } else {
+        setSkills([]);
+      }
+      if (user.employment && Array.isArray(user.employment)) {
+        setEmploymentRecords(user.employment);
+      } else {
+        setEmploymentRecords([]);
       }
 
-      // Fetch Employment Details Separately
-      if (user.current_employment) {
-        setCurrentEmployment(user.current_employment || "Not available");
-      }
-      if (user.employment_type) {
-        setEmploymentType(user.employment_type || "Not available");
-      }
-      if (user.current_company_name) {
-        setCompanyName(user.current_company_name || "Not available");
-      }
-      if (user.current_job_title) {
-        setJobTitle(user.current_job_title || "Not available");
-      }
-      if (user.joining_date) {
-        setJoiningDate(user.joining_date || "Not available");
-      }
-      if (user.current_salary) {
-        setCurrentSalary(user.current_salary || "Not available");
-      }
-      if (user.skill_used) {
-        setSkillUsed(user.skill_used.split(",").map((s) => s.trim()) || ["Not available"]);
-      }
-      if (user.job_profile) {
-        setJobProfile(user.job_profile || "Not available");
-      }
-      if (user.notice_period) {
-        setNoticePeriod(user.notice_period || "Not available");
-      }
+      // Employment details are now managed in EmploymentModal.
     } catch (err) {
       setError("Failed to fetch user profile.");
       console.error(err);
     }
   };
+  const refreshEmploymentDetails = () => {
+    fetchUserProfile(userId);
+    console.log("Employment details refreshed.");
+  };
 
+  const refreshKeySkills = () => {
+    fetchUserProfile(userId);
+    console.log("Key skills refreshed.");
+  };
+
+  const refreshResumeHeadline = () => {
+    fetchUserProfile(userId);
+    console.log("Resume headline refreshed.");
+  };
+
+  // Handlers to set the modal mode and selected record
+  const handleAdd = () => {
+    setSelectedEmploymentRecord(null);
+    setEmploymentActionType("add");
+    setEmploymentModalOpen(true);
+  };
+
+  const handleEdit = (record) => {
+    setSelectedEmploymentRecord(record);
+    setEmploymentActionType("edit");
+    setEmploymentModalOpen(true);
+  };
+
+  const handleDelete = (record) => {
+    setSelectedEmploymentRecord(record);
+    setEmploymentActionType("delete");
+    setEmploymentModalOpen(true);
+  };
+
+  const toggleKeySkillsModal = () => {
+    setKeySkillsModalOpen((prev) => !prev);
+  };
+
+  const toggleResumeHeadlineModal = () => {
+    setResumeHeadlineModalOpen((prev) => !prev);
+  };
 
   return (
     <div className="main-container">
       {/* Sidebar Section */}
-      <div className="sidebar">
+      <div className="sidebar-cad">
         <div className="card quickLink">
           <ul className="collection">
             <li className="collection-header">Quick Links</li>
             <li className="collection-item">
-              <a href="#resume-section" className="action-link">
-                Resume
-              </a>
+              <a href="#resume-section" className="action-link">Resume</a>
             </li>
             <li className="collection-item">
               <a
                 href="#headline-section"
                 className="action-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  toggleResumeHeadlineModal();
-                }}
+                onClick={(e) => { e.preventDefault(); toggleResumeHeadlineModal(); }}
               >
                 Resume Headline
               </a>
@@ -191,53 +182,34 @@ const QuickLinks = () => {
               <a
                 href="#skills-section"
                 className="action-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  toggleKeySkillsModal();
-                }}
+                onClick={(e) => { e.preventDefault(); toggleKeySkillsModal(); }}
               >
                 Key Skills
               </a>
             </li>
             <li className="collection-item">
-              <a href="#employment-section" className="action-link">
-                Employment
-              </a>
+              <a href="#employment-section" className="action-link">Employment</a>
             </li>
             <li className="collection-item">
-              <a href="#education-section" className="action-link">
-                Education
-              </a>
+              <a href="#education-section" className="action-link">Education</a>
             </li>
             <li className="collection-item">
-              <a href="#it-skills-section" className="action-link">
-                IT Skills
-              </a>
+              <a href="#it-skills-section" className="action-link">IT Skills</a>
             </li>
             <li className="collection-item">
-              <a href="#projects-section" className="action-link">
-                Projects
-              </a>
+              <a href="#projects-section" className="action-link">Projects</a>
             </li>
             <li className="collection-item">
-              <a href="#profile-summary-section" className="action-link">
-                Profile Summary
-              </a>
+              <a href="#profile-summary-section" className="action-link">Profile Summary</a>
             </li>
             <li className="collection-item">
-              <a href="#accomplishments-section" className="action-link">
-                Accomplishments
-              </a>
+              <a href="#accomplishments-section" className="action-link">Accomplishments</a>
             </li>
             <li className="collection-item">
-              <a href="#career-profile-section" className="action-link">
-                Career Profile
-              </a>
+              <a href="#career-profile-section" className="action-link">Career Profile</a>
             </li>
             <li className="collection-item">
-              <a href="#personal-details-section" className="action-link">
-                Personal Details
-              </a>
+              <a href="#personal-details-section" className="action-link">Personal Details</a>
             </li>
           </ul>
         </div>
@@ -283,7 +255,7 @@ const QuickLinks = () => {
                             {fileUploaded ? "Update resume" : "Upload resume"}
                           </label>
                         </div>
-                        <br></br>
+                        <br />
                         {fileUploaded ? resume + ".pdf" : ""}
                       </div>
                     </div>
@@ -305,9 +277,7 @@ const QuickLinks = () => {
             <div className="headline-text">
               <p>{resumeHeadline || "No headline set."}</p>
             </div>
-            <button className="edit-btn" onClick={toggleResumeHeadlineModal}>
-              Edit
-            </button>
+            <button className="edit-btn" onClick={toggleResumeHeadlineModal}>Edit</button>
           </div>
         </div>
 
@@ -320,43 +290,86 @@ const QuickLinks = () => {
               {skills.length > 0 ? (
                 <div className="skills-list">
                   {skills.map((skill, index) => (
-                    <span key={index} className="skill-tag">
-                      {skill}
-                    </span>
+                    <span key={index} className="skill-tag">{skill}</span>
                   ))}
                 </div>
               ) : (
                 <p>No skills added.</p>
               )}
             </div>
-            <button className="add-btn" onClick={toggleKeySkillsModal}>
-              Edit Key Skills
-            </button>
+            <button className="add-btn" onClick={toggleKeySkillsModal}>Edit Key Skills</button>
           </div>
         </div>
 
-        <div id="employment-section" className="resume-card employment-card">
-          <div className="title">Employment</div>
-          <div className="headline-section">
-            <div className="employment-entry">
-              <p>
-                <strong>Employment Status:</strong> {currentEmployment} <br />
-                <strong>Employment Type:</strong> {employmentType} <br />
-                <strong>Company:</strong> {companyName} <br />
-                <strong>Job Title:</strong> {jobTitle} <br />
-                <strong>Joining Date:</strong> {joiningDate} <br />
-                <strong>Salary:</strong> ₹{currentSalary} <br />
-                <strong>Skills Used:</strong> {skillUsed.join(", ")} <br />
-                <strong>Job Profile:</strong> {jobProfile} <br />
-                <strong>Notice Period:</strong> {noticePeriod}
-              </p>
+ {/* Employment Section (Display as provided) */}
+ <div id="employment-section" className="employment-section">
+          <div className="card">
+            <div className="widgetHead">
+              <span className="widgetTitle-cad typ-16Bold">Employment</span>
+              <span
+                className="add no-outline typ-16Bold"
+                id="add-employment"
+                tabIndex="0"
+                onClick={handleAdd}
+              >
+                Add employment
+              </span>
             </div>
-            <button className="add-btn" onClick={toggleEmploymentModal}>Edit Employment</button>
+            <div className="widgetCont">
+              {employmentRecords.length > 0 ? (
+                employmentRecords.map((record) => (
+                  <div key={record.employment_id} className="row emp-list">
+                    <div className="item title typ-14Bold">
+                      <span className="truncate emp-desg" title={record.current_job_title}>
+                        {record.current_job_title || "N/A"}
+                      </span>
+                      <span
+                        className="edit icon typ-14Medium"
+                        tabIndex="0"
+                        onClick={() => handleEdit(record)}
+                      >
+                      edit
+                      </span>
+                    </div>
+                    <div className="item">
+                      <span className="truncate typ-14Medium emp-org" title={record.current_company_name}>
+                        {record.current_company_name || "N/A"}
+                      </span>
+                    </div>
+                    <div className="item experienceType typ-14Regular">
+                      <span className="truncate expType">
+                        {record.employment_type || "N/A"}
+                      </span>
+                      <span className="ver-line"></span>
+                      <span className="truncate">
+                        {record.joining_date ? record.joining_date.substring(0, 10) : "N/A"} to{" "}
+                        {record.current_employment === "Yes" ? "Present" : "N/A"}
+                      </span>
+                    </div>
+                    <div className="item emp-notice-prd typ-14Medium">
+                      {record.notice_period ? `${record.notice_period} days Notice Period` : "N/A"}
+                    </div>
+                    <div className="item prefill emp-desc typ-14Medium">
+                      <div>{record.job_profile || "N/A"}</div>
+                    </div>
+                    <div className="keyskillList item typ-14Medium">
+                      <span className="keySkillHeading">Top 5 key skills:</span>
+                      <span className="txt-col-n6">{record.skill_used || "N/A"}</span>
+                    </div>
+                    <div className="record-actions">
+                      <button onClick={() => handleEdit(record)}>Edit</button>
+                      <button onClick={() => handleDelete(record)}>Delete</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p>No employment records found.</p>
+              )}
+            </div>
           </div>
         </div>
 
-
-
+        {/* Modals */}
         <EmploymentModal
           isOpen={isEmploymentModalOpen}
           toggleModal={toggleEmploymentModal}
@@ -375,27 +388,26 @@ const QuickLinks = () => {
           refreshResumeHeadline={refreshResumeHeadline}
         />
 
-
         {/* Other Sections */}
-        <div id="education-section" className="resume-card">
+        <div id="education-section">
           <Education />
         </div>
-        <div id="it-skills-section" className="resume-card">
+        <div id="it-skills-section" >
           <ITSkills />
         </div>
-        <div id="projects-section" className="resume-card">
+        <div id="projects-section" >
           <Projects />
         </div>
-        <div id="profile-summary-section" className="resume-card">
+        <div id="profile-summary-section" >
           <ProfileSummary />
         </div>
-        <div id="accomplishments-section" className="resume-card">
+        <div id="accomplishments-section" >
           <Accomplishments />
         </div>
-        <div id="career-profile-section" className="resume-card">
+        <div id="career-profile-section" >
           <CareerProfile />
         </div>
-        <div id="personal-details-section" className="resume-card">
+        <div id="personal-details-section" >
           <PersonalDetails />
         </div>
       </div>
