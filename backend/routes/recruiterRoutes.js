@@ -66,7 +66,12 @@ router.get("/jobs/status", authenticateToken, recruiterController.getAllJobsWith
 router.get("/jobs/pending", authenticateToken, recruiterController.getPendingJobs);
 router.get("/jobs/approved", authenticateToken, recruiterController.getApprovedJobs);
 router.get("/jobs/rejected", authenticateToken, recruiterController.getRejectedJobs);
-
 router.get('/jobs/:id', authenticateToken, recruiterController.getJobPostById);
+
+// Job Application Management Routes
+router.get('/applications', authenticateToken, recruiterController.getJobApplications);
+router.get('/applications/:application_id', authenticateToken, recruiterController.getApplicationDetail);
+router.patch('/applications/:application_id/status', authenticateToken, recruiterController.updateApplicationStatus);
+
 
 module.exports = router;

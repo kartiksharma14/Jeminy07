@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../db'); // Ensure this points to your Sequelize instance
+const { sequelize } = require('../db'); // Ensure this points to your Sequelize instance
 const CandidateProfile = require('./candidateProfile');
 const JobPost = require('./jobpost');
 
@@ -28,6 +28,11 @@ const JobApplication = sequelize.define('JobApplication', {
     applied_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
+    },
+    status: {
+        type: DataTypes.ENUM('pending', 'reviewing', 'selected', 'rejected'),
+        defaultValue: 'pending',
+        allowNull: false
     }
 }, {
     tableName: 'job_applications',
