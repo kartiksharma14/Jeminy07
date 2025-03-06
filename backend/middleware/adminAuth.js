@@ -1,67 +1,35 @@
-/*const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
-module.exports = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
-  }
-
+exports.verifyToken = (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, 'your-secret-key');
-    req.admin = decoded; // Attach admin data to the request object
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    // Extract token
+    const token = authHeader.split(" ")[1];
+
+    // Verify token
+    //jwt.verify(token, process.env.JWT_SECRET);
+    // Verify token AND decode it
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Set the user data in the request object
+    req.user = {
+        candidate_id: decoded.userId,  // Map userId to candidate_id
+        email: decoded.email
+      };
+      
+    // Token is valid, proceed to next middleware
     next();
-  } catch (err) {
-    res.status(404).json({ error: 'Invalid token.' });
-  }
-};*/
-
-
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const path = require('path');
-
-// Admin Authentication Middleware (Unchanged)
-module.exports = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, 'your-secret-key');
-    req.admin = decoded; // Attach admin data to the request object
-    next();
-  } catch (err) {
-    res.status(404).json({ error: 'Invalid token.' });
+  } catch (error) {
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Token expired" });
+    }
+    return res.status(500).json({ error: "Failed to authenticate token" });
   }
 };
-
-// Multer storage configuration for handling CSV/Excel file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Save files in the "uploads" folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// File filter to allow only CSV and Excel files
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /csv|xlsx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = file.mimetype.includes('spreadsheet') || file.mimetype.includes('csv');
-
-  if (extname && mimetype) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only CSV and Excel files are allowed!'), false);
-  }
-};
-
-// Multer middleware for file uploads
-const upload = multer({ storage, fileFilter });
-
-module.exports.upload = upload;
