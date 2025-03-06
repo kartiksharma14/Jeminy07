@@ -60,7 +60,10 @@ const {
   getApplicationDetails,
   saveJob,
   unsaveJob,
-  getSavedJobs
+  getSavedJobs,
+  getCandidateApplications,
+  getCandidateApplicationDetail,
+  withdrawApplication
 } = require("../controllers/JobApplicationController");
 
 console.log("searchCandidatesByCity:", searchCandidatesByCity);
@@ -198,19 +201,17 @@ router.get('/jobs/search', verifyToken, searchJobs);
 
 // Candidate applies for a job
 router.post('/apply/:job_id', verifyToken, applyForJob);
-
 // Get candidate's job applications
-router.get('/applications', verifyToken, getMyApplications);
-
-// Get application details
-router.get('/applications/:application_id', verifyToken, getApplicationDetails);
-
+router.get('/candidate/applications', verifyToken, getCandidateApplications);
+// Get detailed information about a specific application
+router.get('/candidate/applications/:application_id', verifyToken, getCandidateApplicationDetail);
+// Withdraw an application
+router.patch('/candidate/applications/:application_id/withdraw', verifyToken, withdrawApplication);
 // Save job for later
 router.post('/jobs/:job_id/save', verifyToken, saveJob);
-
 // Unsave a job
 router.delete('/jobs/:job_id/save', verifyToken, unsaveJob);
-
 // Get saved jobs
 router.get('/saved-jobs', verifyToken, getSavedJobs);
+
 module.exports = router;
