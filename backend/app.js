@@ -26,7 +26,6 @@ const authController = require("./controllers/authController");
 const candidateProfileController = require("./controllers/candidateProfileController");
 const recruiterController = require("./controllers/recruiterController");
 const adminController = require("./controllers/adminController");
-
 // Define model associations
 const initializeAssociations = () => {
     // Create a models object to use for associations
