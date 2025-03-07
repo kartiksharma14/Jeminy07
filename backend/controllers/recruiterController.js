@@ -1251,9 +1251,6 @@ exports.testEmail = async (req, res) => {
       message: 'Error sending test email',
       error: error.message
     });
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
   }
 };
 
@@ -1300,7 +1297,5 @@ exports.testEmail = async (req, res) => {
       message: 'Error sending test email',
       error: error.message
     });
-=======
->>>>>>> Stashed changes
   }
 };
