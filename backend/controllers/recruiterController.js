@@ -1202,52 +1202,7 @@ exports.updateApplicationStatus = async (req, res) => {
       error: error.message
     });
 <<<<<<< Updated upstream
-  }
-};
-
-// Test email function to verify your configuration works
-exports.testEmail = async (req, res) => {
-  try {
-    // Log email configuration for debugging
-    console.log('Email Configuration:', {
-      username: process.env.MAIL_USERNAME,
-      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
-    });
-    
-    // Create test email
-    const mailOptions = {
-      from: process.env.MAIL_USERNAME,
-      to: process.env.MAIL_USERNAME, // Send to yourself for testing
-      subject: 'Email Test from Job Portal',
-      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
-    };
-    
-    // Send email and wait for response
-    const info = await new Promise((resolve, reject) => {
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error('Detailed email error:', error);
-          reject(error);
-        } else {
-          resolve(info);
-        }
-      });
-    });
-    
-    console.log('Email test successful:', info.response);
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Test email sent successfully',
-      emailInfo: info.response
-    });
-  } catch (error) {
-    console.error('Error sending test email:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error sending test email',
-      error: error.message
-    });
+<<<<<<< Updated upstream
 =======
 >>>>>>> Stashed changes
   }
@@ -1296,5 +1251,56 @@ exports.testEmail = async (req, res) => {
       message: 'Error sending test email',
       error: error.message
     });
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+  }
+};
+
+// Test email function to verify your configuration works
+exports.testEmail = async (req, res) => {
+  try {
+    // Log email configuration for debugging
+    console.log('Email Configuration:', {
+      username: process.env.MAIL_USERNAME,
+      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+    });
+    
+    // Create test email
+    const mailOptions = {
+      from: process.env.MAIL_USERNAME,
+      to: process.env.MAIL_USERNAME, // Send to yourself for testing
+      subject: 'Email Test from Job Portal',
+      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
+    };
+    
+    // Send email and wait for response
+    const info = await new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Detailed email error:', error);
+          reject(error);
+        } else {
+          resolve(info);
+        }
+      });
+    });
+    
+    console.log('Email test successful:', info.response);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Test email sent successfully',
+      emailInfo: info.response
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+=======
+>>>>>>> Stashed changes
   }
 };

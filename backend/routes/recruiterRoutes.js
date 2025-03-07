@@ -78,7 +78,11 @@ router.patch('/applications/:application_id/status', authenticateToken, recruite
 router.get('/test-email', authenticateToken, recruiterController.testEmail);
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> Stashed changes
 =======
 module.exports = router;
 >>>>>>> Stashed changes

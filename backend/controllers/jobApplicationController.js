@@ -760,7 +760,11 @@ exports.searchJobsByDesignation = async (req, res) => {
       });
     }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   };
+=======
+  };
+>>>>>>> Stashed changes
 =======
   };
 >>>>>>> Stashed changes
