@@ -759,12 +759,8 @@ exports.searchJobsByDesignation = async (req, res) => {
         error: error.message
       });
     }
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   };
 =======
   };
->>>>>>> Stashed changes
 =======
   };
->>>>>>> Stashed changes
