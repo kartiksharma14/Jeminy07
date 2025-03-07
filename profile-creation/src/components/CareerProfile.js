@@ -383,7 +383,7 @@ const CareerProfile = () => {
             </div>
           </div>
           <div className="crossLayer" onClick={() => setIsModalOpen(false)}>
-            <span className="icon">CrossLayer</span>
+            <span className="icon">X</span>
           </div>
         </div>
       )}

@@ -163,7 +163,7 @@ const QuickLinks = () => {
     <div className="main-container">
       {/* Sidebar Section */}
       <div className="sidebar-cad">
-        <div className="card quickLink">
+        <div className="card-quickLink">
           <ul className="collection">
             <li className="collection-header">Quick Links</li>
             <li className="collection-item">

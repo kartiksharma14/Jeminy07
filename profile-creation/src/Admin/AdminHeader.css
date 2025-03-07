@@ -1,0 +1,28 @@
+/* src/styles/AdminHeader.css */
+.admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2c3e50;
+    padding: 10px 20px;
+    color: #fff;
+  }
+  .admin-logo img {
+    height: 40px;
+  }
+  .admin-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+    margin: 0;
+    padding: 0;
+  }
+  .admin-nav ul li a {
+    color: #fff;
+    text-decoration: none;
+  }
+  .admin-profile a {
+    color: #fff;
+    text-decoration: none;
+  }
+  

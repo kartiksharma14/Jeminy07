@@ -17,7 +17,7 @@ function PrivateRouteRecruiter({ children }) {
     console.log("Decoded Token:", decodedToken);
 
     // ✅ Check if recruiter_id exists in token payload
-    if (!decodedToken || !decodedToken.recruiter_id) {
+    if (!decodedToken || !decodedToken.email) {
       console.log("Invalid token: Redirecting to /recruiter/login");
       return <Navigate to="/recruiter/login" replace />;
     }

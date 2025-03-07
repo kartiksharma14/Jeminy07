@@ -1,0 +1,530 @@
+.main-content-job {
+  flex: 1;
+  padding: 12px 20px 20px;
+  margin: 20px 20px 20px 0;
+  background-color: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+}
+.rich-text-editor {
+  width: 100%;
+  height: 150px; /* Set a fixed height */
+  resize: none; /* Prevent resizing */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  padding: 1rem;
+  resize: none;
+  min-height: 200px;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box; /* ensures padding is included in width calculation */
+  overflow-y: hidden; /* Hides the vertical scrollbar */
+  overflow-x: hidden;
+}
+.job-posting-form {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 50px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.form-title {
+  font-size: 24px;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.form-description {
+  color: #718096;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+
+.form-label {
+  display: block;
+  color: #4a5568;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.form-text {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.required {
+  color: #e53e3e;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin: 32px 0 48px 0; /* Add margin to separate from footer */
+  gap: 16px; /* Use gap for consistent spacing */
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: none;
+}
+
+.form-item-width {
+  width: 256px;
+}
+
+.textarea-counter {
+  text-align: right;
+  font-size: 12px;
+  color: #718096;
+}
+
+/* Flex Container */
+.flex-container {
+  display: flex;
+  gap: 12px;
+}
+
+.flex-item {
+  flex: 1;
+}
+
+/* Button Styles */
+.prefill-button,
+.schedule-button,
+.upload-button,
+.reference-button {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.preview-button {
+  background-color: #5c66d1;
+  color: white;
+  padding: 12px 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  text-align: center;
+  font-weight: 500; /* Slightly bolder text */
+  font-size: 16px;
+  min-width: 160px; /* Set fixed minimum width for both buttons */
+  margin: 8px; /* Add some margin between buttons */
+}
+
+
+
+
+/* Diversity Section */
+.diversity-container {
+  background-color: #f5f3ff;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.flex-start {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.checkbox-input {
+  margin-top: 4px;
+}
+
+.diversity-label {
+  color: #4a5568;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4a5568;
+}
+
+.card {
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  width: 100%;
+  box-sizing: border-box; /* Add this to include padding in width calculation */
+  margin-bottom: 24px; /* Add space before buttons */
+}
+
+/* Description Container */
+.description-container {
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  overflow: hidden; /* Add this to contain all child elements */
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* This prevents content from spilling out */
+}
+
+.description-toolbar {
+  border-bottom: 1px solid #cbd5e0;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  background-color: #f9fafb;
+}
+
+.toolbar-button {
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toolbar-button:hover {
+  background-color: #e5e7eb;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.upload-button {
+  margin-left: auto;
+}
+
+.description-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.content-title {
+  font-weight: 500;
+  text-align: left;
+}
+
+/* Additional Options */
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Company Information */
+.form-textarea-company {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  font-size: 14px;
+  resize: none;
+  box-sizing: border-box; /* Add this to include padding in width calculation */
+  min-height: 180px; /* Set a minimum height for the textarea */
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+/* Footer  */
+.footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.refresh-text {
+  color: #4a5568;
+}
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  width: 80px;
+  margin-right: 10px;
+}
+
+.navigation {
+  display: flex;
+  /* Arrange navigation items horizontally */
+  gap: 30px;
+  /* Space between navigation items */
+  align-items: center;
+  display: flex;
+  justify-content: flex-start; /* Align buttons to the left */
+  padding: 10px;
+  
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  color: #f5f0f0;
+  /* Darker color for better visibility */
+  text-decoration: none;
+  /* Remove underlines */
+  cursor: pointer;
+  padding: 5px 10px;
+  /* Add some padding for a button look */
+  font-size: 16px;
+  /* Adjust font size as needed */
+}
+
+.nav-button:hover {
+  background-color: #ddd;
+  /* Add a slight background on hover */
+  border-radius: 5px;
+}
+
+
+
+
+
+.stl-logo {
+  width: 100px;
+}
+
+.recruiter-helpline {
+  font-size: 15px;
+  color: #f8f5f5;
+  margin-top: 10px;
+}
+
+
+
+
+
+.search-container {
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 150px; 
+  font-size: 12px; 
+}
+
+.search-button {
+  background-color: #4c4faf;
+  color: white;
+  border: none;
+  padding: 6px 8px; 
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 3px;
+  font-size: 12px; 
+}
+
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px; 
+  color: #e7e4e4;
+}
+.page-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make the textarea static and non-resizable */
+.form-textarea-job-description {
+  width: 100%;
+  height: 150px; /* Set a fixed height */
+  resize: none; /* Prevent resizing */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  padding: 1rem;
+  resize: none;
+  min-height: 200px;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box; /* ensures padding is included in width calculation */
+  overflow-y: hidden; /* Hides the vertical scrollbar */
+  overflow-x: hidden;
+}
+
+/* character counter */
+.textarea-counter {
+  text-align: right;
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+/*Key Skills*/
+.skills-input-container {
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 100px;
+  background-color: white;
+}
+
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.skill-tag {
+  background-color: #eef5fb; /* softer background */
+  color: #1d74b7;           /* refined blue text */
+  padding: 6px 12px;
+  border-radius: 20px;      /* pill shape for a modern look */
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;                /* space between text and any icon */
+  border: 1px solid #cfdfe6; /* subtle border */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.skill-tag:hover {
+  background-color: #dbe9f3;
+  border-color: #a7c4d4;
+}
+
+
+.remove-skill {
+  background: none;
+  border: none;
+  color: #1976d2;
+  margin-left: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+.remove-skill-button {
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #1976d2;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.remove-skill-button:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  transform: scale(1.1);
+}
+.rdw-editor-toolbar {
+  border-bottom: 1px solid #cbd5e0;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  background-color: #f9fafb;
+}
+.rdw-option-wrapper {
+    padding: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+
+}
+.remove-skill:hover {
+  color: #1565c0;
+}
+
+.skills-text-input {
+  width: 100%;
+  border: none;
+  padding: 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+.skills-text-input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.skills-counter {
+  font-size: 12px;
+  color: #718096;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.suggestions-container {
+  margin-top: 8px;
+}
+
+.suggestions-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #4a5568;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-button {
+  background-color: #f5f5f5;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+}
+
+.suggestion-button:hover {
+  background-color: #e0e0e0;
+}

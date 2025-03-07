@@ -1,0 +1,12 @@
+/* src/styles/ManageRecruiters.css */
+.manage-recruiters {
+    padding: 20px;
+  }
+  .recruiters-list {
+    margin-top: 20px;
+  }
+  .recruiter-item {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+  }
+  

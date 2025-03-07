@@ -6,7 +6,6 @@ import SearchResumesPage from "./SearchResumesPage";
 import CandidateLogin from "./CandidateLogin";
 import CandidateSignup from "./CandidateSignup";
 import RecruiterLogin from "./RecruiterLogin";
-import RecruiterSignup from "./RecruiterSignup";
 import { AuthProvider } from "./AuthProvider";
 import PrivateRouteCandidate from "./PrivateRouteCandidate";
 import PrivateRouteRecruiter from "./PrivateRouteRecruiter";
@@ -14,6 +13,14 @@ import HomePage from "./Homepage";
 import CandidateMain from "./IndexPage/CandidateMain";
 import CandidatesList from "./components/CandidatesList";
 import FetchedUser from "./components/FetchedUser";
+
+// Import admin components
+import AdminPage from "./AdminPage";
+import AdminLogin from "./Admin/AdminLogin";
+import PrivateRouteAdmin from "./PrivateRouteAdmin";
+import JobPostingForm from "./JobPosting/JobPostingForm";
+import JobPreview from "./JobPosting/JobPreview";
+import JobSuccess from "./JobPosting/JobSuccess";
 
 function App() {
   return (
@@ -26,8 +33,7 @@ function App() {
             <Route path="/candidate/login" element={<CandidateLogin />} />
             <Route path="/candidate/signup" element={<CandidateSignup />} />
             <Route path="/recruiter/login" element={<RecruiterLogin />} />
-            <Route path="/recruiter/signup" element={<RecruiterSignup />} />
-
+            <Route path="/admin/login" element={<AdminLogin />} />
             {/* 🔒 Protected Routes for Candidates */}
             <Route
               path="/home"
@@ -48,7 +54,7 @@ function App() {
 
             {/* 🔒 Protected Routes for Recruiters */}
             <Route
-              path="/recruiter"
+              path="/recruiter/*"
               element={
                 <PrivateRouteRecruiter>
                   <RecruiterPage />
@@ -77,6 +83,40 @@ function App() {
                 <PrivateRouteRecruiter>
                   <FetchedUser />
                 </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/post-job/"
+              element={
+                <PrivateRouteRecruiter>
+                  <JobPostingForm/>
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/preview"
+              element={
+                <PrivateRouteRecruiter>
+                  <JobPreview/>
+                </PrivateRouteRecruiter>
+              }
+            />
+             <Route
+              path="/job-success"
+              element={
+                <PrivateRouteRecruiter>
+                  <JobSuccess/>
+                </PrivateRouteRecruiter>
+              }
+            />
+
+            {/* 🔒 Protected Routes for Admin */}
+            <Route
+              path="/admin/*"
+              element={
+                <PrivateRouteAdmin>
+                  <AdminPage />
+                </PrivateRouteAdmin>
               }
             />
           </Routes>

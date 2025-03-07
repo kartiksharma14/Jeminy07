@@ -10,7 +10,7 @@ const CandidateModal = ({ candidate, onClose, onToggleFavorite, isFavorite }) =>
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState(null);
   const AUTH_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjQsImVtYWlsIjoicmVjcnVpdGVya2FydGlrQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQwNDczOTMzLCJleHAiOjE3NDA3MzMxMzN9.2PfTGvc51N1u6LRPgJo4IvfF_qluUNw33aXPifa8dR0";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjYsImVtYWlsIjoibmF2bmVldC5rYXVzaGlrQHN0bC50ZWNoIiwibm1hZSI6Ik5hdm5lZXQgS2F1c2hpayIsImNvbXBhbnlfbmFtZSI6IlNUTCIsImlhdCI6MTc0MTI1NzUzNCwiZXhwIjoxNzQ5ODk3NTM0fQ.Giv3hvdlLpnv2jfHNR0lawe3OV9QaErRf9OeL_v5ykE";
   
   useEffect(() => {
     if (candidate) {
@@ -360,6 +360,7 @@ const experienceText =
   totalExperience.years === 0 && totalExperience.months === 0
     ? "Fresher"
     : `${totalExperience.years} yrs ${totalExperience.months} months`;
+    const currentSalary = candidate.EmploymentDetails?.[0]?.current_salary || "Not Available";
 const [showPhone, setShowPhone] = useState(false);
 
   return (
@@ -379,7 +380,7 @@ const [showPhone, setShowPhone] = useState(false);
         {/* Work Experience, Salary, Location */}
         <div className="candidate-info">
           <span><FaBriefcase /> {experienceText}</span>
-          <span><FaWallet /> {candidate.EmploymentDetails[0].current_salary || "N/A"}</span>
+          <span><FaWallet/>{currentSalary}</span>
          <span><FaMapMarkerAlt /> {candidate.location || "N/A"}</span>
         </div>
 
@@ -424,7 +425,7 @@ const CandidatesList = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const AUTH_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjQsImVtYWlsIjoicmVjcnVpdGVya2FydGlrQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQwNDczOTMzLCJleHAiOjE3NDA3MzMxMzN9.2PfTGvc51N1u6LRPgJo4IvfF_qluUNw33aXPifa8dR0";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjYsImVtYWlsIjoibmF2bmVldC5rYXVzaGlrQHN0bC50ZWNoIiwibm1hZSI6Ik5hdm5lZXQgS2F1c2hpayIsImNvbXBhbnlfbmFtZSI6IlNUTCIsImlhdCI6MTc0MTI1NzUzNCwiZXhwIjoxNzQ5ODk3NTM0fQ.Giv3hvdlLpnv2jfHNR0lawe3OV9QaErRf9OeL_v5ykE";
 
   // Candidate list states.
   const [candidates, setCandidates] = useState([]);

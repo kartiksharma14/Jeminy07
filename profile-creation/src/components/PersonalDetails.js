@@ -142,7 +142,7 @@ const PersonalDetails = () => {
           tabIndex="0"
           onClick={() => setIsModalOpen(true)}
         >
-          edit
+          Edit
         </span>
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
@@ -413,7 +413,7 @@ const PersonalDetails = () => {
             </div>
           </div>
           <div className="crossLayer" onClick={() => setIsModalOpen(false)}>
-            <span className="icon">CrossLayer</span>
+            <span className="icon">X</span>
           </div>
         </div>
       )}

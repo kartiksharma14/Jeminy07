@@ -1,0 +1,66 @@
+/* src/components/AdminLogin.css */
+
+.admin-login-container {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  
+  .admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .admin-form input {
+    padding: 8px;
+    font-size: 16px;
+  }
+  
+  .admin-form button {
+    padding: 10px;
+    font-size: 16px;
+    background-color: #2c3e50;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .error {
+    color: red;
+    font-size: 14px;
+  }
+  
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 400px;
+  }
+  
+  .modal-content h2 {
+    margin-top: 0;
+  }
+  
+  .close-btn-admin {
+    margin-top: 10px;
+    background: #ccc;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+  }
+  

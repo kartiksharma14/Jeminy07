@@ -1,0 +1,96 @@
+/* JobSuccess.css */
+
+.success-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  
+  .success-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .success-icon {
+    margin: 0 auto 20px;
+  }
+  
+  .success-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 25px;
+  }
+  
+  .job-details-summary {
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: left;
+  }
+  
+  .detail-item {
+    display: flex;
+    margin-bottom: 12px;
+  }
+  
+  .detail-label {
+    flex: 0 0 40%;
+    font-weight: 500;
+    color: #555;
+  }
+  
+  .detail-value {
+    flex: 0 0 60%;
+    color: #333;
+  }
+  
+  .job-id {
+    font-weight: 600;
+    color: #32a852;
+  }
+  
+  .success-message {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 30px;
+  }
+  
+  .success-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .view-jobs-button, .post-new-button {
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .view-jobs-button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+  
+  .view-jobs-button:hover {
+    background-color: #e6e6e6;
+  }
+  
+  .post-new-button {
+    background-color: #0077cc;
+    color: white;
+    border: none;
+  }
+  
+  .post-new-button:hover {
+    background-color: #005fa3;
+  }

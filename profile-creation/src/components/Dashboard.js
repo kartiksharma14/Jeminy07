@@ -1,75 +1,90 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
+import {jwtDecode} from "jwt-decode";
+const JobStatus = () => {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust this value to show more/less jobs per page
 
-const SavedSearches = () => {
+  // Retrieve token from localStorage (or your preferred storage)
+  const token = localStorage.getItem('authToken');
+
+  useEffect(() => {
+    if (!token) {
+      console.error('No token found. Please log in.');
+      setLoading(false);
+      return;
+    }
+    fetch('http://localhost:5000/api/recruiter/jobs/status', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setJobs(data.jobs);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching job status:', err);
+        setLoading(false);
+      });
+  }, [token]);
+
+  if (loading) {
+    return <div>Loading job status...</div>;
+  }
+
+  // Pagination logic
+  const indexOfLastJob = currentPage * itemsPerPage;
+  const indexOfFirstJob = indexOfLastJob - itemsPerPage;
+  const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil(jobs.length / itemsPerPage);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
   return (
-    <div className="saved-searches">
+    <div className="job-status">
       <div className="heading flex-row">
-        <strong className="history-header">Saved Searches</strong>
-        <a href="/v2/search/savedSearches" className="link ext">
-          View All
-        </a>
+        <strong className="history-header">Job Status</strong>
       </div>
-      <div className="s-search-list">
+      <div className="job-list">
         <div className="scrollable">
           <ul>
-            <li>
-              <div className="search-item">
-                <h4 className="req">Execution Head_2</h4>
-                <p className="search-details">
-                  RoW, Vendor Management, Quality Process, Optical Testing, OFC, NLD, Project
-                  Management | &gt;=13 years | 5-15 Lacs | Bhubaneswar, Kolkata, Ahmedabad
-                </p>
-                <div className="actions flex-row">
-                  <a className="link fillSearch" href="/v3?agentId=65394872">
-                    Fill this search
-                  </a>
-                  <a className="link ext" href="/v3/search?agentId=65394872">
-                    10+ new profiles
-                  </a>
+            {currentJobs.map((job) => (
+              <li key={job.job_id}>
+                <div className="job-item">
+                  <h4 className="job-title">{job.jobTitle}</h4>
+                  <p className="job-details">
+                    Status: {job.status} | Created on: {new Date(job.job_creation_date).toLocaleDateString()} | Location: {job.locations}
+                  </p>
                 </div>
-              </div>
-            </li>
-            <li>
-              <div className="search-item">
-                <h4 className="req">Execution Head_1</h4>
-                <p className="search-details">
-                  Vendor Management, OFC, NLD, Deployment, Execution | &gt;=13 years | 5-15 Lacs |
-                  Bhubaneswar, Kolkata, Ahmedabad
-                </p>
-                <div className="actions flex-row">
-                  <a className="link fillSearch" href="/v3?agentId=65392286">
-                    Fill this search
-                  </a>
-                  <a className="link ext" href="/v3/search?agentId=65392286">
-                    10+ new profiles
-                  </a>
-                </div>
-              </div>
-            </li>
-            <li>
-              <div className="search-item">
-                <h4 className="req">CS - Pune</h4>
-                <p className="search-details">
-                  Sebi, Sebi Regulations, FEMA, Listing Agreement, Company Secretary | &gt;=6 years |
-                  &lt;=8 Lacs | Pune
-                </p>
-                <div className="actions flex-row">
-                  <a className="link fillSearch" href="/v3?agentId=65289732">
-                    Fill this search
-                  </a>
-                  <a className="link ext" href="/v3/search?agentId=65289732">
-                    1000+ new profiles
-                  </a>
-                </div>
-              </div>
-            </li>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
+      {totalPages > 1 && (
+        <div className="pagination">
+          {pageNumbers.map((number) => (
+            <span
+              key={number}
+              onClick={() => setCurrentPage(number)}
+              className={number === currentPage ? "active" : ""}
+            >
+              {number}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
+
 
 const Sidebar = () => {
   return (
@@ -80,7 +95,7 @@ const Sidebar = () => {
           <p className="hd">Search Resumes</p>
           <ul className="leftNav">
             <li>
-              <a href="/search/advanced">Advanced Search</a>
+              <a href="/candidates">Advanced Search</a>
             </li>
             <li>
               <a href="/search/featured" target="_blank">
@@ -98,8 +113,8 @@ const Sidebar = () => {
               <a href="/edit-jobs">Edit/Refresh/Repost Jobs</a>
             </li>
             <li>
-              <a href="/naukri-assessments" target="_blank">
-                Naukri Assessments
+              <a href="/jeminy-assessments" target="_blank">
+                Jeminy Assessments
               </a>
             </li>
             <li>
@@ -145,6 +160,16 @@ const Sidebar = () => {
 };
 
 const Dashboard = () => {
+  const token = localStorage.getItem("authToken");
+  let companyName = "";
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      companyName = decoded.company_name || ""; // Adjust key if necessary
+    } catch (error) {
+      console.error("Error decoding token:", error);
+    }
+  }
   return (
     <div className="dashboard-container">
       <div className="dashboard-main">
@@ -153,8 +178,17 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="main-content">
-          <h2>Welcome to the Recruiter Dashboard!</h2>
-          <SavedSearches />
+          <div className="dashboard-header">
+            <h2>Welcome to the Recruiter Dashboard!</h2>
+            {companyName && <span className="company-name">💼 {companyName}</span>}
+          </div>
+
+          {/* Job Status Section */}
+          <section className="dashboard-section">
+            <JobStatus />
+          </section>
+
+          {/* Add additional sections here as needed */}
         </main>
       </div>
     </div>

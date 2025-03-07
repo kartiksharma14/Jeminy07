@@ -39,7 +39,7 @@
 
 .dropdown {
     position: absolute;
-    top: calc(100% + 5px); /* Slight spacing from the parent */
+    top: calc(100% + 2px); /* Slight spacing from the parent */
     left: 0;
     background-color: #ffffff;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -47,7 +47,6 @@
     padding: 10px 0;
     z-index: 1000; /* Ensures dropdown stays on top */
     opacity: 0;
-    visibility: hidden;
     transform: translateY(-10px);
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
 }
@@ -66,6 +65,7 @@
     color: #333;
     text-decoration: none;
     transition: background-color 0.2s ease;
+    white-space: nowrap;
 }
 
 .dropdown a:hover,

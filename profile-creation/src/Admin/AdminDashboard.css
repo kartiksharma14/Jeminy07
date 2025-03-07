@@ -1,0 +1,17 @@
+/* src/styles/AdminDashboard.css */
+.admin-dashboard {
+    padding: 20px;
+  }
+  .admin-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+  }
+  .action-button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 3px;
+  }
+  
