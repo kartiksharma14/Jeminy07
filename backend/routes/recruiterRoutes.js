@@ -77,4 +77,8 @@ router.patch('/applications/:application_id/status', authenticateToken, recruite
 // Add to your recruiterRoutes.js
 router.get('/test-email', authenticateToken, recruiterController.testEmail);
 
+<<<<<<< Updated upstream
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> Stashed changes

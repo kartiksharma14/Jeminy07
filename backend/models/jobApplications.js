@@ -30,7 +30,7 @@ const JobApplication = sequelize.define('JobApplication', {
         defaultValue: DataTypes.NOW
     },
     status: {
-        type: DataTypes.ENUM('pending', 'reviewing', 'selected', 'rejected'),
+        type: DataTypes.ENUM('pending',  'selected', 'rejected'),
         defaultValue: 'pending',
         allowNull: false
     }
