@@ -215,5 +215,3 @@ router.delete('/jobs/:job_id/save', verifyToken, unsaveJob);
 router.get('/saved-jobs', verifyToken, getSavedJobs);
 
 module.exports = router;
-module.exports = router;
-module.exports = router;
