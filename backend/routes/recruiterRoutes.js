@@ -53,6 +53,8 @@ router.patch('/jobs/draft', authenticateToken, recruiterController.updateJobDraf
 router.get('/jobs/draft/:sessionId', authenticateToken, recruiterController.getJobDraftPreview);
 router.post('/jobs/publish', authenticateToken, recruiterController.createJobFromDraft);
 router.delete('/jobs/draft/:sessionId', authenticateToken, recruiterController.deleteJobDraft);
+// Get all draft jobs for a recruiter
+router.get('/job-drafts', authenticateToken, recruiterController.getAllJobDrafts);
 
 // Job Post routes 
 router.post('/jobs', authenticateToken, recruiterController.createJobPost);
@@ -72,6 +74,15 @@ router.get('/jobs/:id', authenticateToken, recruiterController.getJobPostById);
 router.get('/applications', authenticateToken, recruiterController.getJobApplications);
 router.get('/applications/:application_id', authenticateToken, recruiterController.getApplicationDetail);
 router.patch('/applications/:application_id/status', authenticateToken, recruiterController.updateApplicationStatus);
+// Add to your recruiterRoutes.js
+router.get('/test-email', authenticateToken, recruiterController.testEmail);
 
-
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> Stashed changes
+=======
+module.exports = router;
+>>>>>>> Stashed changes

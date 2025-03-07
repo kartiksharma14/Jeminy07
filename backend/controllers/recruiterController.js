@@ -1,1725 +1,3 @@
-/*const OTP = require('../models/otp');
-const RecruiterSignin = require('../models/recruiterSignin');
-const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken');
-const JobPost = require('../models/jobpost');  // Ensure the correct lowercase file name
-const { JobApplication } = require('../models/jobApplications');
-const TempJobPost = require('../models/TempJobPost'); // Adjust the path if needed
-const { sequelize } = require('../db');  // New import
-const { Op } = require('sequelize'); // Import for operators
-const cities = require('../data/cities.json');
-
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD
-  }
-});
-
-const { JWT_SECRET } = process.env;
-
-// POST: Recruiter Sign-In (Send OTP)
-// Login with admin-provided credentials and send OTP
-exports.loginRecruiter = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Find the recruiter with the provided email
-    const recruiter = await RecruiterSignin.findOne({ where: { email } });
-
-    // If recruiter doesn't exist
-    if (!recruiter) {
-      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
-    }
-
-    // Debug: Log input password and hashed password
-    console.log('Input Password:', password);
-    console.log('Hashed Password in DB:', recruiter.password);
-    
-    const isPasswordValid = await bcrypt.compare(password, recruiter.password);
-    console.log('Password comparison result:', isPasswordValid);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
-    const otpExpiry = new Date(Date.now() + 20 * 60 * 1000); // 20 minutes expiry
-
-    // Save OTP in otpstore table
-    await OTP.upsert({ email, otp, otp_expiry: otpExpiry });
-
-    // Send OTP via email
-    const mailOptions = {
-      from: process.env.MAIL_DEFAULT_SENDER || process.env.MAIL_USERNAME,
-      to: email,
-      subject: 'Login Verification OTP',
-      text: `Your login verification OTP is: ${otp}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return res.status(200).json({
-      message: 'Credentials verified. OTP sent to your email.',
-      email,
-      otpSent: true,
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Error during login', error: error.message });
-  }
-};
-
-// Step 2: Verify OTP and generate JWT token
-exports.verifyLoginOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  
-  try {
-    // Validate OTP
-    const otpEntry = await OTP.findOne({ where: { email, otp } });
-    
-    if (!otpEntry || new Date() > otpEntry.otp_expiry) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-    
-    // Get the recruiter details after OTP verification
-    const recruiter = await RecruiterSignin.findOne({ where: { email } });
-    
-    if (!recruiter) {
-      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
-    }
-    
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        recruiter_id: recruiter.recruiter_id, 
-        email 
-      },
-      JWT_SECRET,
-      { expiresIn: '2400h' }
-    );
-    
-    // Clean up - delete the OTP
-    await OTP.destroy({ where: { email } });
-    
-    return res.status(200).json({
-      message: 'Login successful!',
-      token,
-      verified: true
-    });
-    
-  } catch (error) {
-    console.error('OTP verification error:', error);
-    return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
-  }
-};
-
-// Get job draft preview
-exports.getJobDraftPreview = async (req, res) => {
-  try {
-    const sessionId = req.params.sessionId;
-    
-    if (!sessionId) {
-      return res.status(400).json({
-        success: false,
-        message: "Session ID is required"
-      });
-    }
-    
-    const jobDraft = await TempJobPost.findOne({
-      where: { session_id: sessionId }
-    });
-    
-    if (!jobDraft) {
-      return res.status(404).json({
-        success: false,
-        message: "Job draft not found or expired"
-      });
-    }
-    
-    return res.status(200).json({
-      success: true,
-      draft: jobDraft
-    });
-  } catch (error) {
-    console.error('Error fetching job draft:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch job draft.",
-      error: error.message
-    });
-  }
-};
-  
-// Create a new job from draft
-exports.createJobFromDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const { session_id } = req.body;
-        
-        if (!session_id) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Session ID is required"
-            });
-        }
-        
-        // Find the job draft
-        const jobDraft = await TempJobPost.findOne({
-            where: { session_id }
-        });
-        
-        if (!jobDraft) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-
-        // Get recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Create the permanent job post
-        const newJob = await JobPost.create({
-            recruiter_id,
-            jobTitle: jobDraft.jobTitle,
-            employmentType: jobDraft.employmentType,
-            keySkills: jobDraft.keySkills,
-            department: jobDraft.department,
-            workMode: jobDraft.workMode,
-            locations: jobDraft.locations,
-            industry: jobDraft.industry,
-            diversityHiring: jobDraft.diversityHiring,
-            jobDescription: jobDraft.jobDescription,
-            multipleVacancies: jobDraft.multipleVacancies,
-            companyName: jobDraft.companyName,
-            companyInfo: jobDraft.companyInfo,
-            companyAddress: jobDraft.companyAddress,
-            min_salary: jobDraft.min_salary,
-            max_salary: jobDraft.max_salary,
-            min_experience: jobDraft.min_experience,
-            max_experience: jobDraft.max_experience,
-            job_creation_date: new Date(),
-            is_active: true,
-            status: "pending"  // Set default status to pending
-        }, { transaction });
-
-        // Delete the draft after creating the permanent job
-        await jobDraft.destroy({ transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job created successfully from draft!",
-            job: newJob
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error creating job from draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job from draft.",
-            error: error.message
-        });
-    }
-};
-
-// Create a job draft
-exports.createJobDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-
-    try {
-        const {
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        // Validate required fields
-        if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields for job draft"
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Generate a new session ID
-        const sessionId = generateUniqueSessionId();
-
-        // Create new draft
-        const jobDraft = await TempJobPost.create({
-            session_id: sessionId,
-            recruiter_id,
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience,
-            created_by: recruiter_id,  // Ensure created_by is also set
-            expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
-        }, { transaction });
-
-        // Commit the transaction
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job draft created successfully!",
-            draft: jobDraft,
-            session_id: sessionId
-        });
-    } catch (error) {
-        await transaction.rollback();
-        console.error('Error creating job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job draft.",
-            error: error.message
-        });
-    }
-};
-
-// Update an existing job draft (PATCH)
-exports.updateJobDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-
-    try {
-        const {
-            session_id, jobTitle, employmentType, keySkills, department, workMode, locations, industry, 
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        if (!session_id) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Session ID is required for updating the job draft"
-            });
-        }
-
-        // Check if draft exists
-        const existingDraft = await TempJobPost.findOne({
-            where: { session_id: session_id }
-        });
-
-        if (!existingDraft) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Update draft
-        const updatedDraft = await existingDraft.update({
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience,
-            created_by: recruiter_id,
-            expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Reset expiry to 24 hours
-        }, { transaction });
-
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job draft updated successfully!",
-            draft: updatedDraft,
-            session_id: session_id
-        });
-    } catch (error) {
-        await transaction.rollback();
-        console.error('Error updating job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update job draft.",
-            error: error.message
-        });
-    }
-};
-
-// Delete a job draft
-exports.deleteJobDraft = async (req, res) => {
-    try {
-        const sessionId = req.params.sessionId;
-        const jobDraft = await TempJobPost.findOne({
-            where: { session_id: sessionId }
-        });
-        
-        if (!jobDraft) {
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-        
-        // Delete the draft
-        await jobDraft.destroy();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job draft deleted successfully"
-        });
-    } catch (error) {
-        console.error('Error deleting job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete job draft.",
-            error: error.message
-        });
-    }
-};
-  
-// Helper function to generate a unique session ID
-function generateUniqueSessionId() {
-    return 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-}
-  
-// Clean up expired drafts - can be run via a cron job
-exports.cleanupExpiredDrafts = async () => {
-    try {
-        const now = new Date();
-        const result = await TempJobPost.destroy({
-            where: {
-                expiry_time: {
-                    [Op.lt]: now
-                }
-            }
-        });
-        
-        console.log(`Cleaned up ${result} expired job drafts`);
-        return result;
-    } catch (error) {
-        console.error('Error cleaning up expired drafts:', error.message);
-        throw error;
-    }
-};
-
-// Create a new job post
-exports.createJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        // Extract data from request body
-        const {
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry, diversityHiring, jobDescription,
-            multipleVacancies, companyName, companyInfo, companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        // Validate required fields
-        if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields"
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Create the job post
-        const newJob = await JobPost.create({
-            recruiter_id,
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry, diversityHiring, jobDescription,
-            multipleVacancies, companyName, companyInfo, companyAddress, min_salary, max_salary, min_experience, max_experience,
-            job_creation_date: new Date(),
-            is_active: true,
-            status: "pending",  // Set default status to 'pending'
-        }, { transaction });
-
-        // Commit the transaction
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job created successfully and pending for Admin approval",
-            job: newJob
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error creating job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job post.",
-            error: error.message
-        });
-    }
-};
-
-// Get all job posts
-exports.getJobPosts = async (req, res) => {
-    try {
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        const jobs = await JobPost.findAll({
-            where: { 
-                recruiter_id,
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-        
-        return res.status(200).json({
-            success: true,
-            count: jobs.length,
-            jobs
-        });
-    } catch (error) {
-        console.error('Error fetching job posts:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch job posts.",
-            error: error.message
-        });
-    }
-};
-
-// Get a single job post by ID
-exports.getJobPostById = async (req, res) => {
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id  // Ensure the job belongs to this recruiter
-            }
-        });
-        
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to view"
-            });
-        }
-        
-        return res.status(200).json({
-            success: true,
-            job
-        });
-    } catch (error) {
-        console.error('Error fetching job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch job post.",
-            error: error.message
-        });
-    }
-};
-
-// Update a job post
-exports.updateJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        // Find the job ensuring it belongs to this recruiter
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id
-            }
-        });
-        
-        if (!job) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to update"
-            });
-        }
-        
-        // Update job post with new data
-        await job.update(req.body, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job post updated successfully",
-            job
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error updating job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update job post.",
-            error: error.message
-        });
-    }
-};
-
-// Delete a job post (soft delete by setting is_active to false)
-exports.deleteJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        // Find the job ensuring it belongs to this recruiter
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id
-            }
-        });
-        
-        if (!job) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to delete"
-            });
-        }
-        
-        // Soft delete by setting is_active to false
-        await job.update({ is_active: false }, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job post deleted successfully"
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error deleting job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete job post.",
-            error: error.message
-        });
-    }
-};
-
-// Get all jobs created by the recruiter with their status
-exports.getAllJobsWithStatus = async (req, res) => {
-    try {
-        // Ensure req.recruiter exists and has recruiter_id
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const jobs = await JobPost.findAll({
-            where: { recruiter_id: recruiterId },
-            attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active"],
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: jobs.length,
-            jobs 
-        });
-    } catch (error) {
-        console.error("Error fetching jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get pending jobs
-exports.getPendingJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const pendingJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "pending",
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: pendingJobs.length,
-            jobs: pendingJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching pending jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch pending jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get approved jobs
-exports.getApprovedJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const approvedJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "approved",
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: approvedJobs.length,
-            jobs: approvedJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching approved jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch approved jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get rejected jobs
-exports.getRejectedJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const rejectedJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "rejected",
-                is_active: true
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true,
-            count: rejectedJobs.length, 
-            jobs: rejectedJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching rejected jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch rejected jobs", 
-            error: error.message 
-        });
-    }
-};*/
-
-
-// controllers/recruiterController.js
-/*const OTP = require('../models/otp');
-const RecruiterSignin = require('../models/recruiterSignin');
-const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken');
-const JobPost = require('../models/jobpost');
-const { JobApplication } = require('../models/jobApplications');
-const TempJobPost = require('../models/TempJobPost');
-const { sequelize } = require('../db');
-const { Op } = require('sequelize');
-const cities = require('../data/cities.json');
-
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD
-  }
-});
-
-const { JWT_SECRET } = process.env;
-
-// Validation function for cities
-function validateCity(cityName) {
-  if (!cityName) return null;
-  
-  // Extract just the city name if format contains a comma
-  const cityToCheck = cityName.split(',')[0].trim().toLowerCase();
-  
-  // Check if the city exists in cities.json
-  const cityFound = cities.cities.find(
-    city => city.City.toLowerCase() === cityToCheck
-  );
-  
-  if (cityFound) {
-    // Return just the city name
-    return cityFound.City;
-  }
-  
-  return null;
-}
-
-// POST: Recruiter Sign-In (Send OTP)
-exports.loginRecruiter = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Find the recruiter with the provided email
-    const recruiter = await RecruiterSignin.findOne({ where: { email } });
-
-    // If recruiter doesn't exist
-    if (!recruiter) {
-      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
-    }
-
-    // Debug: Log input password and hashed password
-    console.log('Input Password:', password);
-    console.log('Hashed Password in DB:', recruiter.password);
-    
-    const isPasswordValid = await bcrypt.compare(password, recruiter.password);
-    console.log('Password comparison result:', isPasswordValid);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
-    const otpExpiry = new Date(Date.now() + 20 * 60 * 1000); // 20 minutes expiry
-
-    // Save OTP in otpstore table
-    await OTP.upsert({ email, otp, otp_expiry: otpExpiry });
-
-    // Send OTP via email
-    const mailOptions = {
-      from: process.env.MAIL_DEFAULT_SENDER || process.env.MAIL_USERNAME,
-      to: email,
-      subject: 'Login Verification OTP',
-      text: `Your login verification OTP is: ${otp}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return res.status(200).json({
-      message: 'Credentials verified. OTP sent to your email.',
-      email,
-      otpSent: true,
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Error during login', error: error.message });
-  }
-};
-
-// Verify OTP and generate JWT token
-exports.verifyLoginOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  
-  try {
-    // Validate OTP
-    const otpEntry = await OTP.findOne({ where: { email, otp } });
-    
-    if (!otpEntry || new Date() > otpEntry.otp_expiry) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-    
-    // Get the recruiter details after OTP verification
-    const recruiter = await RecruiterSignin.findOne({ where: { email } });
-    
-    if (!recruiter) {
-      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
-    }
-    
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        recruiter_id: recruiter.recruiter_id, 
-        email 
-      },
-      JWT_SECRET,
-      { expiresIn: '2400h' }
-    );
-    
-    // Clean up - delete the OTP
-    await OTP.destroy({ where: { email } });
-    
-    return res.status(200).json({
-      message: 'Login successful!',
-      token,
-      verified: true
-    });
-    
-  } catch (error) {
-    console.error('OTP verification error:', error);
-    return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
-  }
-};
-
-// Get job draft preview
-exports.getJobDraftPreview = async (req, res) => {
-  try {
-    const sessionId = req.params.sessionId;
-    
-    if (!sessionId) {
-      return res.status(400).json({
-        success: false,
-        message: "Session ID is required"
-      });
-    }
-    
-    const jobDraft = await TempJobPost.findOne({
-      where: { session_id: sessionId }
-    });
-    
-    if (!jobDraft) {
-      return res.status(404).json({
-        success: false,
-        message: "Job draft not found or expired"
-      });
-    }
-    
-    return res.status(200).json({
-      success: true,
-      draft: jobDraft
-    });
-  } catch (error) {
-    console.error('Error fetching job draft:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch job draft.",
-      error: error.message
-    });
-  }
-};
-  
-// Create a new job from draft
-exports.createJobFromDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const { session_id } = req.body;
-        
-        if (!session_id) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Session ID is required"
-            });
-        }
-        
-        // Find the job draft
-        const jobDraft = await TempJobPost.findOne({
-            where: { session_id }
-        });
-        
-        if (!jobDraft) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-
-        // Get recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Validate location against cities.json
-        const validatedLocation = validateCity(jobDraft.locations);
-        if (!validatedLocation) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location in draft. Please provide a valid city name."
-            });
-        }
-
-        // Create the permanent job post
-        const newJob = await JobPost.create({
-            recruiter_id,
-            jobTitle: jobDraft.jobTitle,
-            employmentType: jobDraft.employmentType,
-            keySkills: jobDraft.keySkills,
-            department: jobDraft.department,
-            workMode: jobDraft.workMode,
-            locations: validatedLocation, // Use the validated location
-            industry: jobDraft.industry,
-            diversityHiring: jobDraft.diversityHiring,
-            jobDescription: jobDraft.jobDescription,
-            multipleVacancies: jobDraft.multipleVacancies,
-            companyName: jobDraft.companyName,
-            companyInfo: jobDraft.companyInfo,
-            companyAddress: jobDraft.companyAddress,
-            min_salary: jobDraft.min_salary,
-            max_salary: jobDraft.max_salary,
-            min_experience: jobDraft.min_experience,
-            max_experience: jobDraft.max_experience,
-            job_creation_date: new Date(),
-            is_active: true,
-            status: "pending"  // Set default status to pending
-        }, { transaction });
-
-        // Delete the draft after creating the permanent job
-        await jobDraft.destroy({ transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job created successfully from draft!",
-            job: newJob
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error creating job from draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job from draft.",
-            error: error.message
-        });
-    }
-};
-
-// Create a job draft
-exports.createJobDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-
-    try {
-        const {
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry,
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        // Validate required fields
-        if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields for job draft"
-            });
-        }
-
-        // Validate location against cities.json
-        const validatedLocation = validateCity(locations);
-        if (!validatedLocation) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location. Please provide a valid city name."
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Generate a new session ID
-        const sessionId = generateUniqueSessionId();
-
-        // Create new draft
-        const jobDraft = await TempJobPost.create({
-            session_id: sessionId,
-            recruiter_id,
-            jobTitle, 
-            employmentType, 
-            keySkills, 
-            department, 
-            workMode, 
-            locations: validatedLocation, // Use the validated location
-            industry,
-            diversityHiring, 
-            jobDescription, 
-            multipleVacancies, 
-            companyName, 
-            companyInfo,
-            companyAddress, 
-            min_salary, 
-            max_salary, 
-            min_experience, 
-            max_experience,
-            created_by: recruiter_id,
-            expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
-        }, { transaction });
-
-        // Commit the transaction
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job draft created successfully!",
-            draft: jobDraft,
-            session_id: sessionId
-        });
-    } catch (error) {
-        await transaction.rollback();
-        console.error('Error creating job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job draft.",
-            error: error.message
-        });
-    }
-};
-
-// Update an existing job draft (PATCH)
-exports.updateJobDraft = async (req, res) => {
-    const transaction = await sequelize.transaction();
-
-    try {
-        const {
-            session_id, jobTitle, employmentType, keySkills, department, workMode, locations, industry, 
-            diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
-            companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        if (!session_id) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Session ID is required for updating the job draft"
-            });
-        }
-
-        // Check if draft exists
-        const existingDraft = await TempJobPost.findOne({
-            where: { session_id: session_id }
-        });
-
-        if (!existingDraft) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Validate location against cities.json if location field is being updated
-        let validatedLocation = existingDraft.locations; // Keep existing if not updating
-        if (locations) {
-            validatedLocation = validateCity(locations);
-            if (!validatedLocation) {
-                await transaction.rollback();
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid location. Please provide a valid city name."
-                });
-            }
-        }
-
-        // Update draft
-        const updatedDraft = await existingDraft.update({
-            jobTitle: jobTitle || existingDraft.jobTitle, 
-            employmentType: employmentType || existingDraft.employmentType, 
-            keySkills: keySkills || existingDraft.keySkills, 
-            department: department || existingDraft.department, 
-            workMode: workMode || existingDraft.workMode, 
-            locations: validatedLocation,
-            industry: industry || existingDraft.industry,
-            diversityHiring: diversityHiring !== undefined ? diversityHiring : existingDraft.diversityHiring, 
-            jobDescription: jobDescription || existingDraft.jobDescription, 
-            multipleVacancies: multipleVacancies !== undefined ? multipleVacancies : existingDraft.multipleVacancies, 
-            companyName: companyName || existingDraft.companyName, 
-            companyInfo: companyInfo || existingDraft.companyInfo,
-            companyAddress: companyAddress || existingDraft.companyAddress, 
-            min_salary: min_salary || existingDraft.min_salary, 
-            max_salary: max_salary || existingDraft.max_salary, 
-            min_experience: min_experience !== undefined ? min_experience : existingDraft.min_experience, 
-            max_experience: max_experience !== undefined ? max_experience : existingDraft.max_experience,
-            created_by: recruiter_id,
-            expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Reset expiry to 24 hours
-        }, { transaction });
-
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job draft updated successfully!",
-            draft: updatedDraft,
-            session_id: session_id
-        });
-    } catch (error) {
-        await transaction.rollback();
-        console.error('Error updating job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update job draft.",
-            error: error.message
-        });
-    }
-};
-
-// Delete a job draft
-exports.deleteJobDraft = async (req, res) => {
-    try {
-        const sessionId = req.params.sessionId;
-        const jobDraft = await TempJobPost.findOne({
-            where: { session_id: sessionId }
-        });
-        
-        if (!jobDraft) {
-            return res.status(404).json({
-                success: false,
-                message: "Job draft not found"
-            });
-        }
-        
-        // Delete the draft
-        await jobDraft.destroy();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job draft deleted successfully"
-        });
-    } catch (error) {
-        console.error('Error deleting job draft:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete job draft.",
-            error: error.message
-        });
-    }
-};
-  
-// Helper function to generate a unique session ID
-function generateUniqueSessionId() {
-    return 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-}
-  
-// Clean up expired drafts - can be run via a cron job
-exports.cleanupExpiredDrafts = async () => {
-    try {
-        const now = new Date();
-        const result = await TempJobPost.destroy({
-            where: {
-                expiry_time: {
-                    [Op.lt]: now
-                }
-            }
-        });
-        
-        console.log(`Cleaned up ${result} expired job drafts`);
-        return result;
-    } catch (error) {
-        console.error('Error cleaning up expired drafts:', error.message);
-        throw error;
-    }
-};
-
-// Create a new job post
-exports.createJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        // Extract data from request body
-        const {
-            jobTitle, employmentType, keySkills, department, workMode, locations, industry, diversityHiring, jobDescription,
-            multipleVacancies, companyName, companyInfo, companyAddress, min_salary, max_salary, min_experience, max_experience
-        } = req.body;
-
-        // Validate required fields
-        if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields"
-            });
-        }
-
-        // Validate location against cities.json
-        const validatedLocation = validateCity(locations);
-        if (!validatedLocation) {
-            await transaction.rollback();
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location. Please provide a valid city name."
-            });
-        }
-
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            await transaction.rollback();
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        // Create the job post
-        const newJob = await JobPost.create({
-            recruiter_id,
-            jobTitle, 
-            employmentType, 
-            keySkills, 
-            department, 
-            workMode, 
-            locations: validatedLocation, // Use the validated location
-            industry, 
-            diversityHiring, 
-            jobDescription,
-            multipleVacancies, 
-            companyName, 
-            companyInfo, 
-            companyAddress, 
-            min_salary, 
-            max_salary, 
-            min_experience, 
-            max_experience,
-            job_creation_date: new Date(),
-            is_active: true,
-            status: "pending",  // Set default status to 'pending'
-        }, { transaction });
-
-        // Commit the transaction
-        await transaction.commit();
-
-        return res.status(200).json({
-            success: true,
-            message: "Job created successfully and pending for Admin approval",
-            job: newJob
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error creating job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create job post.",
-            error: error.message
-        });
-    }
-};
-
-// Get all job posts
-exports.getJobPosts = async (req, res) => {
-    try {
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
-
-        const jobs = await JobPost.findAll({
-            where: { 
-                recruiter_id,
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-        
-        return res.status(200).json({
-            success: true,
-            count: jobs.length,
-            jobs
-        });
-    } catch (error) {
-        console.error('Error fetching job posts:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch job posts.",
-            error: error.message
-        });
-    }
-};
-
-// Get a single job post by ID
-exports.getJobPostById = async (req, res) => {
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id  // Ensure the job belongs to this recruiter
-            }
-        });
-        
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to view"
-            });
-        }
-        
-        return res.status(200).json({
-            success: true,
-            job
-        });
-    } catch (error) {
-        console.error('Error fetching job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch job post.",
-            error: error.message
-        });
-    }
-};
-
-// Update a job post
-exports.updateJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        // Find the job ensuring it belongs to this recruiter
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id
-            }
-        });
-        
-        if (!job) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to update"
-            });
-        }
-        
-        // Check if locations is being updated
-        const { locations } = req.body;
-        let updatedData = { ...req.body };
-        
-        if (locations) {
-            // Validate location against cities.json
-            const validatedLocation = validateCity(locations);
-            if (!validatedLocation) {
-                await transaction.rollback();
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid location. Please provide a valid city name."
-                });
-            }
-            updatedData.locations = validatedLocation;
-        }
-        
-        // Update job post with new data
-        await job.update(updatedData, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job post updated successfully",
-            job
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error updating job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update job post.",
-            error: error.message
-        });
-    }
-};
-
-// Delete a job post (soft delete by setting is_active to false)
-exports.deleteJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
-
-        // Find the job ensuring it belongs to this recruiter
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id
-            }
-        });
-        
-        if (!job) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to delete"
-            });
-        }
-        
-        // Soft delete by setting is_active to false
-        await job.update({ is_active: false }, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job post deleted successfully"
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error deleting job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete job post.",
-            error: error.message
-        });
-    }
-};
-
-// Get all jobs created by the recruiter with their status
-exports.getAllJobsWithStatus = async (req, res) => {
-    try {
-        // Ensure req.recruiter exists and has recruiter_id
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const jobs = await JobPost.findAll({
-            where: { recruiter_id: recruiterId },
-            attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active", "locations"],
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: jobs.length,
-            jobs 
-        });
-    } catch (error) {
-        console.error("Error fetching jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get pending jobs
-exports.getPendingJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const pendingJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "pending",
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: pendingJobs.length,
-            jobs: pendingJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching pending jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch pending jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get approved jobs
-exports.getApprovedJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const approvedJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "approved",
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true, 
-            count: approvedJobs.length,
-            jobs: approvedJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching approved jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch approved jobs", 
-            error: error.message 
-        });
-    }
-};
-
-// Get rejected jobs
-exports.getRejectedJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
-
-        const recruiterId = req.recruiter.recruiter_id;
-
-        const rejectedJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "rejected",
-                is_active: true
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-
-        return res.status(200).json({ 
-            success: true,
-            count: rejectedJobs.length, 
-            jobs: rejectedJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching rejected jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch rejected jobs", 
-            error: error.message 
-        });
-    }
-};
-
-module.exports = exports;*/
-
 // controllers/recruiterController.js
 const OTP = require('../models/otp');
 const RecruiterSignin = require('../models/recruiterSignin');
@@ -1740,8 +18,13 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.MAIL_USERNAME,
-    pass: process.env.MAIL_PASSWORD
-  }
+    pass: process.env.MAIL_PASSWORD.replace(/\s+/g, '') // Remove any spaces in the password
+  },
+  secure: true,
+  tls: {
+    rejectUnauthorized: false
+  },
+  debug: true // Show debug output for troubleshooting
 });
 
 const { JWT_SECRET } = process.env;
@@ -1841,7 +124,9 @@ exports.verifyLoginOtp = async (req, res) => {
     const token = jwt.sign(
       { 
         recruiter_id: recruiter.recruiter_id, 
-        email 
+        email ,
+        name: recruiter.name,
+        company_name: recruiter.company_name
       },
       JWT_SECRET,
       { expiresIn: '2400h' }
@@ -1899,6 +184,51 @@ exports.getJobDraftPreview = async (req, res) => {
   }
 };
   
+
+// Get all draft jobs for a recruiter
+exports.getAllJobDrafts = async (req, res) => {
+  try {
+    // Get recruiter ID from the token
+    const recruiter_id = req.recruiter.recruiter_id;
+    
+    if (!recruiter_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recruiter ID is required'
+      });
+    }
+    
+    // Fetch all draft jobs for this recruiter
+    // Assuming drafts are stored in TempJobPost while published jobs are in JobPost
+    const draftJobs = await TempJobPost.findAll({
+      where: {
+        recruiter_id: recruiter_id
+      },
+      order: [['updatedAt', 'DESC']]
+    });
+    
+    if (draftJobs.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No draft jobs found'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      count: draftJobs.length,
+      draftJobs: draftJobs
+    });
+  } catch (error) {
+    console.error('Error fetching draft jobs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching draft jobs',
+      error: error.message
+    });
+  }
+};
+
 // Create a new job from draft
 exports.createJobFromDraft = async (req, res) => {
     const transaction = await sequelize.transaction();
@@ -2646,7 +976,6 @@ exports.getRejectedJobs = async (req, res) => {
 // ==================== Job Application Management Functions ====================
 
 // Get all applications for a recruiter's jobs
-// Get all applications for a recruiter's jobs
 exports.getJobApplications = async (req, res) => {
   try {
       const recruiterId = req.recruiter.recruiter_id;
@@ -2682,7 +1011,7 @@ exports.getJobApplications = async (req, res) => {
           job_id: { [Op.in]: jobIds }
       };
       
-      if (status && ['pending', 'reviewing', 'selected', 'rejected'].includes(status)) {
+      if (status && ['pending', 'selected', 'rejected'].includes(status)) {
           applicationWhereClause.status = status;
       }
       
@@ -2695,7 +1024,7 @@ exports.getJobApplications = async (req, res) => {
               },
               {
                   model: CandidateProfile,
-                  attributes: ['candidate_id', 'first_name', 'last_name', 'email', 'phone']
+                  attributes: ['candidate_id', 'name', 'email', 'phone']
               }
           ],
           limit: parseInt(limit),
@@ -2732,12 +1061,12 @@ exports.getApplicationDetail = async (req, res) => {
               {
                   model: JobPost,
                   where: { recruiter_id: recruiterId },
-                  attributes: ['job_id', 'jobTitle', 'description', 'locations', 'job_creation_date']
+                  attributes: ['job_id', 'jobTitle', 'jobDescription', 'locations', 'job_creation_date']
               },
               {
                   model: CandidateProfile,
-                  attributes: ['candidate_id', 'first_name', 'last_name', 'email', 'phone', 'current_location',
-                              'total_experience', 'skills', 'resume_headline', 'profile_summary']
+                  attributes: ['candidate_id', 'name', 'email', 'phone', 'location',
+                              'resume_headline', 'profile_summary','expected_salary']
               }
           ]
       });
@@ -2764,98 +1093,214 @@ exports.getApplicationDetail = async (req, res) => {
 };
 
 // Update application status
+// Update application status
 exports.updateApplicationStatus = async (req, res) => {
   try {
-      const recruiterId = req.recruiter.recruiter_id;
-      const { application_id } = req.params;
-      const { status } = req.body;
-      
-      if (!status || !['pending', 'reviewing', 'selected', 'rejected'].includes(status)) {
-          return res.status(400).json({
-              success: false,
-              message: 'Invalid status provided'
-          });
-      }
-      
-      // First check if this application belongs to the recruiter's job
-      const application = await JobApplication.findOne({
-          where: { application_id },
-          include: [
-              {
-                  model: JobPost,
-                  where: { recruiter_id: recruiterId },
-                  attributes: ['job_id', 'jobTitle', 'recruiter_id']
-              },
-              {
-                  model: CandidateProfile,
-                  attributes: ['candidate_id', 'first_name', 'last_name', 'email']
-              }
-          ]
+    const recruiterId = req.recruiter.recruiter_id;
+    const { application_id } = req.params;
+    const { status } = req.body;
+    
+    if (!status || !['pending', 'reviewing', 'selected', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status provided'
       });
+    }
+    
+    // First check if this application belongs to the recruiter's job
+    const application = await JobApplication.findOne({
+      where: { application_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id', 'jobTitle', 'recruiter_id']
+        },
+        {
+          model: CandidateProfile,
+          attributes: ['candidate_id', 'name', 'email']
+        }
+      ]
+    });
+    
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or you do not have permission to update it'
+      });
+    }
+    
+    // Update the status
+    application.status = status;
+    await application.save();
+    
+    // Send email notification to candidate
+    const candidate = application.CandidateProfile;
+    const job = application.JobPost;
+    
+    if (candidate && candidate.email && (status === 'selected' || status === 'rejected')) {
+      console.log(`Attempting to send email to candidate: ${candidate.email}`);
       
-      if (!application) {
-          return res.status(404).json({
-              success: false,
-              message: 'Application not found or you do not have permission to update it'
-          });
-      }
+      const subject = status === 'selected' 
+        ? `Congratulations! You've been selected for ${job.jobTitle}`
+        : `Update on your application for ${job.jobTitle}`;
       
-      // Update the status
-      application.status = status;
-      await application.save();
+      const content = status === 'selected'
+        ? `
+          <h2>Congratulations!</h2>
+          <p>Dear ${candidate.name},</p>
+          <p>We are pleased to inform you that you have been selected for the position of <strong>${job.jobTitle}</strong>.</p>
+          <p>Our HR team will contact you shortly with the next steps.</p>
+          <p>Thank you for your interest in joining our team!</p>
+        `
+        : `
+          <h2>Application Update</h2>
+          <p>Dear ${candidate.name},</p>
+          <p>Thank you for applying for the position of <strong>${job.jobTitle}</strong>.</p>
+          <p>After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications better match our current needs.</p>
+          <p>We appreciate your interest in our company and wish you success in your job search.</p>
+        `;
       
-      // Send email notification to candidate
-      const candidate = application.CandidateProfile;
-      const job = application.JobPost;
+      const mailOptions = {
+        from: `"Job Portal" <${process.env.MAIL_USERNAME}>`,
+        to: candidate.email,
+        subject,
+        html: content
+      };
       
-      if (candidate && candidate.email && (status === 'selected' || status === 'rejected')) {
-          const subject = status === 'selected' 
-              ? `Congratulations! You've been selected for ${job.jobTitle}`
-              : `Update on your application for ${job.jobTitle}`;
-          
-          const content = status === 'selected'
-              ? `
-                  <h2>Congratulations!</h2>
-                  <p>Dear ${candidate.first_name} ${candidate.last_name},</p>
-                  <p>We are pleased to inform you that you have been selected for the position of <strong>${job.jobTitle}</strong>.</p>
-                  <p>Our HR team will contact you shortly with the next steps.</p>
-                  <p>Thank you for your interest in joining our team!</p>
-              `
-              : `
-                  <h2>Application Update</h2>
-                  <p>Dear ${candidate.first_name} ${candidate.last_name},</p>
-                  <p>Thank you for applying for the position of <strong>${job.jobTitle}</strong>.</p>
-                  <p>After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications better match our current needs.</p>
-                  <p>We appreciate your interest in our company and wish you success in your job search.</p>
-              `;
-          
-          const mailOptions = {
-              from: process.env.MAIL_USERNAME,
-              to: candidate.email,
-              subject,
-              html: content
-          };
-          
+      try {
+        // Use async/await with a Promise wrapper for better error handling
+        const emailResult = await new Promise((resolve, reject) => {
           transporter.sendMail(mailOptions, (error, info) => {
-              if (error) {
-                  console.error('Error sending application status email:', error);
-              } else {
-                  console.log('Application status email sent:', info.response);
-              }
+            if (error) {
+              console.error('Detailed email error:', error);
+              reject(error);
+            } else {
+              console.log('Email sent successfully:', info.response);
+              resolve(info);
+            }
           });
+        });
+        
+        console.log(`Email notification sent to ${candidate.email}:`, emailResult.response);
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Continue with the function, don't return here
       }
-      
-      return res.status(200).json({
-          success: true,
-          message: `Application status updated to ${status}`,
-          application
-      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: `Application status updated to ${status}`,
+      application
+    });
   } catch (error) {
-      console.error('Error updating application status:', error);
-      return res.status(500).json({
-          success: false,
-          message: 'Error updating application status',
-          error: error.message
+    console.error('Error updating application status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating application status',
+      error: error.message
+    });
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+  }
+};
+
+// Test email function to verify your configuration works
+exports.testEmail = async (req, res) => {
+  try {
+    // Log email configuration for debugging
+    console.log('Email Configuration:', {
+      username: process.env.MAIL_USERNAME,
+      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+    });
+    
+    // Create test email
+    const mailOptions = {
+      from: process.env.MAIL_USERNAME,
+      to: process.env.MAIL_USERNAME, // Send to yourself for testing
+      subject: 'Email Test from Job Portal',
+      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
+    };
+    
+    // Send email and wait for response
+    const info = await new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Detailed email error:', error);
+          reject(error);
+        } else {
+          resolve(info);
+        }
       });
+    });
+    
+    console.log('Email test successful:', info.response);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Test email sent successfully',
+      emailInfo: info.response
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+  }
+};
+
+// Test email function to verify your configuration works
+exports.testEmail = async (req, res) => {
+  try {
+    // Log email configuration for debugging
+    console.log('Email Configuration:', {
+      username: process.env.MAIL_USERNAME,
+      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+    });
+    
+    // Create test email
+    const mailOptions = {
+      from: process.env.MAIL_USERNAME,
+      to: process.env.MAIL_USERNAME, // Send to yourself for testing
+      subject: 'Email Test from Job Portal',
+      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
+    };
+    
+    // Send email and wait for response
+    const info = await new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Detailed email error:', error);
+          reject(error);
+        } else {
+          resolve(info);
+        }
+      });
+    });
+    
+    console.log('Email test successful:', info.response);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Test email sent successfully',
+      emailInfo: info.response
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+=======
+>>>>>>> Stashed changes
   }
 };

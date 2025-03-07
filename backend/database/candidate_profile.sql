@@ -133,7 +133,6 @@ DROP COLUMN it_skills,
 DROP COLUMN it_skills_proficiency;
 
 
--- After this, you can fetch candidate details based on candidate_id from the signin table.
 SELECT * FROM candidate_profile;
 SHOW CREATE TABLE candidate_profile;
 DESCRIBE candidate_profile;
