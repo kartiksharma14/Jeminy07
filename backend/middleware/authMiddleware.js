@@ -10,9 +10,6 @@ exports.verifyToken = (req, res, next) => {
 
     // Extract token
     const token = authHeader.split(" ")[1];
-
-    // Verify token
-    //jwt.verify(token, process.env.JWT_SECRET);
     // Verify token AND decode it
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // Set the user data in the request object

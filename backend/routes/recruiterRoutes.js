@@ -63,7 +63,7 @@ router.get('/jobs', authenticateToken, recruiterController.getJobPosts);
 router.put('/jobs/:id', authenticateToken, recruiterController.updateJobPost);
 router.delete('/jobs/:id', authenticateToken, recruiterController.deleteJobPost);
 
-// New Routes for Fetching Jobs by Status
+// ✅ New Routes for Fetching Jobs by Status
 router.get("/jobs/status", authenticateToken, recruiterController.getAllJobsWithStatus);
 router.get("/jobs/pending", authenticateToken, recruiterController.getPendingJobs);
 router.get("/jobs/approved", authenticateToken, recruiterController.getApprovedJobs);

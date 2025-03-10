@@ -199,7 +199,7 @@ exports.getSavedJobs = async (req, res) => {
             include: [
                 {
                     model: JobPost,
-                    attributes: ['job_id', 'jobTitle', 'locations', 'companyName', 'salary_range', 'description']
+                    attributes: ['job_id', 'jobTitle', 'locations', 'companyName', 'min_salary', 'max_salary', 'jobDescription']
                 }
             ],
             limit: parseInt(limit),
@@ -493,7 +493,43 @@ exports.searchJobsByCompany = async (req, res) => {
     }
 };
 
-// Combined search function
+exports.searchJobsByDesignation = async (req, res) => {
+    try {
+      const { designation } = req.query;
+  
+      if (!designation) {
+        return res.status(400).json({
+          success: false,
+          message: 'Designation parameter is required'
+        });
+      }
+  
+      const jobs = await JobPost.findAll({
+        where: {
+          jobTitle: {
+            [Op.like]: `%${designation}%`
+          },
+          status: 'approved',
+          is_active: true
+        },
+        order: [['job_creation_date', 'DESC']]
+      });
+  
+      res.status(200).json({
+        success: true,
+        count: jobs.length,
+        jobs: jobs
+      });
+    } catch (error) {
+      console.error('Error searching jobs by designation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error searching jobs by designation',
+        error: error.message
+      });
+    }
+  };
+  // Combined search function
 exports.searchJobs = async (req, res) => {
     try {
         const {
@@ -574,42 +610,77 @@ exports.searchJobs = async (req, res) => {
     }
 };
 
-exports.searchJobsByDesignation = async (req, res) => {
-    try {
-      const { designation } = req.query;
+
+  // Search jobs based on various criteria for candidates
+exports.searchJobsWithAllParameter = async (req, res) => {
+      try {
+          const {
+              keywords,
+              //designation,
+              //company,
+              experience,
+              locations
+          } = req.query;
   
-      if (!designation) {
-        return res.status(400).json({
-          success: false,
-          message: 'Designation parameter is required'
-        });
+          const whereClause = {
+              status: 'approved',
+              is_active: true
+          };
+  
+          // Search by keywords in job description and key skills
+          if (keywords) {
+            whereClause[Op.or] = [
+                { jobDescription: { [Op.like]: `%${keywords}%` } },
+                { keySkills: { [Op.like]: `%${keywords}%` } },
+                { jobTitle: { [Op.like]: `%${keywords}%` } },
+                { companyName: { [Op.like]: `%${keywords}%` } }
+            ];
+        }
+          // Search by designation/job title
+          /*if (designation) {
+              whereClause.jobTitle = { [Op.like]: `%${designation}%` };
+          }
+  
+          // Search by company
+          if (company) {
+              whereClause.companyName = { [Op.like]: `%${company}%` };
+          }*/
+  
+          // Search by experience
+          // If a specific experience value is provided, find jobs with mixmum experience <= the provided value
+          if (experience) {
+              const expValue = parseInt(experience);
+              if (!isNaN(expValue)) {
+                  whereClause.max_experience = { [Op.lte]: expValue };
+              }
+          }
+  
+          // Search by location
+          if (locations) {
+              whereClause.locations = { [Op.like]: `%${locations}%` };
+          }
+  
+          // Find jobs matching the criteria
+          const jobs = await JobPost.findAll({
+              where: whereClause,
+              order: [['createdAt', 'DESC']]
+          });
+  
+          res.status(200).json({
+              success: true,
+              count: jobs.length,
+              jobs: jobs
+          });
+      } catch (error) {
+          console.error('Error searching jobs:', error);
+          res.status(500).json({
+              success: false,
+              message: 'Error searching jobs',
+              error: error.message
+          });
       }
-  
-      const jobs = await JobPost.findAll({
-        where: {
-          jobTitle: {
-            [Op.like]: `%${designation}%`
-          },
-          status: 'approved',
-          is_active: true
-        },
-        order: [['job_creation_date', 'DESC']]
-      });
-  
-      res.status(200).json({
-        success: true,
-        count: jobs.length,
-        jobs: jobs
-      });
-    } catch (error) {
-      console.error('Error searching jobs by designation:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error searching jobs by designation',
-        error: error.message
-      });
-    }
   };
+
 
   exports.getCandidateApplications = async (req, res) => {
     try {
@@ -759,8 +830,4 @@ exports.searchJobsByDesignation = async (req, res) => {
         error: error.message
       });
     }
-  };
-=======
-  };
-=======
   };

@@ -25,20 +25,25 @@ router.post('/signin', adminController.signin);
 
 // Protected Routes (require JWT authentication)
 router.post('/recruiters', adminAuth, adminController.createRecruiter);
+router.get('/recruiters/recent', adminAuth, adminController.getRecentRecruiters);
+router.patch('/recruiters/:recruiterId', adminAuth, adminController.updateRecruiter);
 router.patch('/jobs/:jobId/approve', adminAuth, adminController.approveJob);
 router.put('/jobs/:jobId/edit', adminAuth, adminController.editJob);
 router.get('/jobs/approved', adminAuth, adminController.getApprovedJobs);
 router.get('/jobs/pending', adminAuth, adminController.getPendingJobs);
+router.get('/jobs/rejected', adminAuth, adminController.getRejectedJobs);
+router.patch('/jobs/:jobId/reject', adminAuth, adminController.rejectJob);
 router.get('/jobs/:jobId', adminAuth, adminController.getJobById);
 router.get('/jobs', adminAuth, adminController.getAllJobs);
 router.delete('/jobs/:jobId', adminAuth, adminController.deleteJob);
-router.patch('/jobs/:jobId/reject', adminAuth, adminController.rejectJob);
-//Get all jobs rejected by the admin
-router.get('/jobs/rejected', adminAuth, adminController.getRejectedJobs);
+// Route: Admin gets all recruiters
 router.get('/recruiters', adminAuth, adminController.getRecruiters);
 // Route: Admin uploads bulk candidates via CSV/Excel
 router.post('/upload-candidates', adminAuth, upload.single('file'), adminController.bulkUploadCandidates);
-
+//TO BE DONE 
+// Route: Admin downloads a sample CSV file for bulk candidate upload
+//router.get('/download-sample', adminAuth, adminController.downloadSample);
+router.get('/dashboard-metrics', adminAuth, adminController.getDashboardMetrics);
 
 
 module.exports = router;

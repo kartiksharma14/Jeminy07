@@ -59,6 +59,7 @@ const {
   getMyApplications,
   getApplicationDetails,
   saveJob,
+  searchJobsWithAllParameter,
   unsaveJob,
   getSavedJobs,
   getCandidateApplications,
@@ -196,6 +197,7 @@ router.get('/jobs/search/key-skills', verifyToken, searchJobsByKeySkills);
 router.get('/jobs/search/designation', verifyToken, searchJobsByDesignation);
 //router.get('/jobs/search/education', verifyToken, searchJobsByEducation);
 router.get('/jobs/search', verifyToken, searchJobs);
+router.get('/search-all', verifyToken, searchJobsWithAllParameter);
 
 // ==================== Job Application Routes ====================
 
