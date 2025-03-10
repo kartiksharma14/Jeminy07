@@ -9,11 +9,17 @@ import {
   ContentState,
   convertFromHTML,
 } from "draft-js";
-import draftToHtml from "draftjs-to-html";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import "./JobPostingForm.css";
 import RecruiterHeader from "../components/RecruiterHeader";
 import RecruiterFooter from "../components/RecruiterFooter";
+
+// Helper function to strip HTML tags (not used now but can be useful)
+const stripHTML = (html) => {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || div.innerText || "";
+};
 
 const JobPostingForm = () => {
   const navigate = useNavigate();
@@ -40,46 +46,44 @@ const JobPostingForm = () => {
     max_experience: "",
   };
 
-  // Initialize form state with the passed data if available.
-  const [formData, setFormData] = useState(initialJobData);
+  // Rename state from formData to raw to avoid conflicts with FormData.
+  const [raw, setRaw] = useState(initialJobData);
   const [skillInput, setSkillInput] = useState("");
 
-  // Initialize job description editor state from existing HTML (if any)
-  const initialJobDescEditorState = initialJobData.jobDescription
-    ? EditorState.createWithContent(
-        ContentState.createFromBlockArray(
-          convertFromHTML(initialJobData.jobDescription)
-        )
-      )
+  // Initialize job description editor state.
+  // Here we assume raw.jobDescription is plain text.
+  const initialJobDescEditorState = raw.jobDescription
+    ? EditorState.createWithContent(ContentState.createFromText(raw.jobDescription))
     : EditorState.createEmpty();
   const [jobDescEditorState, setJobDescEditorState] = useState(
     initialJobDescEditorState
   );
 
-  // Initialize company info editor state from existing HTML (if any)
-  const initialCompanyEditorState = initialJobData.companyInfo
-    ? EditorState.createWithContent(
-        ContentState.createFromBlockArray(
-          convertFromHTML(initialJobData.companyInfo)
-        )
-      )
+  // For company info, we assume raw.companyInfo is plain text.
+  const initialCompanyEditorState = raw.companyInfo
+    ? EditorState.createWithContent(ContentState.createFromText(raw.companyInfo))
     : EditorState.createEmpty();
   const [companyEditorState, setCompanyEditorState] = useState(
     initialCompanyEditorState
   );
 
-  const handleJobDescEditorStateChange = (state) => {
-    setJobDescEditorState(state);
-    const htmlContent = draftToHtml(convertToRaw(state.getCurrentContent()));
-    setFormData((prev) => ({ ...prev, jobDescription: htmlContent }));
+  // Handler for job description changes.
+  // We simply extract plain text from the editor.
+  const handleJobDescEditorStateChange = (editorState) => {
+    setJobDescEditorState(editorState);
+    const plainText = editorState.getCurrentContent().getPlainText().trim();
+    setRaw((prev) => ({ ...prev, jobDescription: plainText }));
   };
 
-  const handleCompanyEditorStateChange = (state) => {
-    setCompanyEditorState(state);
-    const htmlContent = draftToHtml(convertToRaw(state.getCurrentContent()));
-    setFormData((prev) => ({ ...prev, companyInfo: htmlContent }));
+  // Handler for company info changes.
+  // We extract plain text as well.
+  const handleCompanyEditorStateChange = (editorState) => {
+    setCompanyEditorState(editorState);
+    const plainText = editorState.getCurrentContent().getPlainText().trim();
+    setRaw((prev) => ({ ...prev, companyInfo: plainText }));
   };
 
+  // Inline and block style handlers.
   const handleCompanyInlineStyle = (style) => {
     const newState = RichUtils.toggleInlineStyle(companyEditorState, style);
     handleCompanyEditorStateChange(newState);
@@ -94,15 +98,16 @@ const JobPostingForm = () => {
     const newState = RichUtils.toggleBlockType(jobDescEditorState, blockType);
     handleJobDescEditorStateChange(newState);
   };
+
   const handleCompanyBlockType = (blockType) => {
     const newState = RichUtils.toggleBlockType(companyEditorState, blockType);
     handleCompanyEditorStateChange(newState);
   };
-  
 
+  // Key skills handlers.
   const addSkill = (skill) => {
-    if (!formData.keySkills.includes(skill) && formData.keySkills.length < 20) {
-      setFormData((prev) => ({
+    if (!raw.keySkills.includes(skill) && raw.keySkills.length < 20) {
+      setRaw((prev) => ({
         ...prev,
         keySkills: [...prev.keySkills, skill],
       }));
@@ -111,33 +116,35 @@ const JobPostingForm = () => {
   };
 
   const removeSkill = (skillToRemove) => {
-    setFormData((prev) => ({
+    setRaw((prev) => ({
       ...prev,
       keySkills: prev.keySkills.filter((skill) => skill !== skillToRemove),
     }));
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && skillInput.trim() && formData.keySkills.length < 20) {
+    if (e.key === "Enter" && skillInput.trim() && raw.keySkills.length < 20) {
       e.preventDefault();
       addSkill(skillInput.trim());
     }
   };
 
+  // Generic input change handler.
   const handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setFormData((prev) => ({
+    setRaw((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
+  // File handler (if uploading job description file).
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setFormData((prev) => ({
+        setRaw((prev) => ({
           ...prev,
           jobDescription: event.target.result,
         }));
@@ -150,53 +157,62 @@ const JobPostingForm = () => {
     document.getElementById("fileInput").click();
   };
 
-  const handlePreview = () => {
-    navigate("/preview", { state: { jobData: formData } });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // When previewing, we filter out empty fields and then send the payload.
+  const handlePreview = async () => {
+    console.log("handlePreview function started");
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/recruiter/jobs",
-        formData,
-        { headers: { "Content-Type": "application/json" } }
+      const jwtToken = localStorage.getItem("authToken");
+
+      const payload = Object.fromEntries(
+        Object.entries(raw).filter(([key, value]) => {
+          if (key === "keySkills") {
+            return Array.isArray(value) && value.length > 0;
+          }
+          return value !== "";
+        })
       );
-      if (response.status === 201) {
-        alert("Job posted successfully!");
-        navigate("/job-success", { state: { jobData: response.data.job } });
+      if (raw.keySkills && raw.keySkills.length > 0) {
+        payload.keySkills = raw.keySkills.join(", ");
+      }
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+
+      const response = await axios.post(
+        "http://localhost:5000/api/recruiter/jobs/draft",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const session_id = response.data.session_id;
+        navigate("/preview", { state: { jobData: { ...raw, session_id } } });
+      } else {
+        alert(response.data.message || "Failed to create job draft.");
       }
     } catch (error) {
-      console.error("Error posting job:", error);
-      alert("Failed to post job. Please try again.");
+      console.error("Error creating job draft:", error);
+      const errorMessage =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        "Failed to create job draft. Please try again.";
+      alert(errorMessage);
     }
   };
-
-  const modules = {
-    toolbar: {
-      options: ["inline", "list"],
-      inline: {
-        options: ["bold", "italic", "underline"],
-      },
-      list: {
-        options: ["ordered"],
-      },
-    },
-  };
-
-  const formats = ["bold", "italic", "underline", "list"];
 
   return (
     <div className="page-container">
       <RecruiterHeader />
-
       <div className="job-posting-form">
         <main className="main-content-job">
-          <form onSubmit={handleSubmit}>
+          <form>
             <div>
               <h2 className="form-title">Post a Job - Hot Vacancy</h2>
             </div>
-
             {/* Basic Job Details */}
             <div className="form-section">
               <div className="flex-container">
@@ -209,7 +225,7 @@ const JobPostingForm = () => {
                     className="form-input"
                     placeholder="Enter a clear & specific title to get better responses"
                     name="jobTitle"
-                    value={formData.jobTitle}
+                    value={raw.jobTitle}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -220,16 +236,16 @@ const JobPostingForm = () => {
                   <select
                     className="form-select"
                     name="employmentType"
-                    value={formData.employmentType}
+                    value={raw.employmentType}
                     onChange={handleInputChange}
                   >
+                    <option>Select Employment Type</option>
                     <option>Full Time, Permanent</option>
                     <option>Part Time</option>
                     <option>Contract</option>
                   </select>
                 </div>
               </div>
-
               <div>
                 <label className="form-label">
                   Key Skills <span className="required">*</span>
@@ -244,7 +260,7 @@ const JobPostingForm = () => {
                     onKeyDown={handleKeyDown}
                   />
                   <div className="skills-list">
-                    {formData.keySkills.map((skill, index) => (
+                    {raw.keySkills.map((skill, index) => (
                       <div key={index} className="skill-tag">
                         {skill}
                         <button
@@ -259,7 +275,6 @@ const JobPostingForm = () => {
                   </div>
                 </div>
               </div>
-
               <div>
                 <label className="form-label">
                   Department & Role Category <span className="required">*</span>
@@ -270,7 +285,7 @@ const JobPostingForm = () => {
                 <select
                   className="form-select"
                   name="department"
-                  value={formData.department}
+                  value={raw.department}
                   onChange={handleInputChange}
                 >
                   <option>IT - Software Developer</option>
@@ -307,7 +322,6 @@ const JobPostingForm = () => {
                   <option>Customer Support - Chat Support Executive</option>
                 </select>
               </div>
-
               <div>
                 <label className="form-label">
                   Work Mode <span className="required">*</span>
@@ -318,7 +332,7 @@ const JobPostingForm = () => {
                 <select
                   className="form-select"
                   name="workMode"
-                  value={formData.workMode}
+                  value={raw.workMode}
                   onChange={handleInputChange}
                 >
                   <option>In office</option>
@@ -326,7 +340,6 @@ const JobPostingForm = () => {
                   <option>Hybrid</option>
                 </select>
               </div>
-
               <div>
                 <label className="form-label">
                   Job Location <span className="required">*</span>
@@ -336,12 +349,11 @@ const JobPostingForm = () => {
                   className="form-input"
                   placeholder="Search and add locations"
                   name="locations"
-                  value={formData.locations}
+                  value={raw.locations}
                   onChange={handleInputChange}
                 />
               </div>
             </div>
-
             {/* Salary and Experience */}
             <div className="form-section">
               <div className="flex-container">
@@ -351,7 +363,7 @@ const JobPostingForm = () => {
                     type="number"
                     className="form-input"
                     name="min_salary"
-                    value={formData.min_salary}
+                    value={raw.min_salary}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -361,12 +373,11 @@ const JobPostingForm = () => {
                     type="number"
                     className="form-input"
                     name="max_salary"
-                    value={formData.max_salary}
+                    value={raw.max_salary}
                     onChange={handleInputChange}
                   />
                 </div>
               </div>
-
               <div className="flex-container">
                 <div className="flex-item">
                   <label className="form-label">
@@ -376,7 +387,7 @@ const JobPostingForm = () => {
                     type="number"
                     className="form-input"
                     name="min_experience"
-                    value={formData.min_experience}
+                    value={raw.min_experience}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -388,13 +399,12 @@ const JobPostingForm = () => {
                     type="number"
                     className="form-input"
                     name="max_experience"
-                    value={formData.max_experience}
+                    value={raw.max_experience}
                     onChange={handleInputChange}
                   />
                 </div>
               </div>
             </div>
-
             {/* Industry and Diversity */}
             <div className="form-section">
               <div>
@@ -402,12 +412,10 @@ const JobPostingForm = () => {
                 <select
                   className="form-select"
                   name="industry"
-                  value={formData.industry}
+                  value={raw.industry}
                   onChange={handleInputChange}
                 >
-                  <option>
-                    Select the industry you're looking to hire from
-                  </option>
+                  <option>Select the industry you're looking to hire from</option>
                   <option>IT</option>
                   <option>Automobile</option>
                   <option>Finance</option>
@@ -441,31 +449,27 @@ const JobPostingForm = () => {
                   <option>Tourism & Ecotourism</option>
                 </select>
               </div>
-
               <div className="diversity-container">
                 <div className="flex-start">
                   <input
                     type="checkbox"
                     className="checkbox-input"
                     name="diversityHiring"
-                    checked={formData.diversityHiring}
+                    checked={raw.diversityHiring}
                     onChange={handleInputChange}
                   />
                   <div>
                     <label className="diversity-label">
-                      Hire women candidates for this role and promote diversity
-                      in the workplace
+                      Hire women candidates for this role and promote diversity in the workplace
                     </label>
                     <p className="form-text">
-                      Diversity hiring feature currently requires no additional
-                      credits
+                      Diversity hiring feature currently requires no additional credits
                     </p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Job Description using react-draft-wysiwyg */}
+            {/* Job Description */}
             <div className="card">
               <label className="form-label">
                 Job Description <span className="required">*</span>
@@ -496,9 +500,7 @@ const JobPostingForm = () => {
                   <button
                     type="button"
                     className="toolbar-button"
-                    onClick={() =>
-                      handleJobDescBlockType("ordered-list-item")
-                    }
+                    onClick={() => handleJobDescBlockType("ordered-list-item")}
                   >
                     List
                   </button>
@@ -532,15 +534,11 @@ Perks and benefits:
                   editorClassName="rich-text-editor"
                 />
                 <div className="textarea-counter">
-                  {1000 -
-                    jobDescEditorState
-                      .getCurrentContent()
-                      .getPlainText().length}{" "}
+                  {1000 - jobDescEditorState.getCurrentContent().getPlainText().length}{" "}
                   Characters Remaining
                 </div>
               </div>
             </div>
-
             {/* Additional Options */}
             <div className="form-section">
               <div>
@@ -553,9 +551,9 @@ Perks and benefits:
                       type="radio"
                       name="multipleVacancies"
                       value="true"
-                      checked={formData.multipleVacancies === true}
+                      checked={raw.multipleVacancies === true}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setRaw((prev) => ({
                           ...prev,
                           multipleVacancies: e.target.value === "true",
                         }))
@@ -568,9 +566,9 @@ Perks and benefits:
                       type="radio"
                       name="multipleVacancies"
                       value="false"
-                      checked={formData.multipleVacancies === false}
+                      checked={raw.multipleVacancies === false}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setRaw((prev) => ({
                           ...prev,
                           multipleVacancies: e.target.value === "false",
                         }))
@@ -581,7 +579,6 @@ Perks and benefits:
                 </div>
               </div>
             </div>
-
             {/* Company Information */}
             <div className="form-section">
               <div>
@@ -591,11 +588,10 @@ Perks and benefits:
                   className="form-input"
                   placeholder="Enter the company name"
                   name="companyName"
-                  value={formData.companyName}
+                  value={raw.companyName}
                   onChange={handleInputChange}
                 />
               </div>
-
               <div className="card">
                 <label className="form-label">
                   About Company <span className="required">*</span>
@@ -626,9 +622,7 @@ Perks and benefits:
                     <button
                       type="button"
                       className="toolbar-button"
-                      onClick={() =>
-                        handleCompanyBlockType("ordered-list-item")
-                      }
+                      onClick={() => handleCompanyBlockType("ordered-list-item")}
                     >
                       List
                     </button>
@@ -641,12 +635,10 @@ Perks and benefits:
                     editorClassName="rich-text-editor"
                   />
                   <div className="textarea-counter">
-                    {500 -
-                      companyEditorState.getCurrentContent().getPlainText().length}{" "}
+                    {500 - companyEditorState.getCurrentContent().getPlainText().length}{" "}
                     Characters Remaining
                   </div>
                 </div>
-
                 <div className="mt-4">
                   <label className="form-label">Company Address</label>
                   <input
@@ -654,13 +646,12 @@ Perks and benefits:
                     className="form-input"
                     placeholder="Add company address"
                     name="companyAddress"
-                    value={formData.companyAddress}
+                    value={raw.companyAddress}
                     onChange={handleInputChange}
                   />
                 </div>
               </div>
             </div>
-
             {/* Action Buttons */}
             <div className="form-actions">
               <button

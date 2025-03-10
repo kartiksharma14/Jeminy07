@@ -21,6 +21,7 @@ import PrivateRouteAdmin from "./PrivateRouteAdmin";
 import JobPostingForm from "./JobPosting/JobPostingForm";
 import JobPreview from "./JobPosting/JobPreview";
 import JobSuccess from "./JobPosting/JobSuccess";
+import LogoutButton from "./Admin/LogoutButton";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/candidate/signup" element={<CandidateSignup />} />
             <Route path="/recruiter/login" element={<RecruiterLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/logout" element={<LogoutButton/>}/>
             {/* 🔒 Protected Routes for Candidates */}
             <Route
               path="/home"

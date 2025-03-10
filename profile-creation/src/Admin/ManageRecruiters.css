@@ -1,12 +1,171 @@
-/* src/styles/ManageRecruiters.css */
-.manage-recruiters {
-    padding: 20px;
-  }
-  .recruiters-list {
-    margin-top: 20px;
-  }
-  .recruiter-item {
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
-  }
-  
+/* src/components/ManageRecruiters.css */
+
+.mr-manage-recruiters {
+  background: #f7f9fc;
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+  padding-bottom: 40px;
+}
+
+/* Layout container for sidebar and content */
+.mr-layout {
+  display: flex;
+}
+
+/* Content area to fill remaining space */
+.mr-content {
+  flex: 1;
+  padding: 20px;
+}
+
+/* Main container styling */
+.mr-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px 25px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Back Button */
+.mr-back-button {
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 25px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.mr-back-button:hover {
+  background: #1f2a38;
+  transform: translateY(-2px);
+}
+
+/* Title */
+.mr-title {
+  text-align: center;
+  font-size: 28px;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  font-weight: 500;
+}
+
+/* Form styling */
+.mr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.mr-form input {
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #e0e6ed;
+  border-radius: 6px;
+  transition: border 0.2s;
+}
+
+.mr-form input:focus {
+  border-color: #2c3e50;
+  outline: none;
+}
+
+.mr-form button {
+  padding: 12px;
+  font-size: 16px;
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.mr-form button:hover {
+  background-color: #1f2a38;
+}
+
+.mr-error {
+  color: #e74c3c;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Table styling */
+.mr-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.mr-table {
+  width: 100%;
+  border-collapse: collapse;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.mr-table th,
+.mr-table td {
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #e0e6ed;
+}
+
+.mr-table th {
+  background-color: #f1f3f7;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.mr-table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* Action buttons in table */
+.mr-action-btn {
+  margin-right: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.edit-btn {
+  background-color: #40739e;
+  color: #fff;
+}
+
+.edit-btn:hover {
+  background-color: #2f3542;
+  transform: translateY(-2px);
+}
+
+.delete-btn {
+  background-color: #e84118;
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background-color: #c23616;
+  transform: translateY(-2px);
+}
+
+.mr-no-data {
+  text-align: center;
+  color: #777;
+  font-size: 16px;
+  margin-top: 20px;
+}

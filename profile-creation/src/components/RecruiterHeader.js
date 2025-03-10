@@ -35,7 +35,7 @@ const RecruiterHeader = () => {
     <header className="recruiter-header">
       {/* 1. Logo Section */}
       <div className="recruiter-header-left">
-        <a href="/">
+        <a href="/recruiter">
           <img
             src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
             alt="Recruiter Logo"

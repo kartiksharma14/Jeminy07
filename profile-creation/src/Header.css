@@ -1,117 +1,158 @@
-/* Header Container */
+/* Header container */
 .header-candidate {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background-color: white;
-  color: #f0f0f0;
-  font-family: Arial, sans-serif;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Left Section: Logo */
+/* Logo */
 .header-left .logo {
   height: 40px;
   width: auto;
-  transition: transform 0.2s;
 }
 
-.header-left .logo:hover {
-  transform: scale(1.1);
-}
-
-/* Center Section: Navigation and Search */
+/* Center Section */
 .header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+/* Minimal Search Bar */
+.minimal-search {
   display: flex;
   align-items: center;
-  gap: 15px;
-  flex: 1;
-  justify-content: center;
+  background: #f1f3f7;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  width: 300px;
 }
 
-.jobs-link {
-  font-size: 16px;
-  color: black;
-  text-decoration: none;
-  margin-right: 15px;
-  transition: color 0.3s;
-}
-
-.jobs-link:hover {
-  color: #007bff;
-}
-
-.search-box {
-  flex: 1;
-  max-width: 300px;
-  padding: 8px 12px;
+.minimal-input {
+  border: none;
+  background: transparent;
+  width: 100%;
   font-size: 14px;
-  border: 1px solid #444;
+  color: #2c3e50;
+  pointer-events: none;
+}
+
+.minimal-search-btn {
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
   border-radius: 4px;
-  background-color: white;
-  color: #f0f0f0;
-  transition: box-shadow 0.3s;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-.search-box:focus {
+.minimal-search-btn:hover {
+  background-color: #1f2a38;
+}
+
+/* Expanded Search Panel */
+.expanded-search-panel {
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #e0e6ed;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  position: relative;
+  z-index: 10;
+}
+
+.expanded-search-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+}
+
+.search-field label {
+  font-size: 12px;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.search-field input,
+.search-field select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #e0e6ed;
+  border-radius: 4px;
   outline: none;
-  box-shadow: 0 0 5px #007bff;
 }
 
-/* Right Section: Profile Icon */
+.expanded-search-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.expanded-search-actions button {
+  padding: 10px 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #2c3e50;
+  color: #fff;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.expanded-search-actions button:hover {
+  background-color: #1f2a38;
+  transform: translateY(-2px);
+}
+
+/* Right Section: Profile Menu */
+.header-right {
+  position: relative;
+}
+
 .profile-icon-placeholder {
-  height: 36px;
-  width: 36px;
+  width: 32px;
+  height: 32px;
+  background-color: #ddd;
   border-radius: 50%;
-  background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNdN9iSAU7808-QMjArLwqvXVONI9MXmK7Mw');
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.2s;
+  cursor: pointer;
 }
 
-.profile-icon-placeholder:hover {
-  transform: scale(1.1);
+.profile-menu-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  z-index: 999;
 }
-@media (max-width: 768px) {
-  /* Adjust the header container for smaller screens */
-  .header-candidate {
-    padding: 8px 10px;
-    flex-wrap: wrap; /* Allow elements to wrap if needed */
-  }
-  
-  /* Reduce logo size for a compact look */
-  .header-left .logo {
-    height: 35px;
-  }
-  
-  /* Center section adjustments: stack or wrap navigation/search */
-  .header-center {
-    flex-basis: 100%;
-    justify-content: center;
-    margin-top: 8px;
-    gap: 10px;
-  }
-  
-  /* Slightly reduce the font size and spacing of navigation links */
-  .jobs-link {
-    font-size: 14px;
-    margin-right: 10px;
-  }
-  
-  /* Make the search box responsive */
-  .search-box {
-    max-width: 100%;
-    font-size: 14px;
-    padding: 6px 10px;
-  }
-  
-  /* Scale down the profile icon for mobile */
-  .profile-icon-placeholder {
-    height: 30px;
-    width: 30px;
-  }
+
+.profile-menu-item {
+  padding: 10px;
+  font-size: 14px;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.profile-menu-item:hover {
+  background: #f1f3f7;
 }

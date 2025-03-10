@@ -1,66 +1,192 @@
-/* src/components/AdminLogin.css */
+/* Overall page layout with video background */
+.admin-login-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif;
+}
 
+/* Background video styling */
+.bg-video {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: -1;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  filter: brightness(0.7);
+}
+
+/* Login container styling */
 .admin-login-container {
-    max-width: 400px;
+  max-width: 400px;
+  width: 90%;
+  margin: 80px auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Form styling */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.admin-form h2 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #e0e6ed;
+  border-radius: 5px;
+  transition: border 0.2s;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+  border-color: #2c3e50;
+  outline: none;
+}
+
+.admin-form button {
+  padding: 12px;
+  font-size: 16px;
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.admin-form button:hover {
+  background-color: #1f2a38;
+}
+
+.toggle-link {
+  text-align: center;
+  color: #2c3e50;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.toggle-link:hover {
+  text-decoration: underline;
+}
+
+/* Error message styling */
+.error {
+  color: #e74c3c;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #e0e6ed;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  transition: border 0.2s;
+}
+
+.modal-content input:focus {
+  border-color: #2c3e50;
+  outline: none;
+}
+
+.modal-content button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.modal-content button:hover {
+  background-color: #1f2a38;
+}
+
+.close-btn-admin {
+  margin-top: 15px;
+  background: #e0e6ed;
+  color: #2c3e50;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.close-btn-admin:hover {
+  background: #cfd7e3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .admin-login-container {
     margin: 40px auto;
     padding: 20px;
   }
   
-  .admin-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .admin-form h2 {
+    font-size: 20px;
   }
   
-  .admin-form input {
-    padding: 8px;
-    font-size: 16px;
-  }
-  
+  .admin-form input,
+  .admin-form select,
   .admin-form button {
-    padding: 10px;
-    font-size: 16px;
-    background-color: #2c3e50;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .error {
-    color: red;
     font-size: 14px;
+    padding: 10px;
   }
-  
-  /* Modal styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .modal-content {
-    background: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    width: 90%;
-    max-width: 400px;
-  }
-  
-  .modal-content h2 {
-    margin-top: 0;
-  }
-  
-  .close-btn-admin {
-    margin-top: 10px;
-    background: #ccc;
-    border: none;
-    padding: 8px;
-    cursor: pointer;
-  }
-  
+}

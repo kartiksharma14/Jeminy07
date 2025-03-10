@@ -1,0 +1,62 @@
+/* src/components/AdminSidebar.css */
+
+.as-sidebar {
+    width: 240px;
+    background: #080320;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  .as-logo {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .as-logo h2 {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0;
+    color: #fff;
+  }
+  
+  .as-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .as-nav-link {
+    text-decoration: none;
+    color: #bdc3c7;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: background 0.3s, color 0.3s;
+    display: block;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+  
+  .as-nav-link:hover {
+    background: #34495e;
+    color: #fff;
+  }
+  
+  .as-nav-link.active {
+    background: #1abc9c;
+    color: #fff;
+  }
+  
+  /* Specific style for the logout button */
+  .logout-button {
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  

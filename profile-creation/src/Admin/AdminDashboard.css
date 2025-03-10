@@ -1,17 +1,78 @@
-/* src/styles/AdminDashboard.css */
-.admin-dashboard {
-    padding: 20px;
-  }
-  .admin-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 20px;
-  }
-  .action-button {
-    padding: 10px 20px;
-    background-color: #3498db;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 3px;
-  }
-  
+/* src/components/AdminDashboard.css */
+
+.enterprise-dashboard {
+  background: linear-gradient(135deg, #f7f9fc, #e2e8f0);
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Layout container for sidebar and main content */
+.enterprise-layout {
+  display: flex;
+}
+
+/* Sidebar is handled by AdminSidebar.css */
+
+/* Main content area */
+.enterprise-main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* Header area within main content */
+.enterprise-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.enterprise-header h1 {
+  font-size: 32px;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.enterprise-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.enterprise-stat-card {
+  background: #ffffff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.enterprise-stat-number {
+  font-size: 24px;
+  font-weight: 600;
+  color: #40739e;
+}
+
+.enterprise-stat-label {
+  font-size: 14px;
+  color: #2c3e50;
+  margin-top: 5px;
+}
+
+/* Enterprise content section */
+.enterprise-content {
+  margin-top: 30px;
+}
+
+.enterprise-card-section {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.enterprise-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  flex: 1 1 300px;
+}

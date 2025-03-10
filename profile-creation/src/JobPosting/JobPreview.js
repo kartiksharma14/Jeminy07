@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Star, Facebook, Linkedin, Twitter } from 'lucide-react';
 import './JobPreview.css';
+import axios from 'axios';
 
 const JobPreview = () => {
   const location = useLocation();
@@ -55,16 +56,31 @@ const JobPreview = () => {
     navigate("/post-job", { state: { jobData } });
   };
 
-  const handlePost = () => {
-    console.log('Posting job:', jobData);
-    // Add a timestamp for creation date and a random job ID for demonstration purposes
-    const jobDataWithTimestamp = {
-      ...jobData,
-      createdAt: new Date().toISOString(),
-      jobId: `JOB-${Math.floor(Math.random() * 100000)}`,
-    };
-    navigate('/job-success', { state: { jobData: jobDataWithTimestamp } });
+  const handlePost = async () => {
+    try {
+      const jwtToken = localStorage.getItem("authToken");
+      const response = await axios.post(
+        "http://localhost:5000/api/recruiter/jobs/publish",
+        { session_id: jobData.session_id },
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.data.success) {
+        // Assuming the published job details are in response.data.job
+        navigate("/job-success", { state: { jobData: response.data.job } });
+      } else {
+        alert("Failed to publish job.");
+      }
+    } catch (error) {
+      console.error("Error publishing job:", error);
+      alert("Failed to publish job. Please try again.");
+    }
   };
+  
 
   return (
     <div className="job-preview-container">
