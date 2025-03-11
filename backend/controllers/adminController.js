@@ -2,16 +2,21 @@ const csvParser = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
+const XLSX = require('xlsx');
 const bcrypt = require('bcryptjs');
 const { Sequelize } = require('sequelize');
+const { sequelize } = require('../db');
+const { Op } = require('sequelize');
 const Admin = require('../models/adminModel');
 const Signin = require("../models/user");
 const Recruiter = require('../models/recruiterSignin');
 const Otp = require('../models/otp');
 const JobPost = require('../models/jobpost');
 const JobApplication = require('../models/jobApplications');
+const TempJobPost = require('../models/TempJobPost'); 
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const e = require('express');
 require('dotenv').config();
 
 // Helper Functions
@@ -143,6 +148,7 @@ exports.signin = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /*async function getDashboardMetrics() {
 try {
@@ -286,7 +292,8 @@ async function getDashboardMetrics() {
     };
   }
 }
-  
+
+
 
 // Admin creates recruiter
 exports.createRecruiter = async (req, res) => {
@@ -728,7 +735,7 @@ exports.getRecentRecruiters = async (req, res) => {
 // Update Recruiter Details (PATCH method)
 exports.updateRecruiter = async (req, res) => {
   const { recruiterId } = req.params;
-  const { name, password, companyName } = req.body;
+  const { name, password, email, companyName } = req.body;
   
   try {
     // Find the recruiter by ID
@@ -740,12 +747,31 @@ exports.updateRecruiter = async (req, res) => {
       });
     }
 
+    // Check if email is being updated and validate it
+    if (email && email !== recruiter.email) {
+      // Check if email is already in use by another recruiter
+      const existingRecruiter = await Recruiter.findOne({ 
+        where: { 
+          email: email,
+          recruiter_id: { [Sequelize.Op.ne]: recruiterId } // Not equal to current recruiter
+        } 
+      });
+      
+      if (existingRecruiter) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email is already in use by another recruiter" 
+        });
+      }
+    }
+
     // Create an object to store fields to update
     const updateFields = {};
     
     // Only update fields that are provided in the request
     if (name) updateFields.name = name;
     if (companyName) updateFields.company_name = companyName;
+    if (email) updateFields.email = email;
     
     // If password is provided, hash it before saving
     if (password) {
@@ -753,16 +779,20 @@ exports.updateRecruiter = async (req, res) => {
       updateFields.password = await bcrypt.hash(password, salt);
     }
     
+    console.log('Updating recruiter with fields:', updateFields);
+    
     // Update the recruiter with the new values
     await recruiter.update(updateFields);
     
+    // Fetch the latest data after update
+    const refreshedRecruiter = await Recruiter.findByPk(recruiterId);
+    
     // Return the updated recruiter (excluding password)
     const updatedRecruiter = {
-      recruiter_id: recruiter.recruiter_id,
-      name: recruiter.name,
-      email: recruiter.email,
-      company_name: recruiter.company_name,
-      // Add other fields you want to return, but not the password
+      recruiter_id: refreshedRecruiter.recruiter_id,
+      name: refreshedRecruiter.name,
+      email: refreshedRecruiter.email,
+      company_name: refreshedRecruiter.company_name,
     };
     
     res.status(200).json({
@@ -772,9 +802,464 @@ exports.updateRecruiter = async (req, res) => {
     });
     
   } catch (err) {
+    console.error('Error updating recruiter:', err);
     res.status(500).json({ 
       success: false, 
       error: err.message 
     });
   }
 };
+
+
+exports.bulkUploadJobs = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        message: "No file uploaded" 
+      });
+    }
+
+    const filePath = req.file.path;
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    let results = [];
+
+    // Process file based on its extension
+    if (fileExtension === '.csv') {
+      // Process CSV file
+      results = await processCSV(filePath);
+    } else if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+      // Process Excel file
+      results = processExcel(filePath);
+    } else {
+      // Clean up the uploaded file
+      fs.unlink(filePath, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Unsupported file format. Please upload CSV, XLSX, or XLS file."
+      });
+    }
+
+    // Process results and insert into database
+    const { insertedJobs, errors } = await insertJobs(results);
+
+    // Clean up the uploaded file
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error deleting file:', err);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${insertedJobs.length} jobs uploaded successfully${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+      data: insertedJobs,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    
+    // Clean up the uploaded file if it exists
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+    
+    return res.status(500).json({ 
+      success: false,
+      message: "Error processing file",
+      error: error.message
+    });
+  }
+};
+
+// Function to process CSV file
+function processCSV(filePath) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    
+    fs.createReadStream(filePath)
+      .pipe(csvParser())
+      .on("data", (row) => {
+        results.push(row);
+      })
+      .on("end", () => {
+        resolve(results);
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+}
+
+// Function to process Excel file
+function processExcel(filePath) {
+  try {
+    const workbook = XLSX.readFile(filePath);
+    const sheet_name_list = workbook.SheetNames;
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+    return data;
+  } catch (error) {
+    throw new Error(`Error processing Excel file: ${error.message}`);
+  }
+}
+
+// Function to insert jobs into database
+async function insertJobs(jobsData) {
+  const insertedJobs = [];
+  const errors = [];
+
+  for (let [index, job] of jobsData.entries()) {
+    try {
+      // Prepare job data with proper data types
+      const jobData = {
+        recruiter_id: parseInt(job.recruiter_id) || null,
+        jobTitle: job.jobTitle,
+        employmentType: job.employmentType,
+        keySkills: job.keySkills,
+        department: job.department || null,
+        workMode: job.workMode,
+        locations: job.locations,
+        industry: job.industry || null,
+        diversityHiring: job.diversityHiring === 'true' || job.diversityHiring === '1' || job.diversityHiring === true ? true : false,
+        jobDescription: job.jobDescription,
+        multipleVacancies: job.multipleVacancies === 'true' || job.multipleVacancies === '1' || job.multipleVacancies === true ? true : false,
+        companyName: job.companyName,
+        companyInfo: job.companyInfo || null,
+        companyAddress: job.companyAddress || null,
+        min_salary: job.min_salary ? parseFloat(job.min_salary) : null,
+        max_salary: job.max_salary ? parseFloat(job.max_salary) : null,
+        min_experience: job.min_experience !== undefined ? parseInt(job.min_experience) : null,
+        max_experience: job.max_experience !== undefined ? parseInt(job.max_experience) : null,
+        is_active: job.is_active === 'true' || job.is_active === '1' || job.is_active === true ? true : false,
+        status: job.status || 'pending' // Default to pending if not specified
+      };
+
+      // Validate required fields
+      const requiredFields = ['jobTitle', 'employmentType', 'keySkills', 'workMode', 'locations', 'jobDescription', 'companyName'];
+      const missingFields = requiredFields.filter(field => !jobData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Insert job into database
+      const insertedJob = await JobPost.create(jobData);
+      insertedJobs.push(insertedJob);
+    } catch (jobError) {
+      errors.push({
+        row: index + 2, // +2 because index is 0-based and we account for header row
+        message: jobError.message,
+        data: job
+      });
+      console.error(`Error inserting job at row ${index + 2}:`, jobError);
+    }
+  }
+
+  return { insertedJobs, errors };
+}
+
+
+// Function to generate and download a job template
+exports.downloadJobTemplate = (req, res) => {
+  try {
+    // Define the template headers and sample data
+    const templateHeaders = [
+      'recruiter_id',
+      'jobTitle',
+      'employmentType',
+      'keySkills',
+      'department',
+      'workMode',
+      'locations',
+      'industry',
+      'diversityHiring',
+      'jobDescription',
+      'multipleVacancies',
+      'companyName',
+      'companyInfo',
+      'companyAddress',
+      'min_salary',
+      'max_salary',
+      'min_experience',
+      'max_experience',
+      'is_active',
+      'status'
+    ];
+
+    const sampleData = [
+      {
+        recruiter_id: '10',
+        jobTitle: 'Full Stack Developer',
+        employmentType: 'Full-time',
+        keySkills: 'React, Node.js, MongoDB',
+        department: 'IT',
+        workMode: 'Remote',
+        locations: 'Bangalore',
+        industry: 'Information Technology',
+        diversityHiring: '1',
+        jobDescription: 'We are looking for a Full Stack Developer to join our team...',
+        multipleVacancies: '1',
+        companyName: 'ABC Tech',
+        companyInfo: 'Leading technology company',
+        companyAddress: '123 Tech Park, Bangalore',
+        min_salary: '2500000',
+        max_salary: '3500000',
+        min_experience: '2',
+        max_experience: '5',
+        is_active: '1',
+        status: 'pending'
+      },
+      {
+        recruiter_id: '11',
+        jobTitle: 'Data Scientist',
+        employmentType: 'Full-time',
+        keySkills: 'Python, R, Machine Learning',
+        department: 'Data Science',
+        workMode: 'Hybrid',
+        locations: 'Mumbai',
+        industry: 'Information Technology',
+        diversityHiring: '0',
+        jobDescription: 'Seeking an experienced Data Scientist to work on challenging projects...',
+        multipleVacancies: '0',
+        companyName: 'XYZ Analytics',
+        companyInfo: 'Data analytics firm',
+        companyAddress: '456 Business Park, Mumbai',
+        min_salary: '3000000',
+        max_salary: '4500000',
+        min_experience: '3',
+        max_experience: '7',
+        is_active: '1',
+        status: 'pending'
+      }
+    ];
+
+    // Create a new workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(sampleData, { header: templateHeaders });
+
+    // Add column widths to improve readability
+    const colWidths = [
+      { wch: 12 }, // recruiter_id
+      { wch: 25 }, // jobTitle
+      { wch: 15 }, // employmentType
+      { wch: 30 }, // keySkills
+      { wch: 15 }, // department
+      { wch: 15 }, // workMode
+      { wch: 20 }, // locations
+      { wch: 20 }, // industry
+      { wch: 15 }, // diversityHiring
+      { wch: 50 }, // jobDescription
+      { wch: 15 }, // multipleVacancies
+      { wch: 25 }, // companyName
+      { wch: 30 }, // companyInfo
+      { wch: 30 }, // companyAddress
+      { wch: 15 }, // min_salary
+      { wch: 15 }, // max_salary
+      { wch: 15 }, // min_experience
+      { wch: 15 }, // max_experience
+      { wch: 10 }, // is_active
+      { wch: 10 }  // status
+    ];
+    ws['!cols'] = colWidths;
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Jobs Template');
+
+    // Create a temporary file path
+    const tempFilePath = path.join(__dirname, '../temp', `jobs-template-${Date.now()}.xlsx`);
+    
+    // Ensure the temp directory exists
+    const tempDir = path.dirname(tempFilePath);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Write the workbook to a file
+    XLSX.writeFile(wb, tempFilePath);
+
+    // Send the file as a download
+    res.download(tempFilePath, 'jobs-template.xlsx', (err) => {
+      // Delete the temporary file after sending
+      fs.unlink(tempFilePath, (unlinkErr) => {
+        if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+      });
+
+      if (err) {
+        console.error('Error sending template file:', err);
+        if (!res.headersSent) {
+          return res.status(500).json({
+            success: false,
+            message: 'Error sending template file',
+            error: err.message
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error generating template:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generating template',
+      error: error.message
+    });
+  }
+};
+
+// Update Admin Password
+exports.updatePassword = async (req, res) => {
+  const adminId = req.admin.id; // Get admin ID from JWT token
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    // Input validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required"
+      });
+    }
+
+    // Password strength validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters long"
+      });
+    }
+
+    // Find the admin by ID
+    const admin = await Admin.findByPk(adminId);
+    if (!admin) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Admin not found" 
+      });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Current password is incorrect" 
+      });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    admin.password = hashedPassword;
+    await admin.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+  } catch (err) {
+    console.error('Error updating admin password:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+};
+
+
+// Delete Recruiter by Admin (with all associated data)
+exports.deleteRecruiter = async (req, res) => {
+  const { recruiterId } = req.params;
+  const adminId = req.admin.id; // Admin ID from JWT token
+  
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Find the recruiter by ID
+    const recruiter = await Recruiter.findByPk(recruiterId, { transaction });
+    if (!recruiter) {
+      await transaction.rollback();
+      return res.status(404).json({ 
+        success: false, 
+        message: "Recruiter not found" 
+      });
+    }
+
+    // Get recruiter details for logging and response
+    const recruiterDetails = {
+      id: recruiter.recruiter_id,
+      name: recruiter.name,
+      email: recruiter.email,
+      company_name: recruiter.company_name
+    };
+
+    // Find all associated jobs
+    const jobs = await JobPost.findAll({
+      where: { recruiter_id: recruiterId },
+      transaction
+    });
+
+    // Delete all job applications for these jobs
+    if (jobs.length > 0) {
+      const jobIds = jobs.map(job => job.job_id);
+      await JobApplication.destroy({
+        where: { 
+          job_id: { [Op.in]: jobIds } 
+        },
+        transaction
+      });
+      
+      console.log(`Deleted applications for ${jobIds.length} jobs`);
+    }
+
+    // Delete all jobs
+    const deletedJobsCount = await JobPost.destroy({
+      where: { recruiter_id: recruiterId },
+      transaction
+    });
+    
+    console.log(`Deleted ${deletedJobsCount} jobs`);
+
+    // Delete all draft jobs if using TempJobPost model
+    const deletedDraftsCount = await TempJobPost.destroy({
+      where: { recruiter_id: recruiterId },
+      transaction
+    });
+    
+    console.log(`Deleted ${deletedDraftsCount} job drafts`);
+
+    // Delete the recruiter
+    await recruiter.destroy({ transaction });
+
+    // Commit the transaction
+    await transaction.commit();
+
+    // Log the deletion
+    console.log(`Admin ${adminId} deleted recruiter:`, recruiterDetails);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Recruiter and all associated data deleted successfully",
+      deletedRecruiter: recruiterDetails,
+      summary: {
+        deletedJobs: jobs.length,
+        deletedDrafts: deletedDraftsCount
+      }
+    });
+    
+  } catch (err) {
+    // Rollback the transaction in case of error
+    await transaction.rollback();
+    console.error('Error deleting recruiter:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+};
+

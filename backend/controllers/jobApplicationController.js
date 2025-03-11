@@ -682,7 +682,7 @@ exports.searchJobsWithAllParameter = async (req, res) => {
   };
 
 
-  exports.getCandidateApplications = async (req, res) => {
+exports.getCandidateApplications = async (req, res) => {
     try {
       // Change from req.candidate.candidate_id to req.user.candidate_id
       const candidateId = req.user.candidate_id; 
@@ -732,25 +732,27 @@ exports.searchJobsWithAllParameter = async (req, res) => {
   // Get detailed information about a specific application
   exports.getCandidateApplicationDetail = async (req, res) => {
     try {
-      // Change from req.candidate.candidate_id to req.user.candidate_id
       const candidateId = req.user.candidate_id;
       const { application_id } = req.params;
       
-      // Find application with joins to job post and recruiter
+      // Find application with joins to job post only
       const application = await JobApplication.findOne({
-        where: { 
+        where: {
           application_id,
           candidate_id: candidateId  // Ensures candidate can only see their own applications
         },
         include: [
           {
             model: JobPost,
-            attributes: ['job_id', 'jobTitle', 'jobDescription', 'locations', 'job_creation_date', 'recruiter_id'],
-            include: [
-              {
-                model: RecruiterProfile,
-                attributes: ['company_name', 'industry', 'company_website']
-              }
+            attributes: [
+              'job_id', 
+              'jobTitle', 
+              'jobDescription', 
+              'locations', 
+              'job_creation_date', 
+              'recruiter_id',
+              'industry',
+              'companyInfo' // I'm assuming this might be what you meant by company_website
             ]
           }
         ]
@@ -778,7 +780,7 @@ exports.searchJobsWithAllParameter = async (req, res) => {
   };
   
   // Withdraw an application (candidate cancels their own application)
-  exports.withdrawApplication = async (req, res) => {
+exports.withdrawApplication = async (req, res) => {
     try {
       // Change from req.candidate.candidate_id to req.user.candidate_id
       const candidateId = req.user.candidate_id;

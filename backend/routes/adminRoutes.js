@@ -22,6 +22,8 @@ const adminAuth = require('../middleware/adminAuth'); // Middleware to verify JW
 router.post('/signup', adminController.signup);
 router.post('/verify-otp', adminController.verifyOtp); // OTP verification route
 router.post('/signin', adminController.signin);
+// Admin password update route
+router.post('/update-password', adminAuth, adminController.updatePassword);
 
 // Protected Routes (require JWT authentication)
 router.post('/recruiters', adminAuth, adminController.createRecruiter);
@@ -40,10 +42,15 @@ router.delete('/jobs/:jobId', adminAuth, adminController.deleteJob);
 router.get('/recruiters', adminAuth, adminController.getRecruiters);
 // Route: Admin uploads bulk candidates via CSV/Excel
 router.post('/upload-candidates', adminAuth, upload.single('file'), adminController.bulkUploadCandidates);
+// Route: Admin uploads bulk jobs via CSV/Excel/XLS
+router.post('/upload-jobs', adminAuth, upload.single('file'), adminController.bulkUploadJobs);
+// Route: Admin downloads a sample template for bulk job upload
+router.get('/download-job-template', adminAuth, adminController.downloadJobTemplate);
 //TO BE DONE 
 // Route: Admin downloads a sample CSV file for bulk candidate upload
 //router.get('/download-sample', adminAuth, adminController.downloadSample);
 router.get('/dashboard-metrics', adminAuth, adminController.getDashboardMetrics);
+router.delete('/recruiters/:recruiterId', adminAuth, adminController.deleteRecruiter);
 
 
 module.exports = router;

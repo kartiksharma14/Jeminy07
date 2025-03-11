@@ -44,7 +44,7 @@ router.get("/search-cities", authenticateToken, async (req, res) => {
 
 router.post('/signin', recruiterController.loginRecruiter);
 router.post('/verify-otp', recruiterController.verifyLoginOtp);
-
+router.post('/update-password', authenticateToken, recruiterController.updateRecruiterPassword);
 console.log('Controller Object:', recruiterController);
 
 // Temp job post routes 
@@ -59,7 +59,6 @@ router.get('/job-drafts', authenticateToken, recruiterController.getAllJobDrafts
 // Job Post routes 
 router.post('/jobs', authenticateToken, recruiterController.createJobPost);
 router.get('/jobs', authenticateToken, recruiterController.getJobPosts);
-
 router.put('/jobs/:id', authenticateToken, recruiterController.updateJobPost);
 router.delete('/jobs/:id', authenticateToken, recruiterController.deleteJobPost);
 

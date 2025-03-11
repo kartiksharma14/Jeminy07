@@ -147,6 +147,68 @@ exports.verifyLoginOtp = async (req, res) => {
   }
 };
 
+// Update Recruiter Password (by recruiter themselves)
+// Update Recruiter Password (by recruiter themselves)
+exports.updateRecruiterPassword = async (req, res) => {
+    const recruiterId = req.recruiter.recruiter_id; // Get recruiter ID from JWT token
+    const { currentPassword, newPassword } = req.body;
+  
+    try {
+      // Input validation
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password and new password are required"
+        });
+      }
+  
+      // Password strength validation
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 8 characters long"
+        });
+      }
+  
+      // Find the recruiter by ID - using RecruiterSignin model, not Recruiter
+      const recruiter = await RecruiterSignin.findByPk(recruiterId);
+      if (!recruiter) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Recruiter not found" 
+        });
+      }
+  
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, recruiter.password);
+      if (!isMatch) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Current password is incorrect" 
+        });
+      }
+  
+      // Hash the new password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+  
+      // Update password
+      recruiter.password = hashedPassword;
+      await recruiter.save();
+  
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully"
+      });
+    } catch (err) {
+      console.error('Error updating recruiter password:', err);
+      res.status(500).json({ 
+        success: false, 
+        error: err.message 
+      });
+    }
+  };
+
 // Get job draft preview
 exports.getJobDraftPreview = async (req, res) => {
   try {
@@ -980,7 +1042,6 @@ exports.getJobApplications = async (req, res) => {
   try {
       const recruiterId = req.recruiter.recruiter_id;
       const { job_id, status, page = 1, limit = 10 } = req.query;
-      
       const offset = (page - 1) * limit;
       
       // First get all jobs posted by this recruiter
@@ -1020,7 +1081,7 @@ exports.getJobApplications = async (req, res) => {
           include: [
               {
                   model: JobPost,
-                  attributes: ['job_id', 'jobTitle', 'locations']
+                  attributes: ['job_id', 'jobTitle', 'locations','companyName']
               },
               {
                   model: CandidateProfile,
