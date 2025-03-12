@@ -24,3 +24,13 @@ SELECT * FROM employmentdetails;
 ALTER TABLE employmentdetails
 ADD COLUMN end_date DATE ,
 ADD COLUMN currently_working TINYINT(1) DEFAULT 0;
+
+ALTER TABLE employmentdetails
+ADD COLUMN location VARCHAR(100) NULL,
+ADD COLUMN department VARCHAR(100) NULL,
+ADD COLUMN monthly_stipend DECIMAL(10, 2) NULL,
+ADD COLUMN worked_till DATE NULL;
+
+ALTER TABLE employmentdetails
+ADD COLUMN previous_company_name VARCHAR(255) NULL,
+ADD COLUMN previous_job_title VARCHAR(255) NULL;
