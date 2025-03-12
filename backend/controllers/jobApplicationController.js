@@ -529,8 +529,108 @@ exports.searchJobsByDesignation = async (req, res) => {
       });
     }
   };
+
+
+  exports.searchJobs = async (req, res) => {
+    try {
+        const {
+            location,
+            industry,
+            min_salary,
+            max_salary,
+            min_experience,
+            max_experience,
+            employmentType,
+            company,
+            jobTitle,
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        // Pagination parameters
+        const pageNum = parseInt(page) > 0 ? parseInt(page) : 1;
+        const limitNum = parseInt(limit) > 0 ? parseInt(limit) : 10;
+        const offset = (pageNum - 1) * limitNum;
+
+        const whereClause = {
+            status: 'approved',
+            is_active: true
+        };
+
+        // Location
+        if (location) {
+            whereClause.locations = { [Op.like]: `%${location}%` };
+        }
+
+        // Industry
+        if (industry) {
+            whereClause.industry = { [Op.like]: `%${industry}%` };
+        }
+
+        // Job Title
+        if (jobTitle) {
+            whereClause.jobTitle = { [Op.like]: `%${jobTitle}%` };
+        }
+
+        // Salary range
+        if (min_salary) {
+            whereClause.min_salary = { [Op.gte]: parseFloat(min_salary) };
+        }
+        if (max_salary) {
+            whereClause.max_salary = { [Op.lte]: parseFloat(max_salary) };
+        }
+
+        // Experience
+        if (min_experience) {
+            whereClause.min_experience = { [Op.gte]: parseInt(min_experience) };
+        }
+        if (max_experience) {
+            whereClause.max_experience = { [Op.lte]: parseInt(max_experience) };
+        }
+
+        // Employment Type
+        if (employmentType) {
+            whereClause.employmentType = { [Op.like]: `%${employmentType}%` };
+        }
+
+        // Company
+        if (company) {
+            whereClause.companyName = { [Op.like]: `%${company}%` };
+        }
+
+        // Get total count for pagination
+        const totalCount = await JobPost.count({
+            where: whereClause
+        });
+
+        const jobs = await JobPost.findAll({
+            where: whereClause,
+            order: [['job_creation_date', 'DESC']],
+            limit: limitNum,
+            offset: offset
+        });
+
+        res.status(200).json({
+            success: true,
+            count: jobs.length,
+            totalCount: totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: pageNum,
+            jobs: jobs
+        });
+    } catch (error) {
+        console.error('Error searching jobs:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error searching jobs',
+            error: error.message
+        });
+    }
+};
+
+
   // Combined search function
-exports.searchJobs = async (req, res) => {
+/*exports.searchJobs = async (req, res) => {
     try {
         const {
             location,
@@ -608,11 +708,11 @@ exports.searchJobs = async (req, res) => {
             error: error.message
         });
     }
-};
+};*/
 
 
   // Search jobs based on various criteria for candidates
-exports.searchJobsWithAllParameter = async (req, res) => {
+/*exports.searchJobsWithAllParameter = async (req, res) => {
       try {
           const {
               keywords,
@@ -644,7 +744,7 @@ exports.searchJobsWithAllParameter = async (req, res) => {
           // Search by company
           if (company) {
               whereClause.companyName = { [Op.like]: `%${company}%` };
-          }*/
+          }
   
           // Search by experience
           // If a specific experience value is provided, find jobs with mixmum experience <= the provided value
@@ -679,7 +779,95 @@ exports.searchJobsWithAllParameter = async (req, res) => {
               error: error.message
           });
       }
-  };
+  };*/
+
+
+  exports.searchJobsWithAllParameter = async (req, res) => {
+    try {
+        const {
+            keywords,
+            //designation,
+            //company,
+            experience,
+            locations,
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        // Pagination parameters
+        const pageNum = parseInt(page) > 0 ? parseInt(page) : 1;
+        const limitNum = parseInt(limit) > 0 ? parseInt(limit) : 10;
+        const offset = (pageNum - 1) * limitNum;
+
+        const whereClause = {
+            status: 'approved',
+            is_active: true
+        };
+
+        // Search by keywords in job description and key skills
+        if (keywords) {
+            whereClause[Op.or] = [
+                { jobDescription: { [Op.like]: `%${keywords}%` } },
+                { keySkills: { [Op.like]: `%${keywords}%` } },
+                { jobTitle: { [Op.like]: `%${keywords}%` } },
+                { companyName: { [Op.like]: `%${keywords}%` } }
+            ];
+        }
+
+        // Search by designation/job title
+        /*if (designation) {
+            whereClause.jobTitle = { [Op.like]: `%${designation}%` };
+        }
+
+        // Search by company
+        if (company) {
+            whereClause.companyName = { [Op.like]: `%${company}%` };
+        }*/
+
+        // Search by experience
+        // If a specific experience value is provided, find jobs with mixmum experience <= the provided value
+        if (experience) {
+            const expValue = parseInt(experience);
+            if (!isNaN(expValue)) {
+                whereClause.max_experience = { [Op.lte]: expValue };
+            }
+        }
+
+        // Search by location
+        if (locations) {
+            whereClause.locations = { [Op.like]: `%${locations}%` };
+        }
+
+        // Get total count for pagination
+        const totalCount = await JobPost.count({
+            where: whereClause
+        });
+
+        // Find jobs matching the criteria with pagination
+        const jobs = await JobPost.findAll({
+            where: whereClause,
+            order: [['createdAt', 'DESC']],
+            limit: limitNum,
+            offset: offset
+        });
+
+        res.status(200).json({
+            success: true,
+            count: jobs.length,
+            totalCount: totalCount,
+            totalPages: Math.ceil(totalCount / limitNum),
+            currentPage: pageNum,
+            jobs: jobs
+        });
+    } catch (error) {
+        console.error('Error searching jobs:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error searching jobs',
+            error: error.message
+        });
+    }
+};
 
 
 exports.getCandidateApplications = async (req, res) => {
@@ -730,7 +918,7 @@ exports.getCandidateApplications = async (req, res) => {
   };
   
   // Get detailed information about a specific application
-  exports.getCandidateApplicationDetail = async (req, res) => {
+exports.getCandidateApplicationDetail = async (req, res) => {
     try {
       const candidateId = req.user.candidate_id;
       const { application_id } = req.params;

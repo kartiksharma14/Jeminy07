@@ -461,7 +461,7 @@ exports.bulkUploadCandidates = async (req, res) => {
 
 
 // Get All Pending Jobs for Approval
-exports.getPendingJobs = async (req, res) => {
+/*exports.getPendingJobs = async (req, res) => {
   try {
     const jobs = await JobPost.findAll({
       where: { status: 'pending' },
@@ -471,7 +471,48 @@ exports.getPendingJobs = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};*/
+
+
+exports.getPendingJobs = async (req, res) => {
+  try {
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: { status: 'pending' }
+    });
+    
+    // Get pending jobs with pagination
+    const jobs = await JobPost.findAll({
+      where: { status: 'pending' },
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+      limit: limit,
+      offset: offset,
+      order: [['createdAt', 'DESC']] // Add an order to ensure consistent pagination
+    });
+    
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: jobs
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching pending jobs',
+      error: err.message 
+    });
+  }
 };
+
 
 // Approve a Job
 exports.approveJob = async (req, res) => {
@@ -496,30 +537,7 @@ exports.approveJob = async (req, res) => {
   }
 };
 
-// Reject a Job
-/*exports.rejectJob = async (req, res) => {
-  const { jobId } = req.params;
-  const adminId = req.admin.id; // Admin ID from JWT token
-  const { rejectionReason } = req.body; // Optional rejection reason
 
-  try {
-    const job = await JobPost.findByPk(jobId);
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-
-    if (job.status === "rejected") {
-        return res.status(400).json({ success: false, message: "Job post is already rejected" });
-    }
-
-    job.status = 'rejected';
-    job.rejectedBy = adminId; 
-    job.rejection_reason = rejectionReason || 'Imcomplete details provided';
-    await job.save();
-
-    res.status(200).json({ message: 'Job rejected successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 exports.rejectJob = async (req, res) => {
   const { jobId } = req.params;
@@ -562,7 +580,7 @@ exports.rejectJob = async (req, res) => {
 };
 
 // Get All Approved Jobs by Admin
-exports.getApprovedJobs = async (req, res) => {
+/*exports.getApprovedJobs = async (req, res) => {
   const adminId = req.admin.id; // Admin ID from JWT token
 
   try {
@@ -574,10 +592,10 @@ exports.getApprovedJobs = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+};*/
 
 // Get All Rejected Jobs by Admin
-exports.getRejectedJobs = async (req, res) => {
+/*exports.getRejectedJobs = async (req, res) => {
   const adminId = req.admin.id; // Admin ID from JWT token
 
   try {
@@ -588,6 +606,89 @@ exports.getRejectedJobs = async (req, res) => {
     res.status(200).json(jobs);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};*/
+
+
+exports.getRejectedJobs = async (req, res) => {
+  const adminId = req.admin.id; // Admin ID from JWT token
+  
+  try {
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: { rejectedBy: adminId, status: 'rejected' }
+    });
+    
+    // Get rejected jobs with pagination
+    const jobs = await JobPost.findAll({
+      where: { rejectedBy: adminId, status: 'rejected' },
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+      limit: limit,
+      offset: offset,
+      order: [['createdAt', 'DESC']] // Add an order to ensure consistent pagination
+    });
+    
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: jobs
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching rejected jobs',
+      error: err.message 
+    });
+  }
+};
+
+exports.getApprovedJobs = async (req, res) => {
+  const adminId = req.admin.id; // Admin ID from JWT token
+  
+  try {
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: { approvedBy: adminId, status: 'approved' }
+    });
+    
+    // Get approved jobs with pagination
+    const jobs = await JobPost.findAll({
+      where: { approvedBy: adminId, status: 'approved' },
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+      limit: limit,
+      offset: offset,
+      order: [['createdAt', 'DESC']] // Add an order to ensure consistent pagination
+    });
+    
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: jobs
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching approved jobs',
+      error: err.message 
+    });
   }
 };
 

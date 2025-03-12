@@ -147,7 +147,7 @@ exports.verifyLoginOtp = async (req, res) => {
   }
 };
 
-// Update Recruiter Password (by recruiter themselves)
+
 // Update Recruiter Password (by recruiter themselves)
 exports.updateRecruiterPassword = async (req, res) => {
     const recruiterId = req.recruiter.recruiter_id; // Get recruiter ID from JWT token
@@ -247,7 +247,6 @@ exports.getJobDraftPreview = async (req, res) => {
 };
   
 
-// Get all draft jobs for a recruiter
 exports.getAllJobDrafts = async (req, res) => {
   try {
     // Get recruiter ID from the token
@@ -260,13 +259,27 @@ exports.getAllJobDrafts = async (req, res) => {
       });
     }
     
-    // Fetch all draft jobs for this recruiter
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await TempJobPost.count({
+      where: {
+        recruiter_id: recruiter_id
+      }
+    });
+    
+    // Fetch all draft jobs for this recruiter with pagination
     // Assuming drafts are stored in TempJobPost while published jobs are in JobPost
     const draftJobs = await TempJobPost.findAll({
       where: {
         recruiter_id: recruiter_id
       },
-      order: [['updatedAt', 'DESC']]
+      order: [['updatedAt', 'DESC']],
+      limit: limit,
+      offset: offset
     });
     
     if (draftJobs.length === 0) {
@@ -279,6 +292,9 @@ exports.getAllJobDrafts = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: draftJobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
       draftJobs: draftJobs
     });
   } catch (error) {
@@ -290,6 +306,7 @@ exports.getAllJobDrafts = async (req, res) => {
     });
   }
 };
+
 
 // Create a new job from draft
 exports.createJobFromDraft = async (req, res) => {
@@ -714,40 +731,58 @@ exports.createJobPost = async (req, res) => {
     }
 };
 
-// Get all job posts
 exports.getJobPosts = async (req, res) => {
-    try {
-        // Get the recruiter_id from the authenticated user
-        const recruiter_id = req.recruiter.recruiter_id;
-        if (!recruiter_id) {
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required. Please log in again."
-            });
-        }
+  try {
+      // Get the recruiter_id from the authenticated user
+      const recruiter_id = req.recruiter.recruiter_id;
+      if (!recruiter_id) {
+          return res.status(401).json({
+              success: false,
+              message: "Authentication required. Please log in again."
+          });
+      }
+      
+      // Pagination parameters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
 
-        const jobs = await JobPost.findAll({
-            where: { 
-                recruiter_id,
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
-        
-        return res.status(200).json({
-            success: true,
-            count: jobs.length,
-            jobs
-        });
-    } catch (error) {
-        console.error('Error fetching job posts:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch job posts.",
-            error: error.message
-        });
-    }
+      // Get total count for pagination
+      const totalCount = await JobPost.count({
+          where: { 
+              recruiter_id,
+              is_active: true 
+          }
+      });
+
+      const jobs = await JobPost.findAll({
+          where: { 
+              recruiter_id,
+              is_active: true 
+          },
+          order: [['job_creation_date', 'DESC']],
+          limit: limit,
+          offset: offset
+      });
+      
+      return res.status(200).json({
+          success: true,
+          count: jobs.length,
+          totalCount: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          currentPage: page,
+          jobs
+      });
+  } catch (error) {
+      console.error('Error fetching job posts:', error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to fetch job posts.",
+          error: error.message
+      });
+  }
 };
+
 
 // Get a single job post by ID
 exports.getJobPostById = async (req, res) => {
@@ -893,78 +928,169 @@ exports.deleteJobPost = async (req, res) => {
     }
 };
 
-// Get all jobs created by the recruiter with their status
+
+
 exports.getAllJobsWithStatus = async (req, res) => {
-    try {
-        // Ensure req.recruiter exists and has recruiter_id
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
+  try {
+      // Ensure req.recruiter exists and has recruiter_id
+      if (!req.recruiter || !req.recruiter.recruiter_id) {
+          return res.status(401).json({ 
+              success: false, 
+              message: "Authentication required. Please log in again." 
+          });
+      }
 
-        const recruiterId = req.recruiter.recruiter_id;
+      const recruiterId = req.recruiter.recruiter_id;
+      
+      // Pagination parameters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
 
-        const jobs = await JobPost.findAll({
-            where: { recruiter_id: recruiterId },
-            attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active", "locations"],
-            order: [['job_creation_date', 'DESC']]
-        });
+      // Get total count for pagination
+      const totalCount = await JobPost.count({
+          where: { recruiter_id: recruiterId }
+      });
 
-        return res.status(200).json({ 
-            success: true, 
-            count: jobs.length,
-            jobs 
-        });
-    } catch (error) {
-        console.error("Error fetching jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch jobs", 
-            error: error.message 
-        });
-    }
+      const jobs = await JobPost.findAll({
+          where: { recruiter_id: recruiterId },
+          attributes: ["job_id", "jobTitle", "status", "job_creation_date", "is_active", "locations"],
+          order: [['job_creation_date', 'DESC']],
+          limit: limit,
+          offset: offset
+      });
+
+      return res.status(200).json({ 
+          success: true, 
+          count: jobs.length,
+          totalCount: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          currentPage: page,
+          jobs 
+      });
+  } catch (error) {
+      console.error("Error fetching jobs:", error);
+      return res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch jobs", 
+          error: error.message 
+      });
+  }
 };
 
-// Get pending jobs
+
+
 exports.getPendingJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
+  try {
+      if (!req.recruiter || !req.recruiter.recruiter_id) {
+          return res.status(401).json({ 
+              success: false, 
+              message: "Authentication required. Please log in again." 
+          });
+      }
 
-        const recruiterId = req.recruiter.recruiter_id;
+      const recruiterId = req.recruiter.recruiter_id;
+      
+      // Pagination parameters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
 
-        const pendingJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "pending",
-                is_active: true 
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
+      // Get total count for pagination
+      const totalCount = await JobPost.count({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "pending",
+              is_active: true 
+          }
+      });
 
-        return res.status(200).json({ 
-            success: true, 
-            count: pendingJobs.length,
-            jobs: pendingJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching pending jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch pending jobs", 
-            error: error.message 
-        });
-    }
+      const pendingJobs = await JobPost.findAll({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "pending",
+              is_active: true 
+          },
+          order: [['job_creation_date', 'DESC']],
+          limit: limit,
+          offset: offset
+      });
+
+      return res.status(200).json({ 
+          success: true, 
+          count: pendingJobs.length,
+          totalCount: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          currentPage: page,
+          jobs: pendingJobs 
+      });
+  } catch (error) {
+      console.error("Error fetching pending jobs:", error);
+      return res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch pending jobs", 
+          error: error.message 
+      });
+  }
+};
+
+
+exports.getApprovedJobs = async (req, res) => {
+  try {
+      if (!req.recruiter || !req.recruiter.recruiter_id) {
+          return res.status(401).json({ 
+              success: false, 
+              message: "Authentication required. Please log in again." 
+          });
+      }
+
+      const recruiterId = req.recruiter.recruiter_id;
+      
+      // Pagination parameters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      // Get total count for pagination
+      const totalCount = await JobPost.count({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "approved",
+              is_active: true 
+          }
+      });
+
+      const approvedJobs = await JobPost.findAll({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "approved",
+              is_active: true 
+          },
+          order: [['job_creation_date', 'DESC']],
+          limit: limit,
+          offset: offset
+      });
+
+      return res.status(200).json({ 
+          success: true, 
+          count: approvedJobs.length,
+          totalCount: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          currentPage: page,
+          jobs: approvedJobs 
+      });
+  } catch (error) {
+      console.error("Error fetching approved jobs:", error);
+      return res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch approved jobs", 
+          error: error.message 
+      });
+  }
 };
 
 // Get approved jobs
-exports.getApprovedJobs = async (req, res) => {
+/*exports.getApprovedJobs = async (req, res) => {
     try {
         if (!req.recruiter || !req.recruiter.recruiter_id) {
             return res.status(401).json({ 
@@ -997,43 +1123,63 @@ exports.getApprovedJobs = async (req, res) => {
             error: error.message 
         });
     }
-};
+};*/
 
-// Get rejected jobs
+
 exports.getRejectedJobs = async (req, res) => {
-    try {
-        if (!req.recruiter || !req.recruiter.recruiter_id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Authentication required. Please log in again." 
-            });
-        }
+  try {
+      if (!req.recruiter || !req.recruiter.recruiter_id) {
+          return res.status(401).json({ 
+              success: false, 
+              message: "Authentication required. Please log in again." 
+          });
+      }
 
-        const recruiterId = req.recruiter.recruiter_id;
+      const recruiterId = req.recruiter.recruiter_id;
+      
+      // Pagination parameters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
 
-        const rejectedJobs = await JobPost.findAll({
-            where: { 
-                recruiter_id: recruiterId, 
-                status: "rejected",
-                is_active: true
-            },
-            order: [['job_creation_date', 'DESC']]
-        });
+      // Get total count for pagination
+      const totalCount = await JobPost.count({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "rejected",
+              is_active: true
+          }
+      });
 
-        return res.status(200).json({ 
-            success: true,
-            count: rejectedJobs.length, 
-            jobs: rejectedJobs 
-        });
-    } catch (error) {
-        console.error("Error fetching rejected jobs:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch rejected jobs", 
-            error: error.message 
-        });
-    }
+      const rejectedJobs = await JobPost.findAll({
+          where: { 
+              recruiter_id: recruiterId, 
+              status: "rejected",
+              is_active: true
+          },
+          order: [['job_creation_date', 'DESC']],
+          limit: limit,
+          offset: offset
+      });
+
+      return res.status(200).json({ 
+          success: true,
+          count: rejectedJobs.length,
+          totalCount: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          currentPage: page,
+          jobs: rejectedJobs 
+      });
+  } catch (error) {
+      console.error("Error fetching rejected jobs:", error);
+      return res.status(500).json({ 
+          success: false, 
+          message: "Failed to fetch rejected jobs", 
+          error: error.message 
+      });
+  }
 };
+
 
 // ==================== Job Application Management Functions ====================
 
@@ -1305,6 +1451,168 @@ exports.testEmail = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error sending test email',
+      error: error.message
+    });
+  }
+};
+
+
+// Get the most recent job for a recruiter (regardless of status)
+exports.getMostRecentJob = async (req, res) => {
+  try {
+    console.log("Token Payload: ", req.recruiter);
+
+    // Get recruiter ID from auth token
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    // Find the most recently updated job (both approved and rejected)
+    const job = await JobPost.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        status: {
+          [Op.or]: ['approved', 'rejected', 'pending'] // Include all possible statuses
+        },
+        is_active: true
+      },
+      order: [['updatedAt', 'DESC']], // Most recently updated first
+      attributes: [
+        'job_id',
+        'jobTitle',
+        'locations',
+        'updatedAt',
+        'companyName',
+        'status',
+        'rejection_reason'
+      ]
+    });
+    
+    // If no job found, return appropriate response
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "No recent jobs found"
+      });
+    }
+    
+    // Get total number of applications for this job if it's approved
+    let applicationCount = 0;
+    if (job.status === 'approved') {
+      applicationCount = await JobApplication.count({
+        where: { job_id: job.job_id }
+      });
+    }
+    
+    // Format the date to DD/MM/YY
+    const jobData = job.toJSON();
+    
+    // Format updatedAt date
+    const updatedDate = new Date(jobData.updatedAt);
+    const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+    
+    // Return the most recent job with application count and formatted date
+    return res.status(200).json({
+      success: true,
+      job: {
+        ...jobData,
+        updatedAt: formattedDate,
+        applicationCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching most recent job:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching most recent job',
+      error: error.message
+    });
+  }
+};
+
+
+// Get all jobs for a recruiter regardless of status with formatted dates
+exports.getAllJobs = async (req, res) => {
+  try {
+    // Get recruiter ID from auth token
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: {
+        recruiter_id: recruiterId,
+        is_active: true
+      }
+    });
+    
+    // Find all active jobs for this recruiter
+    const jobs = await JobPost.findAll({
+      where: {
+        recruiter_id: recruiterId,
+        is_active: true
+      },
+      order: [['updatedAt', 'DESC']], // Most recently updated first
+      attributes: [
+        'job_id',
+        'jobTitle',
+        'locations',
+        'updatedAt',
+        'companyName',
+        'status',
+        'rejection_reason'
+      ],
+      limit: limit,
+      offset: offset
+    });
+    
+    // If no jobs found, return appropriate response
+    if (jobs.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No jobs found"
+      });
+    }
+    
+    // Process each job to add application count and format date
+    const processedJobs = await Promise.all(jobs.map(async (job) => {
+      const jobData = job.toJSON();
+      
+      // Format updatedAt date
+      const updatedDate = new Date(jobData.updatedAt);
+      const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+      
+      // Get application count - only count if job is approved
+      let applicationCount = 0;
+      if (job.status === 'approved') {
+        applicationCount = await JobApplication.count({
+          where: { job_id: job.job_id }
+        });
+      }
+      
+      return {
+        ...jobData,
+        updatedAt: formattedDate,
+        applicationCount
+      };
+    }));
+    
+    // Return all jobs with application counts and formatted dates
+    return res.status(200).json({
+      success: true,
+      count: processedJobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: processedJobs
+    });
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching all jobs',
       error: error.message
     });
   }
