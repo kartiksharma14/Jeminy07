@@ -115,7 +115,7 @@ exports.deleteEducationRecord = async (req, res) => {
 // ==================== Employment Handlers ====================
 
 // POST - Add new employment record
-exports.addEmploymentRecord = async (req, res) => {
+/*exports.addEmploymentRecord = async (req, res) => {
   try {
     const { candidate_id } = req.params;
     const employmentData = Array.isArray(req.body) ? req.body : [req.body];
@@ -172,7 +172,7 @@ exports.updateEmploymentRecord = async (req, res) => {
       error: error.message
     });
   }
-};
+};*/
 
 // DELETE - Delete specific employment record
 exports.deleteEmploymentRecord = async (req, res) => {
@@ -235,6 +235,338 @@ const calculateTotalExperience = async (candidateId) => {
     throw error;
   }
 };
+
+
+// POST - Add new employment record
+exports.addEmploymentRecord = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const employmentData = Array.isArray(req.body) ? req.body : [req.body];
+
+    const processedRecords = employmentData.map(record => {
+      const isCurrent = record.is_current_employment === 'Yes' || record.is_current_employment === true;
+      const isFullTime = record.employment_type === 'Full-Time';
+      
+      // Process company name based on current status
+      let companyName = null;
+      if (isCurrent) {
+        companyName = record.current_company_name;
+      } else {
+        companyName = record.previous_company_name;
+      }
+      
+      // Process job title for Full-Time positions
+      let jobTitle = null;
+      if (isFullTime) {
+        if (isCurrent) {
+          jobTitle = record.current_job_title;
+        } else {
+          jobTitle = record.previous_job_title;
+        }
+      }
+      
+      // Base record with common fields
+      const processedRecord = {
+        candidate_id,
+        current_employment: isCurrent ? 'Yes' : 'No',
+        employment_type: record.employment_type,
+        joining_date: record.joining_year && record.joining_month ? 
+                     new Date(record.joining_year, record.joining_month - 1, 1) : null,
+        currently_working: isCurrent
+      };
+      
+      // Assign company name to appropriate field
+      if (isCurrent) {
+        processedRecord.current_company_name = companyName;
+      } else {
+        processedRecord.previous_company_name = companyName;
+        // Add worked_till date for non-current positions
+        if (record.worked_till_year && record.worked_till_month) {
+          processedRecord.worked_till = new Date(
+            record.worked_till_year, 
+            record.worked_till_month - 1, 
+            1
+          );
+          processedRecord.end_date = processedRecord.worked_till; // For backward compatibility
+        }
+      }
+      
+      // Handle employment type-specific fields
+      if (isFullTime) {
+        // Full-Time specific fields
+        if (isCurrent) {
+          // Current Full-Time
+          processedRecord.current_job_title = jobTitle;
+          processedRecord.experience_in_year = parseInt(record.experience_years || 0);
+          processedRecord.experience_in_months = parseInt(record.experience_months || 0);
+          processedRecord.current_salary = record.current_salary || null;
+          processedRecord.skill_used = record.skills_used || null;
+          processedRecord.job_profile = record.job_profile || null;
+          processedRecord.notice_period = record.notice_period || null;
+        } else {
+          // Previous Full-Time
+          processedRecord.previous_job_title = jobTitle;
+          processedRecord.job_profile = record.job_profile || null;
+        }
+      } else {
+        // Internship fields
+        processedRecord.company_location = record.location || null;
+        processedRecord.department = record.department || null;
+        processedRecord.monthly_stipend = record.monthly_stipend || null;
+      }
+      
+      return processedRecord;
+    });
+
+    const createdRecords = await EmploymentDetails.bulkCreate(processedRecords);
+
+    res.status(200).json({
+      message: "Employment records added successfully",
+      data: createdRecords
+    });
+  } catch (error) {
+    console.error('Error in addEmploymentRecord:', error);
+    res.status(500).json({
+      message: "Error adding employment records",
+      error: error.message
+    });
+  }
+};
+
+// PATCH - Update specific employment record
+exports.updateEmploymentRecord = async (req, res) => {
+  try {
+    const { record_id } = req.params;
+    const updateData = req.body;
+    
+    // Find the existing record
+    const record = await EmploymentDetails.findByPk(record_id);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: "Employment record not found"
+      });
+    }
+    
+    // Determine employment type and current status
+    const isCurrent = updateData.is_current_employment ? 
+                     (updateData.is_current_employment === 'Yes' || updateData.is_current_employment === true) :
+                     (record.current_employment === 'Yes');
+                     
+    const isFullTime = updateData.employment_type ? 
+                      updateData.employment_type === 'Full-Time' :
+                      record.employment_type === 'Full-Time';
+    
+    // Process update data
+    const processedUpdate = {};
+    
+    // Update common fields if provided
+    if (updateData.employment_type) {
+      processedUpdate.employment_type = updateData.employment_type;
+    }
+    
+    if ('is_current_employment' in updateData) {
+      processedUpdate.current_employment = isCurrent ? 'Yes' : 'No';
+      processedUpdate.currently_working = isCurrent;
+    }
+    
+    // Handle company name
+    if (isCurrent && updateData.current_company_name) {
+      processedUpdate.current_company_name = updateData.current_company_name;
+    } else if (!isCurrent && updateData.previous_company_name) {
+      processedUpdate.previous_company_name = updateData.previous_company_name;
+    }
+    
+    // Handle dates
+    if (updateData.joining_year && updateData.joining_month) {
+      processedUpdate.joining_date = new Date(
+        updateData.joining_year, 
+        updateData.joining_month - 1, 
+        1
+      );
+    }
+    
+    if (!isCurrent && updateData.worked_till_year && updateData.worked_till_month) {
+      processedUpdate.worked_till = new Date(
+        updateData.worked_till_year, 
+        updateData.worked_till_month - 1, 
+        1
+      );
+      processedUpdate.end_date = processedUpdate.worked_till; // For backward compatibility
+    }
+    
+    // Handle Full-Time specific fields
+    if (isFullTime) {
+      if (isCurrent) {
+        // Current Full-Time
+        if (updateData.current_job_title) {
+          processedUpdate.current_job_title = updateData.current_job_title;
+        }
+        
+        if ('experience_years' in updateData) {
+          processedUpdate.experience_in_year = parseInt(updateData.experience_years);
+        }
+        
+        if ('experience_months' in updateData) {
+          processedUpdate.experience_in_months = parseInt(updateData.experience_months);
+        }
+        
+        if (updateData.current_salary) {
+          processedUpdate.current_salary = updateData.current_salary;
+        }
+        
+        if (updateData.skills_used) {
+          processedUpdate.skill_used = updateData.skills_used;
+        }
+        
+        if (updateData.notice_period) {
+          processedUpdate.notice_period = updateData.notice_period;
+        }
+      } else {
+        // Previous Full-Time
+        if (updateData.previous_job_title) {
+          processedUpdate.previous_job_title = updateData.previous_job_title;
+        }
+      }
+      
+      // Common for both current and previous Full-Time
+      if (updateData.job_profile) {
+        processedUpdate.job_profile = updateData.job_profile;
+      }
+    } else {
+      // Internship fields
+      if (updateData.location) {
+        processedUpdate.company_location = updateData.location;
+      }
+      
+      if (updateData.department) {
+        processedUpdate.department = updateData.department;
+      }
+      
+      if (updateData.monthly_stipend) {
+        processedUpdate.monthly_stipend = updateData.monthly_stipend;
+      }
+    }
+    
+    // Update the record
+    await record.update(processedUpdate);
+    
+    res.status(200).json({
+      success: true,
+      message: "Employment record updated successfully",
+      data: record
+    });
+  } catch (error) {
+    console.error('Error updating employment record:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating employment record",
+      error: error.message
+    });
+  }
+};
+
+
+
+// Validation middleware for employment record
+exports.validateEmploymentRecord = (req, res, next) => {
+  try {
+    const data = Array.isArray(req.body) ? req.body : [req.body];
+    const errors = [];
+    
+    data.forEach((record, index) => {
+      const prefix = data.length > 1 ? `Record ${index + 1}: ` : '';
+      
+      // Check required fields
+      if (!record.is_current_employment) {
+        errors.push(`${prefix}Current employment status (Yes/No) is required`);
+      }
+      
+      if (!record.employment_type) {
+        errors.push(`${prefix}Employment type (Full-Time/Internship) is required`);
+      }
+      
+      const isCurrent = record.is_current_employment === 'Yes' || record.is_current_employment === true;
+      const isFullTime = record.employment_type === 'Full-Time';
+      
+      // Check company name
+      if (isCurrent && !record.current_company_name) {
+        errors.push(`${prefix}Current company name is required`);
+      } else if (!isCurrent && !record.previous_company_name) {
+        errors.push(`${prefix}Previous company name is required`);
+      }
+      
+      // Check joining date
+      if (!record.joining_year || !record.joining_month) {
+        errors.push(`${prefix}Joining date (year and month) is required`);
+      }
+      
+      // Check Full-Time specific fields
+      if (isFullTime) {
+        if (isCurrent) {
+          if (!record.current_job_title) {
+            errors.push(`${prefix}Current job title is required for Full-Time current employment`);
+          }
+          
+          if (record.experience_years === undefined || record.experience_months === undefined) {
+            errors.push(`${prefix}Total experience (years and months) is required for Full-Time current employment`);
+          }
+          
+          if (!record.notice_period) {
+            errors.push(`${prefix}Notice period is required for Full-Time current employment`);
+          }
+        } else {
+          if (!record.previous_job_title) {
+            errors.push(`${prefix}Previous job title is required for Full-Time previous employment`);
+          }
+          
+          if (!record.worked_till_year || !record.worked_till_month) {
+            errors.push(`${prefix}Worked till date is required for previous employment`);
+          }
+        }
+      } 
+      // Check Internship specific fields
+      else if (record.employment_type === 'Internship') {
+        if (!record.location) {
+          errors.push(`${prefix}Location is required for Internship`);
+        }
+        
+        if (!record.department) {
+          errors.push(`${prefix}Department is required for Internship`);
+        }
+        
+        if (!record.monthly_stipend) {
+          errors.push(`${prefix}Monthly stipend is required for Internship`);
+        }
+        
+        if (!isCurrent && (!record.worked_till_year || !record.worked_till_month)) {
+          errors.push(`${prefix}Worked till date is required for previous Internship`);
+        }
+      }
+    });
+    
+    // If errors found, return them
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      });
+    }
+    
+    // If no errors, proceed
+    next();
+  } catch (error) {
+    console.error('Validation error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error validating employment record",
+      error: error.message
+    });
+  }
+};
+
+
 
 
 // ==================== Projects Handlers ====================
