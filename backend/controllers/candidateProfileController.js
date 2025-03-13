@@ -568,10 +568,8 @@ exports.validateEmploymentRecord = (req, res, next) => {
 
 
 
-
 // POST - Add new employment record
-// POST - Add new employment record
-exports.addEmploymentRecord = async (req, res) => {
+/*exports.addEmploymentRecord = async (req, res) => {
   try {
     const { candidate_id } = req.params;
     const employmentData = Array.isArray(req.body) ? req.body : [req.body];
@@ -784,10 +782,233 @@ exports.updateEmploymentRecord = async (req, res) => {
       error: error.message
     });
   }
+};*/
+
+// POST - Add new employment record
+exports.addEmploymentRecord = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const employmentData = Array.isArray(req.body) ? req.body : [req.body];
+
+    const processedRecords = employmentData.map(record => {
+      const isCurrent = record.is_current_employment === 'Yes' || record.is_current_employment === true;
+      const isFullTime = record.employment_type === 'Full-Time';
+      
+      // Base record with common fields
+      const processedRecord = {
+        candidate_id,
+        current_employment: isCurrent ? 'Yes' : 'No',
+        employment_type: record.employment_type,
+        joining_year: parseInt(record.joining_year) || null,
+        joining_month: parseInt(record.joining_month) || null,
+        currently_working: isCurrent
+      };
+      
+      // Handle company name based on current/previous
+      if (isCurrent) {
+        processedRecord.current_company_name = record.current_company_name || null;
+      } else {
+        processedRecord.previous_company_name = record.previous_company_name || null;
+        
+        // Handle worked_till date for non-current positions using year and month fields
+        if (record.worked_till_year && record.worked_till_month) {
+          processedRecord.worked_till_year = parseInt(record.worked_till_year);
+          processedRecord.worked_till_month = parseInt(record.worked_till_month);
+        }
+      }
+      
+      // Handle employment type-specific fields
+      if (isFullTime) {
+        // Full-Time specific fields
+        if (isCurrent) {
+          // Current Full-Time
+          processedRecord.current_job_title = record.current_job_title || null;
+          processedRecord.experience_in_year = parseInt(record.experience_years || 0);
+          processedRecord.experience_in_months = parseInt(record.experience_months || 0);
+          processedRecord.total_experience_in_years = parseInt(record.total_experience_years || 0);
+          processedRecord.total_experience_in_months = parseInt(record.total_experience_months || 0);
+          processedRecord.current_salary = record.current_salary || null;
+          processedRecord.skill_used = record.skills_used || null;
+          processedRecord.job_profile = record.job_profile || null;
+          processedRecord.notice_period = record.notice_period || null;
+        } else {
+          // Previous Full-Time
+          processedRecord.previous_job_title = record.previous_job_title || null;
+          processedRecord.job_profile = record.job_profile || null;
+          processedRecord.total_experience_in_years = parseInt(record.total_experience_years || 0);
+          processedRecord.total_experience_in_months = parseInt(record.total_experience_months || 0);
+        }
+      } else {
+        // Internship fields
+        processedRecord.location = record.location || null;
+        processedRecord.department = record.department || null;
+        processedRecord.monthly_stipend = record.monthly_stipend || null;
+      }
+      
+      return processedRecord;
+    });
+
+    const createdRecords = await EmploymentDetails.bulkCreate(processedRecords);
+
+    res.status(200).json({
+      message: "Employment records added successfully",
+      data: createdRecords
+    });
+  } catch (error) {
+    console.error('Error in addEmploymentRecord:', error);
+    res.status(500).json({
+      message: "Error adding employment records",
+      error: error.message
+    });
+  }
+};
+
+// PATCH - Update specific employment record
+exports.updateEmploymentRecord = async (req, res) => {
+  try {
+    const { record_id } = req.params;
+    const updateData = req.body;
+    
+    // Find the existing record
+    const record = await EmploymentDetails.findByPk(record_id);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: "Employment record not found"
+      });
+    }
+    
+    // Determine employment type and current status
+    const isCurrent = updateData.is_current_employment ? 
+                     (updateData.is_current_employment === 'Yes' || updateData.is_current_employment === true) :
+                     (record.current_employment === 'Yes');
+                     
+    const isFullTime = updateData.employment_type ? 
+                      updateData.employment_type === 'Full-Time' :
+                      record.employment_type === 'Full-Time';
+    
+    // Process update data
+    const processedUpdate = {};
+    
+    // Update common fields if provided
+    if (updateData.employment_type) {
+      processedUpdate.employment_type = updateData.employment_type;
+    }
+    
+    if ('is_current_employment' in updateData) {
+      processedUpdate.current_employment = isCurrent ? 'Yes' : 'No';
+      processedUpdate.currently_working = isCurrent;
+    }
+    
+    // Update joining year/month if provided
+    if (updateData.joining_year) {
+      processedUpdate.joining_year = parseInt(updateData.joining_year);
+    }
+    
+    if (updateData.joining_month) {
+      processedUpdate.joining_month = parseInt(updateData.joining_month);
+    }
+    
+    // Handle company name
+    if (isCurrent && updateData.current_company_name) {
+      processedUpdate.current_company_name = updateData.current_company_name;
+    } else if (!isCurrent && updateData.previous_company_name) {
+      processedUpdate.previous_company_name = updateData.previous_company_name;
+    }
+    
+    // Handle worked_till for non-current jobs as separate year and month fields
+    if (!isCurrent) {
+      if (updateData.worked_till_year) {
+        processedUpdate.worked_till_year = parseInt(updateData.worked_till_year);
+      }
+      
+      if (updateData.worked_till_month) {
+        processedUpdate.worked_till_month = parseInt(updateData.worked_till_month);
+      }
+    }
+    
+    // Update total experience if provided
+    if (updateData.total_experience_years) {
+      processedUpdate.total_experience_in_years = parseInt(updateData.total_experience_years);
+    }
+    
+    if (updateData.total_experience_months) {
+      processedUpdate.total_experience_in_months = parseInt(updateData.total_experience_months);
+    }
+    
+    // Handle Full-Time specific fields
+    if (isFullTime) {
+      if (isCurrent) {
+        // Current Full-Time
+        if (updateData.current_job_title) {
+          processedUpdate.current_job_title = updateData.current_job_title;
+        }
+        
+        if ('experience_years' in updateData) {
+          processedUpdate.experience_in_year = parseInt(updateData.experience_years);
+        }
+        
+        if ('experience_months' in updateData) {
+          processedUpdate.experience_in_months = parseInt(updateData.experience_months);
+        }
+        
+        if (updateData.current_salary) {
+          processedUpdate.current_salary = updateData.current_salary;
+        }
+        
+        if (updateData.skills_used) {
+          processedUpdate.skill_used = updateData.skills_used;
+        }
+        
+        if (updateData.notice_period) {
+          processedUpdate.notice_period = updateData.notice_period;
+        }
+      } else {
+        // Previous Full-Time
+        if (updateData.previous_job_title) {
+          processedUpdate.previous_job_title = updateData.previous_job_title;
+        }
+      }
+      
+      // Common for both current and previous Full-Time
+      if (updateData.job_profile) {
+        processedUpdate.job_profile = updateData.job_profile;
+      }
+    } else {
+      // Internship fields
+      if (updateData.location) {
+        processedUpdate.location = updateData.location;
+      }
+      
+      if (updateData.department) {
+        processedUpdate.department = updateData.department;
+      }
+      
+      if (updateData.monthly_stipend) {
+        processedUpdate.monthly_stipend = updateData.monthly_stipend;
+      }
+    }
+    
+    // Update the record
+    await record.update(processedUpdate);
+    
+    res.status(200).json({
+      success: true,
+      message: "Employment record updated successfully",
+      data: record
+    });
+  } catch (error) {
+    console.error('Error updating employment record:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating employment record",
+      error: error.message
+    });
+  }
 };
 
 // Validation middleware for employment record
-exports.validateEmploymentRecord = (req, res, next) => {
+/*exports.validateEmploymentRecord = (req, res, next) => {
   try {
     const data = Array.isArray(req.body) ? req.body : [req.body];
     const errors = [];
@@ -867,6 +1088,113 @@ exports.validateEmploymentRecord = (req, res, next) => {
         
         if (!isCurrent && !record.worked_till) {
           errors.push(`${prefix}Worked till date is required for previous Internship`);
+        }
+      }
+    });
+    
+    // If errors found, return them
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      });
+    }
+    
+    // If no errors, proceed
+    next();
+  } catch (error) {
+    console.error('Validation error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error validating employment record",
+      error: error.message
+    });
+  }
+};*/
+
+
+// Validation middleware for employment record
+exports.validateEmploymentRecord = (req, res, next) => {
+  try {
+    const data = Array.isArray(req.body) ? req.body : [req.body];
+    const errors = [];
+    
+    data.forEach((record, index) => {
+      const prefix = data.length > 1 ? `Record ${index + 1}: ` : '';
+      
+      // Check required fields
+      if (!record.is_current_employment) {
+        errors.push(`${prefix}Current employment status (Yes/No) is required`);
+      }
+      
+      if (!record.employment_type) {
+        errors.push(`${prefix}Employment type (Full-Time/Internship) is required`);
+      }
+      
+      const isCurrent = record.is_current_employment === 'Yes' || record.is_current_employment === true;
+      const isFullTime = record.employment_type === 'Full-Time';
+      
+      // Check company name
+      if (isCurrent && !record.current_company_name) {
+        errors.push(`${prefix}Current company name is required`);
+      } else if (!isCurrent && !record.previous_company_name) {
+        errors.push(`${prefix}Previous company name is required`);
+      }
+      
+      // Check joining date
+      if (!record.joining_year || !record.joining_month) {
+        errors.push(`${prefix}Joining date (year and month) is required`);
+      }
+      
+      // Check Full-Time specific fields
+      if (isFullTime) {
+        if (isCurrent) {
+          if (!record.current_job_title) {
+            errors.push(`${prefix}Current job title is required for Full-Time current employment`);
+          }
+          
+          if (record.experience_years === undefined || record.experience_months === undefined) {
+            errors.push(`${prefix}Experience (years and months) is required for Full-Time current employment`);
+          }
+          
+          if (record.total_experience_years === undefined || record.total_experience_months === undefined) {
+            errors.push(`${prefix}Total experience (years and months) is required for Full-Time employment`);
+          }
+          
+          if (!record.notice_period) {
+            errors.push(`${prefix}Notice period is required for Full-Time current employment`);
+          }
+        } else {
+          if (!record.previous_job_title) {
+            errors.push(`${prefix}Previous job title is required for Full-Time previous employment`);
+          }
+          
+          if (record.total_experience_years === undefined || record.total_experience_months === undefined) {
+            errors.push(`${prefix}Total experience (years and months) is required for Full-Time employment`);
+          }
+          
+          if (!record.worked_till_year || !record.worked_till_month) {
+            errors.push(`${prefix}Worked till date (year and month) is required for previous employment`);
+          }
+        }
+      } 
+      // Check Internship specific fields
+      else if (record.employment_type === 'Internship') {
+        if (!record.location) {
+          errors.push(`${prefix}Location is required for Internship`);
+        }
+        
+        if (!record.department) {
+          errors.push(`${prefix}Department is required for Internship`);
+        }
+        
+        if (!record.monthly_stipend) {
+          errors.push(`${prefix}Monthly stipend is required for Internship`);
+        }
+        
+        if (!isCurrent && (!record.worked_till_year || !record.worked_till_month)) {
+          errors.push(`${prefix}Worked till date (year and month) is required for previous Internship`);
         }
       }
     });
@@ -1180,7 +1508,7 @@ exports.deleteITSkillsRecord = async (req, res) => {
 
 
 
-exports.getUserDetails = async (req, res) => {
+/*exports.getUserDetails = async (req, res) => {
   try {
     const { candidate_id } = req.params;
 
@@ -1320,10 +1648,317 @@ exports.getUserDetails = async (req, res) => {
     }
     throw error;
   }
+};*/
+
+
+exports.getUserDetails = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+
+    if (!candidate_id) {
+      return res.status(400).json({ error: "Candidate ID is required" });
+    }
+
+    const [signinData, profileData, educationData, employmentData, projectsData, keyskillsData, itskillsData] = await Promise.all([
+      Signin.findOne({
+        where: { candidate_id },
+        attributes: ["candidate_id", "name", "email", "phone", "resume"],
+      }),
+      CandidateProfile.findOne({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      }),
+      Education.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        order: [['courseend_year', 'DESC']]
+      }),
+      EmploymentDetails.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        // Change the ordering to use joining_year and joining_month instead of joining_date
+        order: [
+          ['joining_year', 'DESC'],
+          ['joining_month', 'DESC']
+        ]
+      }),
+      Projects.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        },
+        order: [['project_end_date', 'DESC']]
+      }),
+      keyskills.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      }),
+      itSkills.findAll({
+        where: { candidate_id },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt']
+        }
+      })
+    ]);
+
+    if (!signinData) {
+      if (res) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+      throw new Error("Candidate not found");
+    }
+
+    // Calculate total experience from employment records
+    const totalExperience = employmentData.reduce((acc, emp) => {
+      return {
+        years: acc.years + (emp.experience_in_year || 0),
+        months: acc.months + (emp.experience_in_months || 0)
+      };
+    }, { years: 0, months: 0 });
+
+    // Adjust months if they exceed 12
+    if (totalExperience.months >= 12) {
+      totalExperience.years += Math.floor(totalExperience.months / 12);
+      totalExperience.months = totalExperience.months % 12;
+    }
+
+    // Safe date formatting function
+    const formatDate = (date) => {
+      if (!date) return null;
+      // If it's already a string in YYYY-MM-DD format, return as is
+      if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return date.split('T')[0];
+      }
+      // If it's a Date object or can be converted to one
+      try {
+        const d = new Date(date);
+        if (d.toString() === 'Invalid Date') return null;
+        return d.toISOString().split('T')[0];
+      } catch {
+        return null;
+      }
+    };
+
+    // Format the data with all relationships
+    const combinedData = {
+      ...signinData.get({ plain: true }),
+      ...(profileData ? profileData.get({ plain: true }) : {}),
+      profile_last_updated: profileData?.profile_last_updated
+        ? formatDate(profileData.profile_last_updated)
+        : null,
+      total_experience: {
+        years: totalExperience.years,
+        months: totalExperience.months,
+        formatted: `${totalExperience.years} years ${totalExperience.months} months`
+      },
+      education: educationData.map(edu => ({
+        ...edu.get({ plain: true }),
+        coursestart_year: edu.coursestart_year,
+        courseend_year: edu.courseend_year
+      })),
+      employment: employmentData.map(emp => {
+        const plainEmp = emp.get({ plain: true });
+        // Add a formatted joining date for display purposes
+        if (plainEmp.joining_year && plainEmp.joining_month) {
+          plainEmp.formatted_joining_date = `${plainEmp.joining_year}-${String(plainEmp.joining_month).padStart(2, '0')}-01`;
+        }
+        // Format worked_till if present
+        if (plainEmp.worked_till) {
+          plainEmp.worked_till = formatDate(plainEmp.worked_till);
+        }
+        return plainEmp;
+      }),
+      projects: projectsData.map(proj => ({
+        ...proj.get({ plain: true }),
+        project_start_date: formatDate(proj.project_start_date),
+        project_end_date: formatDate(proj.project_end_date)
+      })),
+      keyskills: keyskillsData.map(skill => skill.get({ plain: true })),
+      itskills: itskillsData.map(skill => skill.get({ plain: true }))
+    };
+
+    // If called as middleware, return the data
+    if (!res) return combinedData;
+
+    // If called as endpoint, send response
+    return res.status(200).json({
+      message: "Candidate profile fetched successfully",
+      data: combinedData,
+    });
+  } catch (error) {
+    console.error("Error fetching candidate details:", error);
+    if (res) {
+      return res.status(500).json({
+        error: "An error occurred while fetching candidate details",
+        details: error.message,
+      });
+    }
+    throw error;
+  }
 };
 
 
 exports.updateUserDetails = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { candidate_id } = req.params;
+    const { education, employment, projects, location, ...profileData } = req.body;
+
+    if (!candidate_id) {
+      return res.status(400).json({ error: "Candidate ID is required" });
+    }
+
+    // Ensure candidate exists in `signin`
+    const candidateExists = await Signin.findOne({ where: { candidate_id } });
+    if (!candidateExists) {
+      await transaction.rollback();
+      return res.status(404).json({ error: "Candidate not found in signin table" });
+    }
+
+    // If location provided, validate it exists in cities.json
+    if (location) {
+      const cityExists = cities.cities.some(
+        (city) => city.City.toLowerCase() === location.toLowerCase()
+      );
+
+      if (!cityExists) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Invalid city",
+        });
+      }
+
+      // Include location in profileData to update the profile
+      profileData.location = location;
+    }
+
+    // Ensure `candidate_profile` exists or create it
+    const [candidateProfile] = await CandidateProfile.findOrCreate({
+      where: { candidate_id },
+      defaults: {
+        candidate_id,
+        phone: candidateExists.phone || null,
+        resume: candidateExists.resume || null,
+      },
+      transaction,
+    });
+
+    // Merge default `phone` and `resume` into `profileData` if not provided
+    profileData.phone = profileData.phone || candidateProfile.phone || null;
+    profileData.resume = profileData.resume || candidateProfile.resume || null;
+
+    // Update `CandidateProfile` and `Signin` only if there is data to update
+    if (Object.keys(profileData).length > 0) {
+      await CandidateProfile.update(profileData, {
+        where: { candidate_id },
+        transaction,
+      });
+
+      if (profileData.phone || profileData.resume) {
+        await Signin.update(
+          {
+            phone: profileData.phone,
+            resume: profileData.resume,
+          },
+          { where: { candidate_id }, transaction }
+        );
+      }
+    }
+
+    // Update education records
+    if (Array.isArray(education) && education.length > 0) {
+      await Education.destroy({ where: { candidate_id }, transaction });
+      const educationData = education.map((edu) => ({
+        ...edu,
+        candidate_id,
+        coursestart_year: edu.coursestart_year
+          ? new Date(edu.coursestart_year).getFullYear()
+          : null,
+        courseend_year: edu.courseend_year
+          ? new Date(edu.courseend_year).getFullYear()
+          : null,
+      }));
+      await Education.bulkCreate(educationData, { transaction });
+    }
+
+    // Update employment records
+    if (Array.isArray(employment) && employment.length > 0) {
+      await EmploymentDetails.destroy({ where: { candidate_id }, transaction });
+      
+      // Process employment data with the new schema
+      const employmentData = employment.map((emp) => {
+        const processedEmp = {
+          ...emp,
+          candidate_id
+        };
+        
+        // Handle joining dates - convert to separate year and month if needed
+        if (emp.joining_date) {
+          const joiningDate = new Date(emp.joining_date);
+          processedEmp.joining_year = joiningDate.getFullYear();
+          processedEmp.joining_month = joiningDate.getMonth() + 1; // JavaScript months are 0-indexed
+          // Remove the old joining_date field
+          delete processedEmp.joining_date;
+        }
+        
+        // Return the processed employment record
+        return processedEmp;
+      });
+      
+      await EmploymentDetails.bulkCreate(employmentData, { transaction });
+    }
+
+    // Update projects
+    if (Array.isArray(projects) && projects.length > 0) {
+      await Projects.destroy({ where: { candidate_id }, transaction });
+      const projectData = projects.map((proj) => ({
+        ...proj,
+        candidate_id,
+        project_start_date: proj.project_start_date
+          ? new Date(proj.project_start_date).toISOString().split("T")[0]
+          : null,
+        project_end_date: proj.project_end_date
+          ? new Date(proj.project_end_date).toISOString().split("T")[0]
+          : null,
+      }));
+      await Projects.bulkCreate(projectData, { transaction });
+    }
+
+    // Commit the transaction
+    await transaction.commit();
+
+    // Fetch and return updated profile using the existing getUserDetails function
+    const updatedProfile = await exports.getUserDetails({ params: { candidate_id } });
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      data: updatedProfile,
+    });
+  } catch (error) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    console.error("Error updating candidate details:", error);
+    res.status(500).json({
+      error: "An error occurred while updating candidate details",
+      details: error.message,
+    });
+  }
+};
+
+
+
+
+/*exports.updateUserDetails = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { candidate_id } = req.params;
@@ -1454,7 +2089,9 @@ exports.updateUserDetails = async (req, res) => {
       details: error.message,
     });
   }
-};
+};*/
+
+
 
 exports.getCandidatesByExperience = async (req, res) => {   
   try {     

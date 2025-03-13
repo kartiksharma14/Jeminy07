@@ -262,7 +262,11 @@ const EmploymentDetails = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    worked_till: {
+    worked_till_year: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    worked_till_month: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
