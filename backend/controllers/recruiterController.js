@@ -1870,7 +1870,7 @@ exports.getAllJobs = async (req, res) => {
 
 
 // Get candidate profile details only
-exports.getCandidateProfile = async (req, res) => {
+/*exports.getCandidateProfile = async (req, res) => {
   try {
     const { candidate_id } = req.params;
     const recruiterId = req.recruiter.recruiter_id;
@@ -1918,6 +1918,81 @@ exports.getCandidateProfile = async (req, res) => {
     return res.status(200).json({
       success: true,
       candidateProfile
+    });
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching candidate profile",
+      error: error.message
+    });
+  }
+};*/
+
+
+// Get candidate profile details with user information
+exports.getCandidateProfile = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate profile not found"
+      });
+    }
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
+    });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
+    
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Return combined profile
+    return res.status(200).json({
+      success: true,
+      candidateProfile: profileData
     });
   } catch (error) {
     console.error('Error fetching candidate profile:', error);
