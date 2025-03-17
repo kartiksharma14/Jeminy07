@@ -47,6 +47,8 @@ router.post('/verify-otp', recruiterController.verifyLoginOtp);
 router.post('/update-password', authenticateToken, recruiterController.updateRecruiterPassword);
 console.log('Controller Object:', recruiterController);
 
+router.get('/candidates/:candidate_id', authenticateToken, recruiterController.getCandidateProfile);
+
 // Temp job post routes 
 router.post('/jobs/draft', authenticateToken, recruiterController.createJobDraft);
 router.patch('/jobs/draft', authenticateToken, recruiterController.updateJobDraft);

@@ -712,7 +712,7 @@ exports.getJobById = async (req, res) => {
 };
 
 // Get All Jobs
-exports.getAllJobs = async (req, res) => {
+/*exports.getAllJobs = async (req, res) => {
   try {
     const jobs = await JobPost.findAll({
       include: [{ model: Recruiter, attributes: ['email', 'name'] }],
@@ -722,6 +722,47 @@ exports.getAllJobs = async (req, res) => {
     res.status(200).json(jobs);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};*/
+
+
+
+exports.getAllJobs = async (req, res) => {
+  try {
+    // Get pagination parameters from query string with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination metadata
+    const totalCount = await JobPost.count({
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }]
+    });
+
+    // Get paginated jobs
+    const jobs = await JobPost.findAll({
+      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
+      order: [['createdAt', 'DESC']],
+      limit: limit,
+      offset: offset
+    });
+    
+    // Return jobs with pagination metadata
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: jobs
+    });
+  } catch (err) {
+    console.error('Error fetching all jobs:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching all jobs',
+      error: err.message 
+    });
   }
 };
 
