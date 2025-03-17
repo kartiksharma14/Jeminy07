@@ -1539,7 +1539,7 @@ exports.deleteITSkillsRecord = async (req, res) => {
         attributes: {
           exclude: ['createdAt', 'updatedAt']
         },
-        order: [['joining_date', 'DESC']]
+        order: [['joining_year', 'DESC']]
       }),
       Projects.findAll({
         where: { candidate_id },
