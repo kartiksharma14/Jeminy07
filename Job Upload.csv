@@ -1,0 +1,3 @@
+recruiter_id,jobTitle,employmentType,keySkills,department,workMode,locations,industry,diversityHiring,jobDescription,multipleVacancies,companyName,companyInfo,companyAddress,min_salary,max_salary,min_experience,max_experience,is_active,status
+10,Full Stack Developer,Full-time,"React, Node.js, MongoDB",IT,Remote,Bangalore,IT,1,We are looking for a Full Stack Developer to join our team...,1,ABC Tech,Leading technology company,123 Tech Park,2500000,3500000,2,5,1,pending
+11,Data Scientist,Full-time,"Python, R, Machine Learning",Data Science,Hybrid,Mumbai,IT,0,Seeking an experienced Data Scientist to work on challenging projects...,0,XYZ Analytics,Data analytics firm,456 Business Park,3000000,4500000,3,7,1,pending
