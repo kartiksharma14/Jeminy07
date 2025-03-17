@@ -1363,7 +1363,7 @@ exports.getRejectedJobs = async (req, res) => {
 
 
 
-exports.getJobApplications = async (req, res) => {
+/*exports.getJobApplications = async (req, res) => {
   try {
     const recruiterId = req.recruiter.recruiter_id;
     const { job_id, status, page = 1, limit = 10 } = req.query;
@@ -1495,6 +1495,251 @@ exports.getJobApplications = async (req, res) => {
       totalPages: Math.ceil(count / limit),
       currentPage: parseInt(page),
       applications: rows
+    });
+  } catch (error) {
+    console.error('Error getting job applications:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error getting job applications',
+      error: error.message
+    });
+  }
+};*/
+
+
+exports.getJobApplications = async (req, res) => {
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id, status, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Special case: If a specific job_id is requested, first check if it exists
+    if (job_id) {
+      const jobDetails = await JobPost.findOne({
+        where: {
+          job_id: job_id,
+          recruiter_id: recruiterId
+        },
+        attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+      });
+      
+      // If the job exists, check for applications
+      if (jobDetails) {
+        const applicationWhereClause = {
+          job_id: job_id
+        };
+        
+        if (status && ['pending', 'selected', 'rejected'].includes(status)) {
+          applicationWhereClause.status = status;
+        }
+        
+        const { count, rows } = await JobApplication.findAndCountAll({
+          where: applicationWhereClause,
+          include: [
+            {
+              model: JobPost,
+              attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+            },
+            {
+              model: CandidateProfile,
+              attributes: ['candidate_id', 'name', 'email', 'phone']
+            }
+          ],
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          order: [['applied_at', 'DESC']]
+        });
+        
+        // If no applications found, return job details in a dummy structure
+        if (count === 0) {
+          return res.status(200).json({
+            success: true,
+            count: 0,
+            totalPages: 0,
+            currentPage: parseInt(page),
+            applications: [{
+              application_id: null,
+              job_id: jobDetails.job_id,
+              candidate_id: null,
+              applied_at: null,
+              status: null,
+              JobPost: {
+                job_id: jobDetails.job_id,
+                jobTitle: jobDetails.jobTitle,
+                locations: jobDetails.locations,
+                companyName: jobDetails.companyName
+              },
+              candidate_profile: null
+            }]
+          });
+        }
+        
+        // Fetch user names from User table for all candidates
+        const candidateIds = rows.map(app => app.candidate_id);
+        const users = await User.findAll({
+          where: {
+            candidate_id: {
+              [Op.in]: candidateIds
+            }
+          },
+          attributes: ['candidate_id', 'name', 'email']
+        });
+        
+        // Create a map of candidate_id to user information
+        const userMap = {};
+        users.forEach(user => {
+          userMap[user.candidate_id] = user;
+        });
+        
+        // Enhance the application rows with user information
+        const enhancedRows = rows.map(application => {
+          const appJson = application.toJSON();
+          
+          // If candidate exists in the user table, update the profile info
+          if (userMap[appJson.candidate_id]) {
+            // If candidate_profile is null, initialize it
+            if (!appJson.candidate_profile) {
+              appJson.candidate_profile = {
+                candidate_id: appJson.candidate_id
+              };
+            }
+            
+            // Update name if it's empty in candidate_profile but exists in user
+            if ((!appJson.candidate_profile.name || appJson.candidate_profile.name === '') && 
+                userMap[appJson.candidate_id].name) {
+              appJson.candidate_profile.name = userMap[appJson.candidate_id].name;
+            }
+            
+            // Update email if it's null in candidate_profile but exists in user
+            if (appJson.candidate_profile.email === null && userMap[appJson.candidate_id].email) {
+              appJson.candidate_profile.email = userMap[appJson.candidate_id].email;
+            }
+          }
+          
+          return appJson;
+        });
+        
+        // If applications found, return them with enhanced information
+        return res.status(200).json({
+          success: true,
+          count,
+          totalPages: Math.ceil(count / limit),
+          currentPage: parseInt(page),
+          applications: enhancedRows
+        });
+      }
+    }
+    
+    // If no specific job_id is requested or job not found, proceed with original logic
+    const whereClause = { recruiter_id: recruiterId };
+    if (job_id) {
+      whereClause.job_id = job_id;
+    }
+    
+    const jobs = await JobPost.findAll({
+      where: whereClause,
+      attributes: ['job_id']
+    });
+    
+    if (jobs.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        applications: []
+      });
+    }
+    
+    const jobIds = jobs.map(job => job.job_id);
+    
+    const applicationWhereClause = {
+      job_id: { [Op.in]: jobIds }
+    };
+    
+    if (status && ['pending', 'selected', 'rejected'].includes(status)) {
+      applicationWhereClause.status = status;
+    }
+    
+    const { count, rows } = await JobApplication.findAndCountAll({
+      where: applicationWhereClause,
+      include: [
+        {
+          model: JobPost,
+          attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+        },
+        {
+          model: CandidateProfile,
+          attributes: ['candidate_id', 'name', 'email', 'phone']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['applied_at', 'DESC']]
+    });
+    
+    // If no applications found, return empty array
+    if (count === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        applications: []
+      });
+    }
+    
+    // Fetch user names from User table for all candidates
+    const candidateIds = rows.map(app => app.candidate_id);
+    const users = await User.findAll({
+      where: {
+        candidate_id: {
+          [Op.in]: candidateIds
+        }
+      },
+      attributes: ['candidate_id', 'name', 'email']
+    });
+    
+    // Create a map of candidate_id to user information
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.candidate_id] = user;
+    });
+    
+    // Enhance the application rows with user information
+    const enhancedRows = rows.map(application => {
+      const appJson = application.toJSON();
+      
+      // If candidate exists in the user table, update the profile info
+      if (userMap[appJson.candidate_id]) {
+        // If candidate_profile is null, initialize it
+        if (!appJson.candidate_profile) {
+          appJson.candidate_profile = {
+            candidate_id: appJson.candidate_id
+          };
+        }
+        
+        // Update name if it's empty in candidate_profile but exists in user
+        if ((!appJson.candidate_profile.name || appJson.candidate_profile.name === '') && 
+            userMap[appJson.candidate_id].name) {
+          appJson.candidate_profile.name = userMap[appJson.candidate_id].name;
+        }
+        
+        // Update email if it's null in candidate_profile but exists in user
+        if (appJson.candidate_profile.email === null && userMap[appJson.candidate_id].email) {
+          appJson.candidate_profile.email = userMap[appJson.candidate_id].email;
+        }
+      }
+      
+      return appJson;
+    });
+    
+    return res.status(200).json({
+      success: true,
+      count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      applications: enhancedRows
     });
   } catch (error) {
     console.error('Error getting job applications:', error);
@@ -1868,66 +2113,6 @@ exports.getAllJobs = async (req, res) => {
   }
 };
 
-
-// Get candidate profile details only
-/*exports.getCandidateProfile = async (req, res) => {
-  try {
-    const { candidate_id } = req.params;
-    const recruiterId = req.recruiter.recruiter_id;
-    
-    if (!candidate_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Candidate ID is required"
-      });
-    }
-
-    // First, check if this recruiter has any jobs that the candidate has applied to
-    // This ensures recruiters can only view profiles of candidates who applied to their jobs
-    const candidateApplications = await JobApplication.findOne({
-      where: { candidate_id },
-      include: [
-        {
-          model: JobPost,
-          where: { recruiter_id: recruiterId },
-          attributes: ['job_id']
-        }
-      ]
-    });
-
-    if (!candidateApplications) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only view profiles of candidates who have applied to your job postings"
-      });
-    }
-
-    // Get the complete candidate profile
-    const candidateProfile = await CandidateProfile.findOne({
-      where: { candidate_id }
-    });
-
-    if (!candidateProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "Candidate profile not found"
-      });
-    }
-
-    // Return just the candidate profile without application details
-    return res.status(200).json({
-      success: true,
-      candidateProfile
-    });
-  } catch (error) {
-    console.error('Error fetching candidate profile:', error);
-    return res.status(500).json({
-      success: false,
-      message: "Error fetching candidate profile",
-      error: error.message
-    });
-  }
-};*/
 
 
 // Get candidate profile details with user information
