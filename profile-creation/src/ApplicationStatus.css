@@ -1,0 +1,166 @@
+/* Overall container for the applications list */
+.application-status-container {
+  padding: 30px;
+  margin: 30px;
+  border-radius: 8px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.application-status-container h1 {
+  margin-bottom: 25px;
+  font-size: 2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Filter buttons */
+.filter-buttons {
+  margin-bottom: 25px;
+}
+
+.filter-buttons button {
+  padding: 10px 20px;
+  margin-right: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #eaeaea;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.filter-buttons button:hover {
+  background-color: #dcdcdc;
+}
+
+.filter-buttons button.active {
+  background-color: #007bff;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+}
+
+/* Applications list styles */
+.applications-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.application-card {
+  background-color: #fff;  /* Pure white card */
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.application-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.application-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+  color: #222;
+  font-weight: 600;
+}
+
+.application-card p {
+  margin: 4px 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* Error message */
+.error {
+  color: #d9534f;
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+/* ===== New CSS for Application Detail View ===== */
+
+/* Container for the application detail view */
+.application-detail-container {
+  padding: 30px;
+  margin: 30px;
+  border-radius: 8px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+}
+
+/* Back button in detail view */
+.application-detail-container button {
+  padding: 8px 16px;
+  margin-bottom: 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.application-detail-container button:hover {
+  background-color: #0056b3;
+}
+
+/* Application detail content */
+.application-detail {
+  background-color: #fff;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.application-detail h2 {
+  margin-top: 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.application-detail p {
+  margin: 10px 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* ===== Pagination Styles ===== */
+.application-status-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.application-status-pagination button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.application-status-pagination button:hover:not(:disabled) {
+  background: #1f2a38;
+  transform: translateY(-2px);
+}
+
+.application-status-pagination button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.application-status-pagination span {
+  font-size: 14px;
+  color: #333;
+}

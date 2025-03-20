@@ -551,176 +551,236 @@
   }
   
   /* ========================
-     Modal Styles
-     ======================== */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s;
-  }
-  
-  .modal-content {
-    background-color: #fff;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    padding: 20px;
-    position: relative;
-    animation: slideIn 0.3s;
-  }
-  
-  .modal-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    cursor: pointer;
-  }
-  
-  /* Modal Header */
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-  }
-  
-  .modal-title h2 {
-    margin: 0;
-    font-size: 1.5em;
-    color: #007bff;
-  }
-  
-  .modal-subtitle {
-    font-size: 0.9em;
-    color: #666;
-    margin-top: 5px;
-  }
-  
-  /* Modal Image */
-  .modal-image {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
-    margin: 0 auto 15px;
-    display: block;
-    border-radius: 50%;
-    border: 3px solid #007bff;
-  }
-  
-  .modal-placeholder-image {
-    width: 150px;
-    height: 150px;
-    margin: 0 auto 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #eee;
-    color: #999;
-    border-radius: 50%;
-    border: 3px solid #007bff;
-  }
-  
-  /* Modal Sections */
-  .modal-section {
-    margin-bottom: 20px;
-  }
-  
-  .modal-section h3 {
-    margin-bottom: 8px;
-    color: #007bff;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 4px;
-  }
-  
-  .education-card,
-  .employment-card,
-  .project-card {
-    background-color: #f9f9f9;
-    padding: 8px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-  }
-  
-  .skills-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-  }
-  
-  .skill-badge {
-    background-color: #007bff;
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-  }
-  
-  /* Modal Footer */
-  .modal-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-  }
-  
-  .contact-button,
-  .close-button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-  }
-  
-  .contact-button {
-    background-color: #28a745;
-  }
-  
-  .contact-button:hover {
-    background-color: #218838;
-  }
-  
-  .close-button {
-    background-color: #6c757d;
-  }
-  
-  .close-button:hover {
-    background-color: #5a6268;
-  }
-  
-  /* Modal Loader */
-  .modal-loader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-  }
-  
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  
-  @keyframes slideIn {
-    from { transform: translateY(-20px); }
-    to   { transform: translateY(0); }
-  }
-  
+   Isolated Modal Styles
+======================== */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  animation: fadeIn 0.3s !important;
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #fff !important;
+  border-radius: 8px !important;
+  width: 90% !important;
+  max-width: 600px !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  padding: 20px !important;
+  position: relative !important;
+  animation: slideIn 0.3s !important;
+  box-sizing: border-box !important;
+}
+
+/* Isolated Buttons */
+
+/* Modal Close Button */
+.modal-close {
+  background: none !important;
+  border: none !important;
+  font-size: 1.8em !important;
+  color: #007bff !important;
+  cursor: pointer !important;
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 1001 !important;
+  width: auto !important;
+  padding: 0px !important;
+}
+
+.modal-close:hover {
+  color: #0056b3 !important;
+}
+
+
+/* Favorite Button */
+.favorite-button {
+  background: none !important;
+  border: none !important;
+  font-size: 1.2em !important;
+  cursor: pointer !important;
+  color: #999 !important;
+  transition: color 0.3s !important;
+}
+
+.favorite-button:hover {
+  color: #007bff !important;
+}
+
+.favorite-button.favorited {
+  color: gold !important;
+}
+
+/* Contact Button (in Modal Footer) */
+.contact-button {
+  padding: 10px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  font-size: 1em !important;
+  background-color: #28a745 !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.contact-button:hover {
+  background-color: #218838 !important;
+}
+
+/* Close Button (in Modal Footer) */
+.close-button {
+  padding: 10px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  font-size: 1em !important;
+  background-color: #6c757d !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.close-button:hover {
+  background-color: #5a6268 !important;
+}
+
+/* Modal Header & Text Elements */
+.modal-header {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between !important;
+  margin-bottom: 15px !important;
+  padding: 10px 0 !important;
+
+}
+.modal-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.modal-title h2 {
+  margin: 0 !important;
+  font-size: 1.5em !important;
+  line-height: 1.2 !important;
+}
+
+.modal-subtitle {
+  margin: 0 !important;
+  font-size: 0.9em !important;
+  color: #666 !important;
+}
+
+
+/* Loader & Error Message */
+.modal-loader {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 20px !important;
+}
+
+.error-message {
+  color: red !important;
+  font-size: 1em !important;
+}
+
+/* Candidate Image & Placeholder */
+.modal-image {
+  width: 150px !important;
+  height: 150px !important;
+  object-fit: cover !important;
+  margin: 0 auto 15px !important;
+  display: block !important;
+  border-radius: 50% !important;
+  border: 3px solid #007bff !important;
+}
+
+.modal-placeholder-image {
+  width: 150px !important;
+  height: 150px !important;
+  margin: 0 auto 15px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #eee !important;
+  color: #999 !important;
+  border-radius: 50% !important;
+  border: 3px solid #007bff !important;
+}
+
+/* Modal Sections */
+.modal-section {
+  margin-bottom: 20px !important;
+}
+
+.modal-section h3 {
+  margin-bottom: 8px !important;
+  color: #007bff !important;
+  border-bottom: 1px solid #ddd !important;
+  padding-bottom: 4px !important;
+}
+
+/* Cards within Sections */
+.education-card,
+.employment-card,
+.project-card {
+  background-color: #f9f9f9 !important;
+  padding: 8px !important;
+  margin-bottom: 8px !important;
+  border-radius: 4px !important;
+}
+
+/* Skills */
+.skills-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+}
+
+.skill-badge {
+  background-color: #007bff !important;
+  color: #fff !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-size: 0.8em !important;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  border-top: 1px solid #eee !important;
+  padding-top: 10px !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); }
+  to   { transform: translateY(0); }
+}

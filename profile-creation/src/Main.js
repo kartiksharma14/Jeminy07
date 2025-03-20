@@ -22,6 +22,11 @@ import JobPostingForm from "./JobPosting/JobPostingForm";
 import JobPreview from "./JobPosting/JobPreview";
 import JobSuccess from "./JobPosting/JobSuccess";
 import LogoutButton from "./Admin/LogoutButton";
+import JobList from "./components/JobList";
+import CandidateJobPreview from "./CandidateJobPreview";
+import ApplicationStatus from "./ApplicationStatus";
+import ManageResponses from "./JobPosting/ManageResponses";
+import ManageJobsRecruiter from "./JobPosting/ManageJobsRecruiter";
 
 function App() {
   return (
@@ -35,7 +40,8 @@ function App() {
             <Route path="/candidate/signup" element={<CandidateSignup />} />
             <Route path="/recruiter/login" element={<RecruiterLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/logout" element={<LogoutButton/>}/>
+            <Route path="/logout" element={<LogoutButton />} />
+
             {/* 🔒 Protected Routes for Candidates */}
             <Route
               path="/home"
@@ -50,6 +56,31 @@ function App() {
               element={
                 <PrivateRouteCandidate>
                   <HomePage />
+                </PrivateRouteCandidate>
+              }
+            />
+            <Route
+              path="/job-list"
+              element={
+                <PrivateRouteCandidate>
+                  <JobList />
+                </PrivateRouteCandidate>
+              }
+            />
+            <Route
+              path="/job-preview"
+              element={
+                <PrivateRouteCandidate>
+                  <CandidateJobPreview />
+                </PrivateRouteCandidate>
+              }
+            />
+            {/* Consolidated ApplicationStatus route */}
+            <Route
+              path="/application-status/:applicationId?"
+              element={
+                <PrivateRouteCandidate>
+                  <ApplicationStatus />
                 </PrivateRouteCandidate>
               }
             />
@@ -91,7 +122,7 @@ function App() {
               path="/post-job/"
               element={
                 <PrivateRouteRecruiter>
-                  <JobPostingForm/>
+                  <JobPostingForm />
                 </PrivateRouteRecruiter>
               }
             />
@@ -99,15 +130,39 @@ function App() {
               path="/preview"
               element={
                 <PrivateRouteRecruiter>
-                  <JobPreview/>
+                  <JobPreview />
                 </PrivateRouteRecruiter>
               }
             />
-             <Route
+            <Route
               path="/job-success"
               element={
                 <PrivateRouteRecruiter>
-                  <JobSuccess/>
+                  <JobSuccess />
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/manage-jobs"
+              element={
+                <PrivateRouteRecruiter>
+                  <ManageResponses />
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/manage-responses"
+              element={
+                <PrivateRouteRecruiter>
+                  <ManageJobsRecruiter />
+                </PrivateRouteRecruiter>
+              }
+            />
+            <Route
+              path="/manage-responses/:jobId"
+              element={
+                <PrivateRouteRecruiter>
+                  <ManageResponses />
                 </PrivateRouteRecruiter>
               }
             />

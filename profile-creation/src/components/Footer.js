@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="footer-container">
         {/* Left Section: Logo and New Social Links */}
         <div className="footer-left">
-          <a href="https://stl.tech" className="footer-logo">
+          <a href="/homepage" className="footer-logo">
             <img
               src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
               alt="STL Logo"

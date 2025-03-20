@@ -136,7 +136,7 @@ exports.signin = async (req, res) => {
     // Get dashboard metrics
     const dashboardMetrics = await getDashboardMetrics();
     
-    const token = jwt.sign({ id: admin.admin_id }, 'your-secret-key', { expiresIn: '10000h' });
+    const token = jwt.sign({ id: admin.admin_id }, 'your_super_secret_key', { expiresIn: '10000h' });
     
     res.status(200).json({ 
       token,

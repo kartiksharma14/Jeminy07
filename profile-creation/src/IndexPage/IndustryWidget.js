@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
+import { Navigation, Autoplay } from "swiper/modules"; // Import Autoplay
 import "swiper/css";
 import "swiper/css/navigation";
 import "./IndustryWidget.css"; // Import the corresponding CSS
@@ -14,8 +14,10 @@ function IndustryWidget() {
     <div className="naukri-industry-wdgt">
       <h2 className="headline">Top institutions hiring now</h2>
       <div className="industry-group">
-        <Swiper
-          modules={[Navigation]}
+      <Swiper
+          modules={[Navigation, Autoplay]}
+          loop={true} // Enable infinite looping
+          autoplay={{ delay: 2000, disableOnInteraction: false }} // Auto-advance every 3 seconds
           navigation={{
             nextEl: ".swiper-button-next",
             prevEl: ".swiper-button-prev",
