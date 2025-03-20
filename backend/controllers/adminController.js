@@ -14,6 +14,9 @@ const Otp = require('../models/otp');
 const JobPost = require('../models/jobpost');
 const JobApplication = require('../models/jobApplications');
 const TempJobPost = require('../models/TempJobPost'); 
+const MasterClient = require('../models/masterClient');
+const ClientSubscription = require('../models/clientSubscription');
+const ClientLoginDevice = require('../models/clientLoginDevice');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const e = require('express');
@@ -1595,20 +1598,6 @@ exports.getJobById = async (req, res) => {
   }
 };
 
-// Get All Jobs
-/*exports.getAllJobs = async (req, res) => {
-  try {
-    const jobs = await JobPost.findAll({
-      include: [{ model: Recruiter, attributes: ['email', 'name'] }],
-      order: [['createdAt', 'DESC']]
-    });
-    
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
-
 
 
 exports.getAllJobs = async (req, res) => {
@@ -2289,3 +2278,1113 @@ exports.deleteRecruiter = async (req, res) => {
   }
 };
 
+
+// Get all recruiters with their device usage
+exports.getRecruitersDeviceUsage = async (req, res) => {
+  try {
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const totalCount = await Recruiter.count();
+    
+    // Get recruiters with pagination
+    const recruiters = await Recruiter.findAll({
+      attributes: ['recruiter_id', 'name', 'email', 'company_name'],
+      order: [['recruiter_id', 'DESC']],
+      limit,
+      offset
+    });
+    
+    // Get device and subscription data for each recruiter
+    const recruitersWithData = await Promise.all(recruiters.map(async (recruiter) => {
+      const recruiterData = recruiter.toJSON();
+      
+      // Get subscription data
+      const subscription = await ClientSubscription.findOne({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        }
+      });
+      
+      // Count active devices
+      const activeDevicesCount = await ClientLoginDevice.count({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        }
+      });
+      
+      // Get most recent login
+      const mostRecentDevice = await ClientLoginDevice.findOne({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        },
+        order: [['last_login', 'DESC']]
+      });
+      
+      return {
+        ...recruiterData,
+        subscription: subscription ? {
+          id: subscription.subscription_id,
+          login_allowed: subscription.login_allowed,
+          cv_download_quota: subscription.cv_download_quota,
+          start_date: subscription.start_date,
+          end_date: subscription.end_date
+        } : null,
+        device_stats: {
+          active_devices: activeDevicesCount,
+          max_allowed: subscription ? subscription.login_allowed : 0,
+          usage_percentage: subscription ? Math.round((activeDevicesCount / subscription.login_allowed) * 100) : 0,
+          last_login: mostRecentDevice ? mostRecentDevice.last_login : null
+        }
+      };
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      total: totalCount,
+      page,
+      total_pages: Math.ceil(totalCount / limit),
+      recruiters: recruitersWithData
+    });
+  } catch (error) {
+    console.error('Error fetching recruiters device usage:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching recruiters device usage',
+      error: error.message
+    });
+  }
+};
+
+// Get all devices for a specific recruiter
+exports.getRecruiterDevices = async (req, res) => {
+  try {
+    const { recruiterId } = req.params;
+    
+    // Check if recruiter exists
+    const recruiter = await Recruiter.findByPk(recruiterId);
+    if (!recruiter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recruiter not found'
+      });
+    }
+    
+    // Get subscription data
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true
+      }
+    });
+    
+    // Get all devices
+    const devices = await ClientLoginDevice.findAll({
+      where: {
+        client_id: recruiterId
+      },
+      order: [['last_login', 'DESC']]
+    });
+    
+    // Process devices to add device type information
+    const processedDevices = devices.map(device => {
+      const deviceData = device.toJSON();
+      
+      // Format dates
+      deviceData.last_login_formatted = formatDate(deviceData.last_login);
+      deviceData.start_date_formatted = formatDate(deviceData.start_date);
+      deviceData.end_date_formatted = deviceData.end_date ? formatDate(deviceData.end_date) : 'No expiry';
+      
+      // Parse user agent to get device info
+      deviceData.device_info = parseUserAgent(deviceData.user_agent);
+      
+      return deviceData;
+    });
+    
+    // Count active devices
+    const activeDevices = processedDevices.filter(device => device.is_active).length;
+    
+    return res.status(200).json({
+      success: true,
+      recruiter: {
+        id: recruiter.recruiter_id,
+        name: recruiter.name,
+        email: recruiter.email,
+        company_name: recruiter.company_name
+      },
+      subscription: subscription ? {
+        id: subscription.subscription_id,
+        login_allowed: subscription.login_allowed,
+        cv_download_quota: subscription.cv_download_quota,
+        start_date: subscription.start_date,
+        end_date: subscription.end_date
+      } : null,
+      devices: processedDevices,
+      stats: {
+        total_devices: devices.length,
+        active_devices: activeDevices,
+        max_allowed: subscription ? subscription.login_allowed : 0,
+        remaining_slots: subscription ? Math.max(0, subscription.login_allowed - activeDevices) : 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching recruiter devices:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching recruiter devices',
+      error: error.message
+    });
+  }
+};
+
+// Remove a device from a recruiter
+exports.removeRecruiterDevice = async (req, res) => {
+  try {
+    const { recruiterId, deviceId } = req.params;
+    
+    // Check if device exists and belongs to the recruiter
+    const device = await ClientLoginDevice.findOne({
+      where: {
+        device_id: deviceId,
+        client_id: recruiterId
+      }
+    });
+    
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: 'Device not found or does not belong to this recruiter'
+      });
+    }
+    
+    // Soft delete by deactivating the device
+    await device.update({
+      is_active: false
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Device removed successfully'
+    });
+  } catch (error) {
+    console.error('Error removing device:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error removing device',
+      error: error.message
+    });
+  }
+};
+
+// Update recruiter subscription
+exports.updateRecruiterSubscription = async (req, res) => {
+  try {
+    const { recruiterId } = req.params;
+    const { login_allowed, cv_download_quota, start_date, end_date } = req.body;
+    
+    // Check if recruiter exists
+    const recruiter = await Recruiter.findByPk(recruiterId);
+    if (!recruiter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recruiter not found'
+      });
+    }
+    
+    // Find existing subscription or create new one
+    let subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true
+      }
+    });
+    
+    if (subscription) {
+      // Update existing subscription
+      await subscription.update({
+        login_allowed: login_allowed !== undefined ? login_allowed : subscription.login_allowed,
+        cv_download_quota: cv_download_quota !== undefined ? cv_download_quota : subscription.cv_download_quota,
+        start_date: start_date || subscription.start_date,
+        end_date: end_date !== undefined ? end_date : subscription.end_date
+      });
+    } else {
+      // Create new subscription
+      subscription = await ClientSubscription.create({
+        client_id: recruiterId,
+        login_allowed: login_allowed || 2,
+        cv_download_quota: cv_download_quota || 0,
+        start_date: start_date || new Date(),
+        end_date: end_date || null,
+        is_active: true
+      });
+    }
+    
+    // If login_allowed was decreased, deactivate excess devices
+    if (login_allowed !== undefined && login_allowed < subscription.login_allowed) {
+      const activeDevices = await ClientLoginDevice.findAll({
+        where: {
+          client_id: recruiterId,
+          is_active: true
+        },
+        order: [['last_login', 'DESC']]
+      });
+      
+      if (activeDevices.length > login_allowed) {
+        // Keep the most recently used devices up to login_allowed
+        const devicesToDeactivate = activeDevices.slice(login_allowed);
+        
+        for (const device of devicesToDeactivate) {
+          await device.update({
+            is_active: false
+          });
+        }
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription updated successfully',
+      subscription
+    });
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating subscription',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to format dates
+function formatDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+// Helper function to parse user agent string
+function parseUserAgent(userAgent) {
+  if (!userAgent) return 'Unknown device';
+  
+  let deviceInfo = {};
+  
+  // Browser detection
+  if (userAgent.includes('Firefox')) {
+    deviceInfo.browser = 'Firefox';
+  } else if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+    deviceInfo.browser = 'Chrome';
+  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    deviceInfo.browser = 'Safari';
+  } else if (userAgent.includes('Edg')) {
+    deviceInfo.browser = 'Edge';
+  } else if (userAgent.includes('MSIE') || userAgent.includes('Trident')) {
+    deviceInfo.browser = 'Internet Explorer';
+  } else {
+    deviceInfo.browser = 'Unknown browser';
+  }
+  
+  // Device type detection
+  if (userAgent.includes('Mobile')) {
+    deviceInfo.type = 'Mobile';
+  } else if (userAgent.includes('Tablet')) {
+    deviceInfo.type = 'Tablet';
+  } else {
+    deviceInfo.type = 'Desktop';
+  }
+  
+  // OS detection
+  if (userAgent.includes('Windows')) {
+    deviceInfo.os = 'Windows';
+  } else if (userAgent.includes('Mac OS')) {
+    deviceInfo.os = 'macOS';
+  } else if (userAgent.includes('Linux')) {
+    deviceInfo.os = 'Linux';
+  } else if (userAgent.includes('Android')) {
+    deviceInfo.os = 'Android';
+  } else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+    deviceInfo.os = 'iOS';
+  } else {
+    deviceInfo.os = 'Unknown OS';
+  }
+  
+  return deviceInfo;
+}
+
+
+
+// Create a new client
+exports.createClient = async (req, res) => {
+  const { client_name, address, contact_person, email, phone } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Client name is required"
+      });
+    }
+    
+    // Check if client with same email already exists
+    if (email) {
+      const existingClient = await MasterClient.findOne({ 
+        where: { email }
+      });
+      
+      if (existingClient) {
+        return res.status(400).json({
+          success: false,
+          message: "A client with this email already exists"
+        });
+      }
+    }
+    
+    // Create the client
+    const client = await MasterClient.create({
+      client_name,
+      address,
+      contact_person,
+      email,
+      phone
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client created successfully",
+      data: client
+    });
+  } catch (err) {
+    console.error('Error creating client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client",
+      error: err.message
+    });
+  }
+};
+
+// Get all clients with pagination
+exports.getAllClients = async (req, res) => {
+  try {
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1; // Default to page 1
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page
+    
+    // Calculate offset
+    const offset = (page - 1) * limit;
+    
+    // Get total count for pagination metadata
+    const totalCount = await MasterClient.count();
+    
+    // Get paginated results
+    const clients = await MasterClient.findAll({
+      order: [['client_id', 'DESC']],
+      offset: offset,
+      limit: limit
+    });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    // Construct pagination metadata
+    const pagination = {
+      currentPage: page,
+      itemsPerPage: limit,
+      totalItems: totalCount,
+      totalPages: totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1
+    };
+    
+    // Return response with data and pagination metadata
+    res.status(200).json({
+      success: true,
+      data: clients,
+      pagination: pagination
+    });
+  } catch (err) {
+    console.error('Error fetching clients:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching clients",
+      error: err.message
+    });
+  }
+};
+
+// Get a single client by ID
+exports.getClientById = async (req, res) => {
+  const { clientId } = req.params;
+  
+  try {
+    const client = await MasterClient.findByPk(clientId);
+    
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: client
+    });
+  } catch (err) {
+    console.error('Error fetching client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client",
+      error: err.message
+    });
+  }
+};
+
+// Update client details (PATCH method)
+exports.updateClient = async (req, res) => {
+  const { clientId } = req.params;
+  const { client_name, address, contact_person, email, phone } = req.body;
+  
+  try {
+    // Find the client by ID
+    const client = await MasterClient.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Check if updating to an email that already exists with another client
+    if (email && email !== client.email) {
+      const existingClient = await MasterClient.findOne({
+        where: {
+          email,
+          client_id: { [Op.ne]: clientId }
+        }
+      });
+      
+      if (existingClient) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is already in use by another client"
+        });
+      }
+    }
+    
+    // Prepare update object with only provided fields
+    const updateFields = {};
+    if (client_name) updateFields.client_name = client_name;
+    if (address !== undefined) updateFields.address = address;
+    if (contact_person !== undefined) updateFields.contact_person = contact_person;
+    if (email !== undefined) updateFields.email = email;
+    if (phone !== undefined) updateFields.phone = phone;
+    
+    // Update client with provided fields
+    await client.update(updateFields);
+    
+    // Fetch the updated client
+    const updatedClient = await MasterClient.findByPk(clientId);
+    
+    res.status(200).json({
+      success: true,
+      message: "Client updated successfully",
+      data: updatedClient
+    });
+  } catch (err) {
+    console.error('Error updating client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error updating client",
+      error: err.message
+    });
+  }
+};
+
+// Delete a client
+exports.deleteClient = async (req, res) => {
+  const { clientId } = req.params;
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Find the client
+    const client = await MasterClient.findByPk(clientId, { transaction });
+    
+    if (!client) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Get client details for response
+    const clientDetails = {
+      id: client.client_id,
+      name: client.client_name,
+      email: client.email
+    };
+    
+    // Delete the client
+    await client.destroy({ transaction });
+    
+    // Commit the transaction
+    await transaction.commit();
+    
+    res.status(200).json({
+      success: true,
+      message: "Client deleted successfully",
+      data: clientDetails
+    });
+  } catch (err) {
+    // Rollback in case of error
+    await transaction.rollback();
+    console.error('Error deleting client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting client",
+      error: err.message
+    });
+  }
+};
+
+// Search clients
+exports.searchClients = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required"
+      });
+    }
+    
+    // Perform search across multiple fields
+    const clients = await MasterClient.findAll({
+      where: {
+        [Op.or]: [
+          { client_name: { [Op.like]: `%${query}%` } },
+          { email: { [Op.like]: `%${query}%` } },
+          { phone: { [Op.like]: `%${query}%` } },
+          { contact_person: { [Op.like]: `%${query}%` } }
+        ]
+      },
+      order: [['client_id', 'DESC']],
+      limit: 20 // Limit the number of results
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: clients.length,
+      data: clients
+    });
+  } catch (err) {
+    console.error('Error searching clients:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error searching clients",
+      error: err.message
+    });
+  }
+};
+
+// Get recent clients for dashboard
+exports.getRecentClients = async (req, res) => {
+  try {
+    // Get count from query params or default to 5
+    const count = parseInt(req.query.count) || 5;
+    
+    // Fetch the most recently created clients
+    const recentClients = await MasterClient.findAll({
+      order: [['created_at', 'DESC']], // Most recent first
+      limit: count
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: recentClients
+    });
+  } catch (err) {
+    console.error('Error fetching recent clients:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching recent clients",
+      error: err.message
+    });
+  }
+};
+
+
+
+// Create a new client subscription
+exports.createClientSubscription = async (req, res) => {
+  const { client_id, cv_download_quota, login_allowed, start_date, end_date } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_id || !cv_download_quota || !login_allowed) {
+      return res.status(400).json({
+        success: false,
+        message: "Client ID, CV download quota, and login allowed count are required"
+      });
+    }
+    
+    // Check if client exists
+    const client = await MasterClient.findByPk(client_id);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Check if an active subscription already exists
+    const existingSubscription = await ClientSubscription.findOne({
+      where: {
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (existingSubscription) {
+      return res.status(400).json({
+        success: false,
+        message: "An active subscription already exists for this client",
+        data: existingSubscription
+      });
+    }
+    
+    // Create the subscription
+    const subscription = await ClientSubscription.create({
+      client_id,
+      cv_download_quota,
+      login_allowed,
+      start_date: start_date || new Date(),
+      end_date,
+      is_active: true
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client subscription created successfully",
+      data: subscription
+    });
+  } catch (err) {
+    console.error('Error creating client subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client subscription",
+      error: err.message
+    });
+  }
+};
+
+// Get all client subscriptions
+/*exports.getAllClientSubscriptions = async (req, res) => {
+  try {
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const totalCount = await ClientSubscription.count();
+    
+    // Get paginated subscriptions with client details
+    const subscriptions = await ClientSubscription.findAll({
+      include: [
+        {
+          model: MasterClient,
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ],
+      order: [['subscription_id', 'DESC']],
+      limit,
+      offset
+    });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    res.status(200).json({
+      success: true,
+      data: subscriptions,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalCount,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching client subscriptions:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client subscriptions",
+      error: err.message
+    });
+  }
+};*/
+
+
+// In adminController.js when you're ready
+exports.getAllClientSubscriptions = async (req, res) => {
+  try {
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const totalCount = await ClientSubscription.count();
+    
+    // Get paginated subscriptions with client details
+    const subscriptions = await ClientSubscription.findAll({
+      include: [
+        {
+          model: MasterClient,
+          as: 'client',  // Use the alias defined in associations
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ],
+      order: [['subscription_id', 'DESC']],
+      limit,
+      offset
+    });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    res.status(200).json({
+      success: true,
+      data: subscriptions,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalCount,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching client subscriptions:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client subscriptions",
+      error: err.message
+    });
+  }
+};
+
+// Get subscription by ID
+// Update the getClientSubscriptionById function in adminController.js
+exports.getClientSubscriptionById = async (req, res) => {
+  const { subscriptionId } = req.params;
+  
+  try {
+    const subscription = await ClientSubscription.findByPk(subscriptionId, {
+      include: [
+        {
+          model: MasterClient,
+          as: 'client',  // Make sure to include this alias
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ]
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: subscription
+    });
+  } catch (err) {
+    console.error('Error fetching subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching subscription",
+      error: err.message
+    });
+  }
+};
+
+
+// Get subscription by client ID
+exports.getClientSubscriptionByClientId = async (req, res) => {
+  const { clientId } = req.params;
+  
+  try {
+    // Check if client exists
+    const client = await MasterClient.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Get active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: clientId,
+        is_active: true
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "No active subscription found for this client"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        subscription,
+        client: {
+          client_id: client.client_id,
+          client_name: client.client_name,
+          email: client.email,
+          phone: client.phone
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching client subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client subscription",
+      error: err.message
+    });
+  }
+};
+
+
+// Update client subscription
+// Update client subscription
+exports.updateClientSubscription = async (req, res) => {
+  const { subscriptionId } = req.params;
+  const { cv_download_quota, login_allowed, start_date, end_date, is_active } = req.body;
+  
+  try {
+    // Find the subscription
+    const subscription = await ClientSubscription.findByPk(subscriptionId);
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found"
+      });
+    }
+    
+    // Prepare update object
+    const updateFields = {};
+    if (cv_download_quota !== undefined) updateFields.cv_download_quota = cv_download_quota;
+    if (login_allowed !== undefined) updateFields.login_allowed = login_allowed;
+    if (start_date !== undefined) updateFields.start_date = start_date;
+    if (end_date !== undefined) updateFields.end_date = end_date;
+    if (is_active !== undefined) updateFields.is_active = is_active;
+    
+    // Update the subscription
+    await subscription.update(updateFields);
+    
+    // Get the updated subscription with client details
+    const updatedSubscription = await ClientSubscription.findByPk(subscriptionId, {
+      include: [
+        {
+          model: MasterClient,
+          as: 'client',  // Important: use the alias here
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ]
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: "Subscription updated successfully",
+      data: updatedSubscription
+    });
+  } catch (err) {
+    console.error('Error updating subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error updating subscription",
+      error: err.message
+    });
+  }
+};
+
+// Deactivate a subscription
+exports.deactivateClientSubscription = async (req, res) => {
+  const { subscriptionId } = req.params;
+  
+  try {
+    // Find the subscription
+    const subscription = await ClientSubscription.findByPk(subscriptionId);
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found"
+      });
+    }
+    
+    // Check if already inactive
+    if (!subscription.is_active) {
+      return res.status(400).json({
+        success: false,
+        message: "Subscription is already inactive"
+      });
+    }
+    
+    // Deactivate the subscription
+    await subscription.update({ is_active: false });
+    
+    res.status(200).json({
+      success: true,
+      message: "Subscription deactivated successfully"
+    });
+  } catch (err) {
+    console.error('Error deactivating subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error deactivating subscription",
+      error: err.message
+    });
+  }
+};
+
+// Get active subscriptions that are expiring soon
+exports.getExpiringSubscriptions = async (req, res) => {
+  try {
+    // Default to subscriptions expiring in next 30 days
+    const daysToExpiry = parseInt(req.query.days) || 30;
+    
+    // Calculate the date to check against
+    const today = new Date();
+    const expiryDate = new Date();
+    expiryDate.setDate(today.getDate() + daysToExpiry);
+    
+    // Find active subscriptions expiring before the specified date
+    const subscriptions = await ClientSubscription.findAll({
+      where: {
+        is_active: true,
+        end_date: {
+          [Op.and]: [
+            { [Op.ne]: null }, // End date is not null
+            { [Op.lte]: expiryDate }, // End date is before or on the expiry date
+            { [Op.gte]: today } // End date is after or on today (not expired yet)
+          ]
+        }
+      },
+      include: [
+        {
+          model: MasterClient,
+          as: 'client', // Add the 'as' alias here
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ],
+      order: [['end_date', 'ASC']] // Soonest expiring first
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: subscriptions.length,
+      data: subscriptions
+    });
+  } catch (err) {
+    console.error('Error fetching expiring subscriptions:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching expiring subscriptions",
+      error: err.message
+    });
+  }
+};
+
+
+// Renew a subscription
+exports.renewClientSubscription = async (req, res) => {
+  const { subscriptionId } = req.params;
+  const { cv_download_quota, login_allowed, duration_days, end_date } = req.body;
+  
+  // Validate that either duration_days or end_date is provided
+  if (!duration_days && !end_date) {
+    return res.status(400).json({
+      success: false,
+      message: "Either duration_days or end_date must be provided"
+    });
+  }
+  
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Find the subscription
+    const subscription = await ClientSubscription.findByPk(subscriptionId, { transaction });
+    if (!subscription) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found"
+      });
+    }
+    
+    // Deactivate the current subscription
+    await subscription.update(
+      { is_active: false },
+      { transaction }
+    );
+    
+    // Calculate new end date if duration_days provided
+    let newEndDate;
+    if (end_date) {
+      newEndDate = new Date(end_date);
+    } else if (duration_days) {
+      newEndDate = new Date();
+      newEndDate.setDate(newEndDate.getDate() + parseInt(duration_days));
+    }
+    
+    // Create a new subscription
+    const newSubscription = await ClientSubscription.create({
+      client_id: subscription.client_id,
+      cv_download_quota: cv_download_quota || subscription.cv_download_quota,
+      login_allowed: login_allowed || subscription.login_allowed,
+      start_date: new Date(),
+      end_date: newEndDate,
+      is_active: true
+    }, { transaction });
+    
+    // Commit the transaction
+    await transaction.commit();
+    
+    res.status(200).json({
+      success: true,
+      message: "Subscription renewed successfully",
+      data: newSubscription
+    });
+  } catch (err) {
+    // Rollback in case of error
+    await transaction.rollback();
+    console.error('Error renewing subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error renewing subscription",
+      error: err.message
+    });
+  }
+};

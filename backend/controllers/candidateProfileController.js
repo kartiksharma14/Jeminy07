@@ -1539,7 +1539,7 @@ exports.deleteITSkillsRecord = async (req, res) => {
         attributes: {
           exclude: ['createdAt', 'updatedAt']
         },
-        order: [['joining_year', 'DESC']]
+        order: [['joining_date', 'DESC']]
       }),
       Projects.findAll({
         where: { candidate_id },
@@ -2093,7 +2093,7 @@ exports.updateUserDetails = async (req, res) => {
 
 
 
-exports.getCandidatesByExperience = async (req, res) => {   
+/*exports.getCandidatesByExperience = async (req, res) => {   
   try {     
     const { min_experience, max_experience } = req.query;      
     const minExp = parseFloat(min_experience);     
@@ -2169,11 +2169,145 @@ exports.getCandidatesByExperience = async (req, res) => {
       details: error.message,     
     });   
   } 
+};*/
+
+
+exports.getCandidatesByExperience = async (req, res) => {
+  try {
+    const { min_experience, max_experience, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    const minExp = parseFloat(min_experience);
+    const maxExp = parseFloat(max_experience);
+    
+    if (isNaN(minExp) || isNaN(maxExp)) {
+      return res.status(400).json({
+        error: "Both minimum and maximum experience values are required and must be numbers",
+      });
+    }
+    
+    if (minExp > maxExp) {
+      return res.status(400).json({
+        error: "Minimum experience cannot be greater than maximum experience",
+      });
+    }
+    
+    // Prepare where clause for search query
+    let whereClause = {};
+    
+    // Add search query if provided
+    if (search && search.trim()) {
+      whereClause = {
+        [Op.or]: [
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+          { '$keyskills.keyskillsname$': { [Op.like]: `%${search.toLowerCase()}%` } },
+          { '$itSkills.itskills_name$': { [Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_job_title$': { [Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_company_name$': { [Op.like]: `%${search.toLowerCase()}%` } }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: {
+            experience_in_year: {
+              [Op.gte]: minExp,
+              [Op.lte]: maxExp,
+            },
+          },
+          required: true,
+        },
+        {
+          model: Signin,
+          required: true,
+        }
+      ],
+      distinct: true
+    });
+    
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: {
+            experience_in_year: {
+              [Op.gte]: minExp,
+              [Op.lte]: maxExp,
+            },
+          },
+          required: true,
+        },
+        {
+          model: Education,
+          required: false // Set to false to get candidates even if they don't have education details
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false, // Include even if no project details
+        },
+        {
+          model: keyskills,
+          required: false, // Include even if no project details
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
+        }
+      ],
+      order: [[EmploymentDetails, 'experience_in_year', 'ASC']],
+      limit: limit,
+      offset: offset,
+      distinct: true
+    });
+    
+    if (!candidates || candidates.length === 0) {
+      return res.status(404).json({
+        error: `No candidates found with experience between ${minExp} and ${maxExp} years`,
+      });
+    }
+    
+    const formattedCandidates = candidates.map((candidate) =>
+      candidate.get({ plain: true })
+    );
+    
+    res.status(200).json({
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates,
+    });
+  } catch (error) {
+    console.error("Error fetching candidates:", error);
+    res.status(500).json({
+      error: "An error occurred while fetching candidates",
+      details: error.message,
+    });
+  }
 };
 
 
 
-exports.searchCandidatesByCity = async (req, res) => {
+/*exports.searchCandidatesByCity = async (req, res) => {
   try {
     const { location } = req.query;
 
@@ -2257,10 +2391,154 @@ exports.searchCandidatesByCity = async (req, res) => {
       details: error.message,
     });
   }
+};*/
+
+
+exports.searchCandidatesByCity = async (req, res) => {
+  try {
+    const { location, search } = req.query;
+
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    if (!location) {
+      return res.status(400).json({
+        success: false,
+        message: "Location query is required",
+      });
+    }
+
+    // Prepare the base where clause for location
+    let whereClause = {
+      location: {
+        [Op.like]: `%${location}%`,
+      },
+    };
+
+    // Add search query condition if provided
+    if (search && search.trim()) {
+      whereClause = {
+        [Op.and]: [
+          whereClause,
+          {
+            [Op.or]: [
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+              { '$keyskills.keyskillsname$': { [Op.like]: `%${search.toLowerCase()}%` } },
+              { '$itSkills.itskills_name$': { [Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_job_title$': { [Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_company_name$': { [Op.like]: `%${search.toLowerCase()}%` } }
+            ]
+          }
+        ]
+      };
+    }
+
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        {
+          model: Signin,
+          required: true
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: EmploymentDetails,
+          required: false
+        }
+      ],
+      distinct: true
+    });
+
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          required: false,
+        },
+        {
+          model: Education,
+          required: false,
+        },
+        {
+          model: Projects,
+          required: false,
+        },
+        {
+          model: itSkills,
+          required: false,
+          attributes: ['itskills_name', 'itskills_proficiency'],
+        },
+        {
+          model: keyskills,
+          required: false,
+          attributes: ['keyskillsname'],
+        },
+        {
+          model: Signin,
+          attributes: ["name", "email"],
+          required: true,
+        },
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']] // Sort by last updated
+    });
+
+    if (!candidates || candidates.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No candidates found in ${location}`,
+      });
+    }
+
+    // Transform the response to handle arrays properly
+    const formattedCandidates = candidates.map(candidate => {
+      const plainCandidate = candidate.get({ plain: true });
+      
+      // Ensure itSkills and keyskills are properly formatted arrays
+      return {
+        ...plainCandidate,
+        itSkills: plainCandidate.itSkills || [],
+        keyskills: plainCandidate.keyskills || []
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates,
+    });
+  } catch (error) {
+    console.error("Error searching candidates by city:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while searching for candidates",
+      details: error.message,
+    });
+  }
 };
 
+
 // Search candidates by keyword
-exports.searchByKeyword = async (req, res) => {
+/*exports.searchByKeyword = async (req, res) => {
   const keyword = req.query.keyword;
 
   if (!keyword) {
@@ -2272,8 +2550,6 @@ exports.searchByKeyword = async (req, res) => {
       where: {
         [Sequelize.Op.or]: [
           // CandidateProfile table columns
-          /*Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', `%${keyword.toLowerCase()}%`),
-          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('email')), 'LIKE', `%${keyword.toLowerCase()}%`),*/
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', '%100%'),
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', '%100%'),
           Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.phone')), 'LIKE', '%100%'),
@@ -2458,10 +2734,265 @@ exports.searchByKeyword = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'An error occurred while searching for candidates.' });
   }
+};*/
+
+
+exports.searchByKeyword = async (req, res) => {
+  const { keyword, search } = req.query;
+
+  // Get pagination parameters
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  if (!keyword) {
+    return res.status(400).json({ message: 'Keyword is required.' });
+  }
+
+  try {
+    // Build the base where clause for keyword
+    const whereConditions = [
+      // CandidateProfile table columns
+      /*Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('email')), 'LIKE', `%${keyword.toLowerCase()}%`),*/
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', '%100%'),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', '%100%'),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.phone')), 'LIKE', '%100%'),
+      //Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('phone')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('location')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('fresher_experience')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('availability_to_join')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('gender')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('marital_status')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('category')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('differently_abled')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('career_break')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('work_permit_to_usa')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('work_permit_to_country')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('permanent_address')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('home_town')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('language_proficiency')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('current_industry')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('department')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('desired_job_type')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('desired_employment_type')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('preferred_shift')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('preferred_work_location')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('resume_headline')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('summary')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('software_name')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('software_version')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('certification_name')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('work_title')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('work_sample_description')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('profile_summary')), 'LIKE', `%${keyword.toLowerCase()}%`),
+      Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('online_profile')), 'LIKE', `%${keyword.toLowerCase()}%`),
+
+      // Projects table columns
+      {
+        '$keyskills.keyskillsname$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+
+      // itSkills table columns
+      {
+        '$itSkills.itskills_name$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$itSkills.itskills_proficiency$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+
+      {
+        '$projects.project_title$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$projects.client$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$projects.project_status$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$projects.technology_used$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$projects.details_of_project$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+
+      // Education table columns
+      {
+        '$education.education_level$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$education.university$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$education.course$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$education.specialization$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+
+      // EmploymentDetails table columns
+      {
+        '$employmentdetails.current_employment$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.employment_type$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.current_company_name$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.current_job_title$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.skill_used$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.job_profile$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      },
+      {
+        '$employmentdetails.notice_period$': {
+          [Sequelize.Op.like]: `%${keyword.toLowerCase()}%`,
+        },
+      }
+    ];
+
+    let whereClause = {
+      [Sequelize.Op.or]: whereConditions
+    };
+
+    // Add additional search parameter if provided
+    if (search && search.trim()) {
+      // Create search conditions
+      const searchConditions = [
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+        { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+        { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+      ];
+
+      // Combine with existing where clause
+      whereClause = {
+        [Sequelize.Op.and]: [
+          whereClause,
+          { [Sequelize.Op.or]: searchConditions }
+        ]
+      };
+    }
+
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        { model: Projects, required: false },
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: keyskills, required: false },
+        { model: itSkills, required: false },
+        { model: Signin, required: true }
+      ],
+      distinct: true
+    });
+
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Projects,
+          required: false,
+        },
+        {
+          model: Education,
+          required: false,
+        },
+        {
+          model: EmploymentDetails,
+          required: false,
+        },
+        {
+          model: keyskills, // Add keyskills model
+          required: false,
+          attributes: ['keyskills_id', 'keyskillsname']
+        },
+        {
+          model: itSkills, // Add itSkills model
+          required: false,
+          attributes: ['itskills_id', 'itskills_name', 'itskills_proficiency']
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
+        }
+      ],
+      limit,
+      offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    if (candidates.length === 0) {
+      return res.status(404).json({ message: 'No candidates found for the given keyword.' });
+    }
+
+    const formattedCandidates = candidates.map((candidate) => candidate.get({ plain: true }));
+
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while searching for candidates.' });
+  }
 };
 
+
+
 // Search by Education Details
-exports.searchCandidateByEducation = async (req, res) => {
+/*exports.searchCandidateByEducation = async (req, res) => {
   try {
     const {
       education_level,
@@ -2523,10 +3054,152 @@ exports.searchCandidateByEducation = async (req, res) => {
       error: error.message 
     });
   }
+};*/
+
+
+exports.searchCandidateByEducation = async (req, res) => {
+  try {
+    const {
+      education_level,
+      university,
+      course,
+      specialization,
+      coursestart_year,
+      courseend_year,
+      search
+    } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Education where clause
+    let whereClause = {};
+
+    // Add conditions if parameters are provided
+    if (education_level) {
+      whereClause['education_level'] = { [Sequelize.Op.like]: `%${education_level}%` };
+    }
+    if (university) {
+      whereClause['university'] = { [Sequelize.Op.like]: `%${university}%` };
+    }
+    if (course) {
+      whereClause['course'] = { [Sequelize.Op.like]: `%${course}%` };
+    }
+    if (specialization) {
+      whereClause['specialization'] = { [Sequelize.Op.like]: `%${specialization}%` };
+    }
+    if (coursestart_year) {
+      whereClause['coursestart_year'] = coursestart_year;
+    }
+    if (courseend_year) {
+      whereClause['courseend_year'] = courseend_year;
+    }
+    
+    // Candidate profile where clause for search query
+    let profileWhereClause = {};
+    
+    // Add search condition if provided
+    if (search && search.trim()) {
+      profileWhereClause = {
+        [Sequelize.Op.or]: [
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+          { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: profileWhereClause,
+      include: [{
+        model: Education,
+        where: whereClause,
+        required: true
+      }, {
+        model: Signin,
+        required: true
+      }],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: profileWhereClause,
+      include: [
+        {
+          model: Education,
+          where: whereClause,
+          required: true
+        },
+        {
+          model: EmploymentDetails,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    if (candidates.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'No candidates found with specified education criteria' 
+      });
+    }
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error searching candidates by education',
+      error: error.message 
+    });
+  }
 };
 
+
 // Search by Employment Details
-exports.searchCandidateByEmployment = async (req, res) => {
+/*exports.searchCandidateByEmployment = async (req, res) => {
   try {
     const {
       current_employment,
@@ -2599,7 +3272,204 @@ exports.searchCandidateByEmployment = async (req, res) => {
       error: error.message 
     });
   }
+};*/
+
+
+
+exports.searchCandidateByEmployment = async (req, res) => {
+  try {
+    const {
+      current_employment,
+      employment_type,
+      current_company_name,
+      current_job_title,
+      experience_in_year,
+      notice_period,
+      skill_used,
+      search
+    } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Create employment where clause
+    let whereClause = {};
+
+    // Add conditions if parameters are provided
+    if (current_employment) {
+      whereClause['current_employment'] = current_employment;
+    }
+    if (employment_type) {
+      whereClause['employment_type'] = { [Sequelize.Op.like]: `%${employment_type}%` };
+    }
+    if (current_company_name) {
+      whereClause['current_company_name'] = { [Sequelize.Op.like]: `%${current_company_name}%` };
+    }
+    if (current_job_title) {
+      whereClause['current_job_title'] = { [Sequelize.Op.like]: `%${current_job_title}%` };
+    }
+    if (experience_in_year) {
+      whereClause['experience_in_year'] = experience_in_year;
+    }
+    if (notice_period) {
+      whereClause['notice_period'] = { [Sequelize.Op.like]: `%${notice_period}%` };
+    }
+    if (skill_used) {
+      whereClause['skill_used'] = { [Sequelize.Op.like]: `%${skill_used}%` };
+    }
+    
+    // Create candidate profile where clause for search
+    let profileWhereClause = {};
+    
+    // Add search conditions if search parameter provided
+    if (search && search.trim()) {
+      profileWhereClause = {
+        [Sequelize.Op.or]: [
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+          { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: whereClause,
+          required: true
+        },
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: whereClause,
+          required: true
+        },
+        {
+          model: Education,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    if (candidates.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'No candidates found with specified employment criteria' 
+      });
+    }
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error searching candidates by employment',
+      error: error.message 
+    });
+  }
 };
+
+/*exports.searchCandidateByGender = async (req, res) => {
+  try {
+    const { gender } = req.query;
+    
+    if (!gender) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gender parameter is required'
+      });
+    }
+
+    const candidates = await CandidateProfile.findAll({
+      where: {
+        gender: { [Sequelize.Op.like]: `%${gender}%` }
+      },
+      include: [
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: Projects, required: false },
+        { model: itSkills, required: false },
+        { model: keyskills, required: false },
+        {
+          model: Signin, // Include the Signin model
+          attributes: ['name', 'email'], // Specify the fields you want to include
+          required: true // Ensure that only candidates with signin data are returned
+        }
+      ]
+    });
+
+    if (candidates.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No candidates found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      total_candidates: candidates.length,
+      data: candidates
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates',
+      error: error.message
+    });
+  }
+};*/
 
 
 exports.searchCandidateByGender = async (req, res) => {
@@ -2652,7 +3522,8 @@ exports.searchCandidateByGender = async (req, res) => {
   }
 };
 
-exports.searchCandidateBySalary = async (req, res) => {
+
+/*exports.searchCandidateBySalary = async (req, res) => {
   try {
     const { min_salary, max_salary } = req.query;
 
@@ -2690,10 +3561,129 @@ exports.searchCandidateBySalary = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};*/
+
+
+
+
+exports.searchCandidateBySalary = async (req, res) => {
+  try {
+    const { min_salary, max_salary, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Build employment details where clause for salary
+    let whereClause = {};
+    if (min_salary) {
+      whereClause.current_salary = { [Sequelize.Op.gte]: min_salary };
+    }
+    if (max_salary) {
+      whereClause.current_salary = { 
+        ...whereClause.current_salary,
+        [Sequelize.Op.lte]: max_salary 
+      };
+    }
+    
+    // Build candidate profile where clause for search
+    let profileWhereClause = {};
+    
+    // Add search conditions if search parameter is provided
+    if (search && search.trim()) {
+      profileWhereClause = {
+        [Sequelize.Op.or]: [
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+          { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: whereClause,
+          required: true
+        },
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: whereClause,
+          required: true
+        },
+        {
+          model: Education,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error searching candidates by salary',
+      error: error.message 
+    });
+  }
 };
 
 
-exports.searchCandidateByNoticePeriod = async (req, res) => {
+/*exports.searchCandidateByNoticePeriod = async (req, res) => {
   try {
     const { notice_period } = req.query;
 
@@ -2722,9 +3712,120 @@ exports.searchCandidateByNoticePeriod = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};*/
+
+
+
+exports.searchCandidateByNoticePeriod = async (req, res) => {
+  try {
+    const { notice_period, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Create employment where clause for notice period
+    let employmentWhereClause = {
+      notice_period: { [Sequelize.Op.lte]: notice_period }
+    };
+    
+    // Create candidate profile where clause for search
+    let profileWhereClause = {};
+    
+    // Add search conditions if search parameter is provided
+    if (search && search.trim()) {
+      profileWhereClause = {
+        [Sequelize.Op.or]: [
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+          Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+          { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+          { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: employmentWhereClause,
+          required: true
+        },
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: profileWhereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: employmentWhereClause,
+          required: true
+        },
+        {
+          model: Education,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error searching candidates by notice period',
+      error: error.message 
+    });
+  }
 };
 
-exports.searchCandidateByDisability = async (req, res) => {
+
+
+/*exports.searchCandidateByDisability = async (req, res) => {
   try {
     const { differently_abled } = req.query;
 
@@ -2754,10 +3855,12 @@ exports.searchCandidateByDisability = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+};*/
 
 
-exports.searchCandidateByItSkills = async (req, res) => {
+
+
+/*exports.searchCandidateByItSkills = async (req, res) => {
   try {
     const { skills } = req.query;
 
@@ -2867,9 +3970,228 @@ exports.searchCandidateByItSkills = async (req, res) => {
       error: error.message,
     });
   }
+};*/
+
+
+exports.searchCandidateByItSkills = async (req, res) => {
+  try {
+    const { 
+      skills, 
+      page = 1, 
+      limit = 10, 
+      search
+    } = req.query;
+
+    // Validate skills parameter
+    if (!skills) {
+      return res.status(400).json({
+        success: false,
+        message: 'Skills parameter is required',
+      });
+    }
+
+    // Parse page and limit, ensuring they are numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Prepare where clause for IT skills
+    const itSkillsWhereClause = {
+      itskills_name: { [Sequelize.Op.like]: `%${skills}%` }
+    };
+
+    // Prepare additional where clause for global search
+    const globalSearchWhereClause = search ? {
+      [Sequelize.Op.or]: [
+        { '$Signin.name$': { [Sequelize.Op.like]: `%${search}%` } },
+        { location: { [Sequelize.Op.like]: `%${search}%` } },
+        { current_industry: { [Sequelize.Op.like]: `%${search}%` } },
+        { desired_job_type: { [Sequelize.Op.like]: `%${search}%` } }
+      ]
+    } : {};
+
+    // Find candidates with pagination
+    const { count, rows: candidates } = await CandidateProfile.findAndCountAll({
+      include: [
+        {
+          model: Education,
+          required: false
+        },
+        {
+          model: EmploymentDetails,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: true,
+          where: itSkillsWhereClause
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
+          where: globalSearchWhereClause
+        }
+      ],
+      attributes: {
+        include: [
+          'candidate_id', 'photo', 'profile_last_updated', 'location',
+          'fresher_experience', 'availability_to_join', 'phone', 'gender',
+          'marital_status', 'dob', 'category', 'differently_abled',
+          'career_break', 'work_permit_to_usa', 'work_permit_to_country',
+          'permanent_address', 'home_town', 'pin_code', 'language_proficiency',
+          'current_industry', 'department', 'desired_job_type',
+          'desired_employment_type', 'preferred_shift', 'preferred_work_location',
+          'expected_salary', 'resume_headline', 'resume', 'summary',
+          'software_name', 'software_version', 'certification_name',
+          'certification_url', 'work_title', 'work_sample_url',
+          'work_sample_description', 'profile_summary', 'online_profile',
+          'work_sample', 'white_paper', 'presentation', 'patent', 'certification'
+        ]
+      },
+      limit: limitNum,
+      offset: offset,
+      // Sort by profile_last_updated in descending order
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    // If no candidates found
+    if (candidates.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No candidates found with the given IT skills',
+      });
+    }
+
+    // Prepare response
+    res.status(200).json({
+      success: true,
+      total_candidates: count,
+      current_page: pageNum,
+      total_pages: Math.ceil(count / limitNum),
+      per_page: limitNum,
+      data: candidates
+    });
+  } catch (error) {
+    console.error('Error searching candidates by IT skills:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates by IT skills',
+      error: error.message,
+    });
+  }
 };
 
-exports.searchCandidateByExcludingKeyword = async (req, res) => {
+
+
+
+
+exports.searchCandidateByDisability = async (req, res) => {
+  try {
+    const { differently_abled, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Create base where clause for disability status
+    let whereClause = {
+      differently_abled: { [Sequelize.Op.like]: `%${differently_abled}%` }
+    };
+    
+    // Add search conditions if search parameter is provided
+    if (search && search.trim()) {
+      whereClause = {
+        [Sequelize.Op.and]: [
+          { differently_abled: { [Sequelize.Op.like]: `%${differently_abled}%` } },
+          {
+            [Sequelize.Op.or]: [
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+              { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+            ]
+          }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: Projects, required: false },
+        { model: itSkills, required: false },
+        { model: keyskills, required: false },
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: Projects, required: false },
+        { model: itSkills, required: false },
+        { model: keyskills, required: false },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error searching candidates by disability status',
+      error: error.message 
+    });
+  }
+};
+
+
+
+/*exports.searchCandidateByExcludingKeyword = async (req, res) => {
   try {
     const { exclude } = req.query;
 
@@ -2976,9 +4298,166 @@ exports.searchCandidateByExcludingKeyword = async (req, res) => {
       error: error.message,
     });
   }
+};*/
+
+
+exports.searchCandidateByExcludingKeyword = async (req, res) => {
+  try {
+    const { exclude, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    if (!exclude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Exclude keyword is required',
+      });
+    }
+    
+    // Create base where clause for excluding keyword
+    let whereClause = Sequelize.where(
+      Sequelize.fn('LOWER', Sequelize.col('profile_summary')),
+      {
+        [Sequelize.Op.or]: [
+          { [Sequelize.Op.notLike]: `%${exclude.toLowerCase()}%` },
+          { [Sequelize.Op.is]: null }
+        ]
+      }
+    );
+    
+    // Add search conditions if search parameter is provided
+    if (search && search.trim()) {
+      whereClause = {
+        [Sequelize.Op.and]: [
+          whereClause,
+          {
+            [Sequelize.Op.or]: [
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+              { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+            ]
+          }
+        ]
+      };
+    }
+
+    // Get all candidates matching the where clause (for filtering)
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Education,
+          required: false
+        },
+        {
+          model: EmploymentDetails,
+          required: false
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          required: false
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true,
+        }
+      ],
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    // Filter results in JavaScript to handle NULL values and complex conditions
+    const filteredCandidates = candidates.filter(candidate => {
+      // Helper function to check if text contains exclude keyword
+      const containsKeyword = (text) => 
+        text && text.toLowerCase().includes(exclude.toLowerCase());
+
+      // Check profile_summary
+      if (containsKeyword(candidate.profile_summary)) return false;
+
+      // Check Education
+      if (candidate.Education && candidate.Education.some(edu => 
+        containsKeyword(edu.course) || containsKeyword(edu.university)
+      )) return false;
+
+      // Check EmploymentDetails
+      if (candidate.EmploymentDetails && candidate.EmploymentDetails.some(emp =>
+        containsKeyword(emp.current_job_title) || containsKeyword(emp.current_company_name)
+      )) return false;
+
+      // Check Projects
+      if (candidate.Projects && candidate.Projects.some(proj =>
+        containsKeyword(proj.project_title) || containsKeyword(proj.details_of_project)
+      )) return false;
+
+      // Check ITSkills
+      if (candidate.itSkills && candidate.itSkills.some(skill =>
+        containsKeyword(skill.itskills_name)
+      )) return false;
+
+      // Check KeySkills
+      if (candidate.keyskills && candidate.keyskills.some(skill =>
+        containsKeyword(skill.keyskillsname)
+      )) return false;
+
+      return true;
+    });
+
+    if (filteredCandidates.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No candidates found after excluding the given keyword',
+      });
+    }
+    
+    // Calculate total count for pagination
+    const totalCount = filteredCandidates.length;
+    
+    // Apply pagination to filtered results
+    const paginatedResults = filteredCandidates.slice(offset, offset + limit);
+    
+    // Format candidates for JSON response
+    const formattedCandidates = paginatedResults.map(candidate => candidate.get({ plain: true }));
+
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates,
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates by excluding keyword',
+      error: error.message,
+    });
+  }
 };
 
-exports.searchCandidateByActiveIn = async (req, res) => {
+
+
+/*exports.searchCandidateByActiveIn = async (req, res) => {
   try {
     // Extract 'days' from query
     const { days } = req.query;
@@ -3030,11 +4509,123 @@ exports.searchCandidateByActiveIn = async (req, res) => {
       error: error.message,
     });
   }
+};*/
+
+
+exports.searchCandidateByActiveIn = async (req, res) => {
+  try {
+    // Extract parameters from query
+    const { days, search } = req.query;
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Validate 'days' parameter (must be one of the dropdown values)
+    const validDays = [1, 15, 30, 90, 180]; // 1 Day, 15 Days, 1 Month, 3 Months, 6 Months
+    if (!validDays.includes(parseInt(days))) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid 'days' parameter. Allowed values: ${validDays.join(", ")}`,
+      });
+    }
+
+    // Calculate the active date range
+    const activeDate = new Date();
+    activeDate.setDate(activeDate.getDate() - parseInt(days));
+
+    // Create base where clause for active date
+    let whereClause = {
+      profile_last_updated: {
+        [Sequelize.Op.gte]: activeDate, // Greater than or equal to activeDate
+      },
+    };
+    
+    // Add search conditions if search parameter is provided
+    if (search && search.trim()) {
+      whereClause = {
+        [Sequelize.Op.and]: [
+          { profile_last_updated: { [Sequelize.Op.gte]: activeDate } },
+          {
+            [Sequelize.Op.or]: [
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+              Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+              { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+              { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+            ]
+          }
+        ]
+      };
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: Projects, required: false },
+        { model: keyskills, required: false},
+        { model: itSkills, required: false},
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Fetch candidates whose 'profile_last_updated' is >= activeDate with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        { model: Education, required: false },
+        { model: EmploymentDetails, required: false },
+        { model: Projects, required: false },
+        { model: keyskills, required: false},
+        { model: itSkills, required: false},
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+    
+    // Format candidates for response
+    const formattedCandidates = candidates.map(candidate => candidate.get({ plain: true }));
+
+    // Return the result with pagination metadata
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      data: formattedCandidates,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates by active status',
+      error: error.message,
+    });
+  }
 };
 
 
 
-exports.searchCandidates = async (req, res) => {
+/*exports.searchCandidates = async (req, res) => {
   try {
     const {
       min_experience,
@@ -3183,6 +4774,236 @@ exports.searchCandidates = async (req, res) => {
     res.status(200).json({
       success: true,
       total_candidates: formattedCandidates.length,
+      data: formattedCandidates
+    });
+
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching candidates',
+      error: error.message
+    });
+  }
+};*/
+
+
+exports.searchCandidates = async (req, res) => {
+  try {
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    const {
+      min_experience,
+      max_experience,
+      location,
+      education_level,
+      university,
+      course,
+      specialization,
+      coursestart_year,
+      courseend_year,
+      current_employment,
+      employment_type,
+      current_company_name,
+      current_job_title,
+      notice_period,
+      min_salary,
+      max_salary,
+      gender,
+      differently_abled,
+      skills,
+      keyword,
+      exclude_keyword,
+      active_days,
+      search // Additional search parameter
+    } = req.query;
+
+    let whereClause = {};
+    let employmentWhereClause = {};
+    let educationWhereClause = {};
+    let itSkillsWhereClause = {};
+
+    if (min_experience || max_experience) {
+      employmentWhereClause.experience_in_year = {};
+      if (min_experience) employmentWhereClause.experience_in_year[Sequelize.Op.gte] = parseFloat(min_experience);
+      if (max_experience) employmentWhereClause.experience_in_year[Sequelize.Op.lte] = parseFloat(max_experience);
+    }
+
+    if (location) whereClause.location = { [Sequelize.Op.like]: `%${location}%` };
+
+    if (education_level) educationWhereClause.education_level = { [Sequelize.Op.like]: `%${education_level}%` };
+    if (university) educationWhereClause.university = { [Sequelize.Op.like]: `%${university}%` };
+    if (course) educationWhereClause.course = { [Sequelize.Op.like]: `%${course}%` };
+    if (specialization) educationWhereClause.specialization = { [Sequelize.Op.like]: `%${specialization}%` };
+    if (coursestart_year) educationWhereClause.coursestart_year = coursestart_year;
+    if (courseend_year) educationWhereClause.courseend_year = courseend_year;
+
+    if (current_employment) employmentWhereClause.current_employment = current_employment;
+    if (employment_type) employmentWhereClause.employment_type = { [Sequelize.Op.like]: `%${employment_type}%` };
+    if (current_company_name) employmentWhereClause.current_company_name = { [Sequelize.Op.like]: `%${current_company_name}%` };
+    if (current_job_title) employmentWhereClause.current_job_title = { [Sequelize.Op.like]: `%${current_job_title}%` };
+    if (notice_period) employmentWhereClause.notice_period = { [Sequelize.Op.like]: `%${notice_period}%` };
+
+    if (min_salary || max_salary) {
+      employmentWhereClause.current_salary = {};
+      if (min_salary) employmentWhereClause.current_salary[Sequelize.Op.gte] = parseFloat(min_salary);
+      if (max_salary) employmentWhereClause.current_salary[Sequelize.Op.lte] = parseFloat(max_salary);
+    }
+
+    if (gender) whereClause.gender = { [Sequelize.Op.like]: `%${gender}%` };
+    if (differently_abled) whereClause.differently_abled = { [Sequelize.Op.like]: `%${differently_abled}%` };
+    if (skills) itSkillsWhereClause.itskills_name = { [Sequelize.Op.like]: `%${skills}%` };
+
+    if (active_days) {
+      const activeDate = new Date();
+      activeDate.setDate(activeDate.getDate() - parseInt(active_days));
+      whereClause.profile_last_updated = { [Sequelize.Op.gte]: activeDate };
+    }
+
+    if (keyword) {
+      whereClause[Sequelize.Op.or] = [
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${keyword.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.phone')), 'LIKE', `%${keyword.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${keyword.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${keyword.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${keyword.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${keyword.toLowerCase()}%`)
+      ];
+    }
+
+    if (exclude_keyword) {
+      whereClause.profile_summary = {
+        [Sequelize.Op.or]: [
+          { [Sequelize.Op.notLike]: `%${exclude_keyword}%` },
+          { [Sequelize.Op.is]: null }
+        ]
+      };
+    }
+    
+    // Add additional search parameter condition if provided
+    if (search && search.trim()) {
+      const searchConditions = [
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.location')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.resume_headline')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('candidate_profile.profile_summary')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.name')), 'LIKE', `%${search.toLowerCase()}%`),
+        Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('signin.email')), 'LIKE', `%${search.toLowerCase()}%`),
+        { '$keyskills.keyskillsname$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+        { '$itSkills.itskills_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+        { '$employmentDetails.current_job_title$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } },
+        { '$employmentDetails.current_company_name$': { [Sequelize.Op.like]: `%${search.toLowerCase()}%` } }
+      ];
+      
+      if (!whereClause[Sequelize.Op.or]) {
+        whereClause[Sequelize.Op.or] = searchConditions;
+      } else {
+        // If keyword already added OR conditions, we need to create an AND/OR structure
+        whereClause = {
+          [Sequelize.Op.and]: [
+            whereClause,
+            { [Sequelize.Op.or]: searchConditions }
+          ]
+        };
+      }
+    }
+    
+    // Get total count for pagination
+    const totalCount = await CandidateProfile.count({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: Object.keys(employmentWhereClause).length > 0 ? employmentWhereClause : undefined,
+          required: Object.keys(employmentWhereClause).length > 0
+        },
+        {
+          model: Education,
+          where: Object.keys(educationWhereClause).length > 0 ? educationWhereClause : undefined,
+          required: Object.keys(educationWhereClause).length > 0
+        },
+        {
+          model: itSkills,
+          where: Object.keys(itSkillsWhereClause).length > 0 ? itSkillsWhereClause : undefined,
+          required: Object.keys(itSkillsWhereClause).length > 0
+        },
+        {
+          model: Signin,
+          required: true
+        }
+      ],
+      distinct: true
+    });
+
+    // Get candidates with pagination
+    const candidates = await CandidateProfile.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: EmploymentDetails,
+          where: Object.keys(employmentWhereClause).length > 0 ? employmentWhereClause : undefined,
+          required: Object.keys(employmentWhereClause).length > 0
+        },
+        {
+          model: Education,
+          where: Object.keys(educationWhereClause).length > 0 ? educationWhereClause : undefined,
+          required: Object.keys(educationWhereClause).length > 0
+        },
+        {
+          model: Projects,
+          required: false
+        },
+        {
+          model: itSkills,
+          where: Object.keys(itSkillsWhereClause).length > 0 ? itSkillsWhereClause : undefined,
+          required: Object.keys(itSkillsWhereClause).length > 0
+        },
+        {
+          model: keyskills,
+          required: false
+        },
+        {
+          model: Signin,
+          attributes: ['name', 'email'],
+          required: true
+        }
+      ],
+      limit,
+      offset,
+      distinct: true,
+      order: [['profile_last_updated', 'DESC']]
+    });
+
+    // 🔥 **Calculate Total Experience**
+    const formattedCandidates = candidates.map(candidate => {
+      let totalYears = 0;
+      let totalMonths = 0;
+
+      if (candidate.EmploymentDetails && candidate.EmploymentDetails.length > 0) {
+        candidate.EmploymentDetails.forEach(emp => {
+          totalYears += emp.experience_in_year || 0;
+          totalMonths += emp.experience_in_months || 0;
+        });
+
+        // Convert months into years
+        totalYears += Math.floor(totalMonths / 12);
+        totalMonths = totalMonths % 12;
+      }
+
+      return {
+        ...candidate.toJSON(),
+        total_experience: `${totalYears} years ${totalMonths} months`
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      total_candidates: formattedCandidates.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
       data: formattedCandidates
     });
 
