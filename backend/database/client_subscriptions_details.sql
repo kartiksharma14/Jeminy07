@@ -14,3 +14,10 @@ CREATE TABLE client_subscriptions_details (
 );
 
 SELECT * FROM client_subscriptions_details; 
+
+-- Speeds up queries that filter or join based on client_id
+CREATE INDEX idx_client_subscriptions_client_id ON client_subscriptions_details(client_id);
+-- Speeds up queries that filter for active/inactive subscriptions
+CREATE INDEX idx_client_subscriptions_active ON client_subscriptions_details(is_active);
+-- Speeds up date range queries for active subscriptions
+CREATE INDEX idx_client_subscriptions_dates ON client_subscriptions_details(start_date, end_date);

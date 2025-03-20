@@ -45,7 +45,17 @@ router.get("/search-cities", authenticateToken, async (req, res) => {
 router.post('/signin', recruiterController.loginRecruiter);
 router.post('/verify-otp', recruiterController.verifyLoginOtp);
 router.post('/update-password', authenticateToken, recruiterController.updateRecruiterPassword);
+
+// Device management route for recruiters
+//router.get('/my-devices', authenticateToken, recruiterController.getMyDevices);
+
+router.get('/candidates/:candidate_id/resume', authenticateToken, recruiterController.downloadCandidateResume);
+router.get('/cv-quota', authenticateToken, recruiterController.getCVDownloadQuota);
+// Session management
+router.get('/my-sessions', authenticateToken, recruiterController.getMySessions);
+
 console.log('Controller Object:', recruiterController);
+
 
 router.get('/candidates/:candidate_id', authenticateToken, recruiterController.getCandidateProfile);
 

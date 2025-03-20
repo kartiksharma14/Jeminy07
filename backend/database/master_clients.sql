@@ -12,3 +12,7 @@ CREATE TABLE master_clients (
 );
 
 SELECT * FROM master_clients; 
+
+-- Only add these if you frequently search by these fields
+CREATE INDEX idx_master_clients_email ON master_clients(email);
+CREATE INDEX idx_master_clients_phone ON master_clients(phone);

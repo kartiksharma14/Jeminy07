@@ -36,6 +36,13 @@ ADD COLUMN rejectedBy INT NULL AFTER approvedBy,
 ADD COLUMN rejection_reason VARCHAR(255) NULL AFTER rejectedBy;
 DESCRIBE job_posts;
 
+ALTER TABLE job_posts
+ADD COLUMN end_date INT;
+
+ALTER TABLE job_posts 
+drop column end_date,
+ADD COLUMN end_date VARCHAR(10);
+
 SELECT * FROM job_posts; 
 
 
