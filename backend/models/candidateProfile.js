@@ -1,23 +1,20 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../db');
 
-
 const CandidateProfile = sequelize.define("candidate_profile", {
   candidate_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     allowNull: false,
     references: {
-      model: 'signin',
+      model: 'signin',  // referencing the table name for Signin
       key: 'candidate_id'
     }
   },
-
   photo: {
     type: DataTypes.BLOB,
     allowNull: true
   },
-  
   profile_last_updated: {
     type: DataTypes.DATEONLY,
     defaultValue: DataTypes.NOW,
@@ -158,7 +155,6 @@ const CandidateProfile = sequelize.define("candidate_profile", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-
   online_profile: {
     type: DataTypes.TEXT, // Stores large text data
     allowNull: true,
@@ -183,7 +179,6 @@ const CandidateProfile = sequelize.define("candidate_profile", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-
 }, {
   tableName: 'candidate_profile',
   timestamps: false,
@@ -194,27 +189,5 @@ const CandidateProfile = sequelize.define("candidate_profile", {
     }
   ]
 });
-
-/*CandidateProfile.associate = (models) => {
-  CandidateProfile.hasMany(models.EmploymentDetails, {
-    foreignKey: 'candidate_id',
-    sourceKey: 'candidate_id'
-  });
-  CandidateProfile.belongsTo(models.Signin, {
-    foreignKey: 'candidate_id',
-    targetKey: 'candidate_id'
-  });
-};*/
-
-/*CandidateProfile.hasMany(models.keyskills, {
-  foreignKey: 'candidate_id',
-  sourceKey: 'candidate_id'
-});
-CandidateProfile.hasMany(models.itSkills, {
-  foreignKey: 'candidate_id',
-  sourceKey: 'candidate_id'
-})*/
-
-
 
 module.exports = CandidateProfile;
