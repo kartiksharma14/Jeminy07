@@ -46,7 +46,13 @@ const Recruiter = require('../models/recruiterSignin'); // Adjust path as necess
       },
       jobDescription: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: false,
+        validate: {
+          len: {
+            args: [0, 3000],
+            msg: "Job description cannot exceed 3000 characters"
+          }
+        }
       },
       multipleVacancies: {
         type: DataTypes.BOOLEAN,
@@ -58,7 +64,13 @@ const Recruiter = require('../models/recruiterSignin'); // Adjust path as necess
       },
       companyInfo: {
         type: DataTypes.TEXT,
-        allowNull: true
+        allowNull: true,
+        validate: {
+          len: {
+            args: [0, 3000],
+            msg: "Job description cannot exceed 3000 characters"
+          }
+        }
       },
       companyAddress: {
         type: DataTypes.TEXT,
@@ -83,6 +95,10 @@ const Recruiter = require('../models/recruiterSignin'); // Adjust path as necess
       created_by: {
         type: DataTypes.BIGINT,
         allowNull: true
+      },
+      end_date: {
+        type: DataTypes.STRING(10), // Using STRING to store in DD/MM/YY format
+        allowNull: true,
       },
       expiry_time: {
         type: DataTypes.DATE,

@@ -9,6 +9,9 @@ const JobApplication = require('../models/jobApplications');
 const CandidateProfile = require('../models/candidateProfile');
 const User = require('../models/user');
 const TempJobPost = require('../models/TempJobPost');
+const ClientSubscription = require('../models/clientSubscription');
+const ClientLoginDevice = require('../models/clientLoginDevice');
+const CVDownloadTracker = require('../models/cvDownloadTracker');
 const { sequelize } = require('../db');
 const { Op } = require('sequelize');
 const cities = require('../data/cities.json');
@@ -102,7 +105,7 @@ exports.loginRecruiter = async (req, res) => {
 };
 
 // Verify OTP and generate JWT token
-exports.verifyLoginOtp = async (req, res) => {
+/*exports.verifyLoginOtp = async (req, res) => {
   const { email, otp } = req.body;
   
   try {
@@ -145,8 +148,387 @@ exports.verifyLoginOtp = async (req, res) => {
     console.error('OTP verification error:', error);
     return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
   }
+};*/
+
+// Update the verifyLoginOtp function to handle device login limits
+
+// Verify OTP and generate JWT token with session limiting
+/*exports.verifyLoginOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  
+  try {
+    // Validate OTP
+    const otpEntry = await OTP.findOne({ where: { email, otp } });
+    
+    if (!otpEntry || new Date() > otpEntry.otp_expiry) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    
+    // Get the recruiter details after OTP verification
+    const recruiter = await RecruiterSignin.findOne({ where: { email } });
+    
+    if (!recruiter) {
+      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
+    }
+    
+    // Check if the account is locked
+    if (recruiter.is_locked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been locked. Please contact an administrator.'
+      });
+    }
+    
+    // Generate a unique login ID for this session
+    const loginId = `login_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    
+    // Check for active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiter.recruiter_id,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have an active subscription. Please contact admin.',
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+    
+    // Count active sessions for this recruiter
+    const activeSessionCount = await ClientLoginDevice.count({
+      where: {
+        client_id: recruiter.recruiter_id,
+        is_active: true
+      }
+    });
+    
+    // Check if recruiter has reached session limit
+    if (activeSessionCount >= subscription.login_allowed) {
+      // Get list of active sessions for informational purposes
+      const activeSessions = await ClientLoginDevice.findAll({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        },
+        attributes: ['device_id', 'last_login'],
+        order: [['last_login', 'DESC']]
+      });
+      
+      // Format the sessions for display
+      const formattedSessions = activeSessions.map(session => {
+        const lastLogin = new Date(session.last_login);
+        const formattedDate = `${lastLogin.toLocaleDateString()} ${lastLogin.toLocaleTimeString()}`;
+        
+        return {
+          session_id: session.device_id,
+          last_login: formattedDate
+        };
+      });
+      
+      return res.status(403).json({
+        success: false,
+        message: `Maximum number of sessions (${subscription.login_allowed}) already active. Please log out from another session or contact admin.`,
+        errorCode: 'SESSION_LIMIT_REACHED',
+        activeSessions: formattedSessions
+      });
+    }
+    
+    // Register new session
+    await ClientLoginDevice.create({
+      client_id: recruiter.recruiter_id,
+      login_id: loginId,
+      start_date: new Date(),
+      end_date: subscription.end_date,
+      last_login: new Date(),
+      is_active: true
+    });
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        recruiter_id: recruiter.recruiter_id, 
+        email,
+        name: recruiter.name,
+        company_name: recruiter.company_name,
+        login_id: loginId // Include login_id in token for session tracking
+      },
+      JWT_SECRET,
+      { expiresIn: '2400h' }
+    );
+    
+    // Clean up - delete the OTP
+    await OTP.destroy({ where: { email } });
+    
+    return res.status(200).json({
+      message: 'Login successful!',
+      token,
+      verified: true
+    });
+    
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
+  }
+};*/
+
+// Add a function to handle device logout
+exports.logoutDevice = async (req, res) => {
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    const loginId = req.recruiter.login_id;
+    
+    if (!loginId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid session identifier'
+      });
+    }
+    
+    // Find the current device
+    const device = await ClientLoginDevice.findOne({
+      where: {
+        client_id: recruiterId,
+        login_id: loginId,
+        is_active: true
+      }
+    });
+    
+    if (!device) {
+      return res.status(404).json({
+        success: false,
+        message: 'Device session not found'
+      });
+    }
+    
+    // Deactivate the device
+    await device.update({
+      is_active: false,
+      end_date: new Date()
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Successfully logged out'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error during logout',
+      error: error.message
+    });
+  }
 };
 
+// Get candidate profile details with user information and track the view
+exports.getCandidateProfile = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id } = req.query; // Optional job_id parameter
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate profile not found"
+      });
+    }
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
+    });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
+    
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Check if recruiter has an active subscription with CV quota
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have an active subscription. Please contact admin.",
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+
+    // Check if recruiter has exceeded their CV view quota
+    // First, count how many CVs they've viewed this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const viewsThisMonth = await CVViewTracker.count({
+      where: {
+        recruiter_id: recruiterId,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    // Check if already viewed this CV this month to avoid double counting
+    const alreadyViewedThisMonth = await CVViewTracker.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        candidate_id,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    if (!alreadyViewedThisMonth) {
+      // If haven't viewed this CV this month, check quota
+      if (viewsThisMonth >= subscription.cv_download_quota && subscription.cv_download_quota > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `You have reached your CV view limit (${subscription.cv_download_quota}) for this month. Please contact admin to increase your quota.`,
+          errorCode: 'CV_QUOTA_EXCEEDED',
+          quota: {
+            total: subscription.cv_download_quota,
+            used: viewsThisMonth,
+            remaining: 0
+          }
+        });
+      }
+
+      // Track this CV view
+      await CVViewTracker.create({
+        recruiter_id: recruiterId,
+        candidate_id,
+        job_id: job_id || candidateApplications.JobPost.job_id,
+        view_date: new Date()
+      });
+    }
+
+    // Calculate remaining quota
+    const remainingQuota = subscription.cv_download_quota > 0 
+      ? subscription.cv_download_quota - viewsThisMonth 
+      : null; // null means unlimited
+
+    // Return combined profile with quota information
+    return res.status(200).json({
+      success: true,
+      candidateProfile: profileData,
+      quota: {
+        total: subscription.cv_download_quota,
+        used: viewsThisMonth,
+        remaining: remainingQuota
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching candidate profile",
+      error: error.message
+    });
+  }
+};
+
+// Add middleware for tracking device activity and refreshing last_login timestamp
+exports.refreshDeviceActivity = async (req, res, next) => {
+  try {
+    if (!req.recruiter || !req.recruiter.login_id) {
+      return next();
+    }
+    
+    const recruiterId = req.recruiter.recruiter_id;
+    const loginId = req.recruiter.login_id;
+    
+    // Update the last_login timestamp for this device
+    await ClientLoginDevice.update(
+      { last_login: new Date() },
+      { 
+        where: { 
+          client_id: recruiterId,
+          login_id: loginId,
+          is_active: true
+        }
+      }
+    );
+    
+    next();
+  } catch (error) {
+    console.error('Error refreshing device activity:', error);
+    next(); // Continue to the next middleware even if this fails
+  }
+};
+
+// Helper function to format dates
+function formatDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
 
 // Update Recruiter Password (by recruiter themselves)
 exports.updateRecruiterPassword = async (req, res) => {
@@ -309,7 +691,7 @@ exports.getAllJobDrafts = async (req, res) => {
 
 
 // Create a new job from draft
-exports.createJobFromDraft = async (req, res) => {
+/*exports.createJobFromDraft = async (req, res) => {
     const transaction = await sequelize.transaction();
     
     try {
@@ -587,7 +969,746 @@ exports.updateJobDraft = async (req, res) => {
             error: error.message
         });
     }
+};*/
+
+
+// Helper function to format date in DD/MM/YY format
+/*const formatDateToDDMMYY = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
 };
+
+exports.createJobFromDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+      const { session_id, end_date } = req.body;
+      
+      if (!session_id) {
+          await transaction.rollback();
+          return res.status(400).json({
+              success: false,
+              message: "Session ID is required"
+          });
+      }
+      
+      // Find the job draft
+      const jobDraft = await TempJobPost.findOne({
+          where: { session_id }
+      });
+      
+      if (!jobDraft) {
+          await transaction.rollback();
+          return res.status(404).json({
+              success: false,
+              message: "Job draft not found"
+          });
+      }
+
+      // Get recruiter_id from the authenticated user
+      const recruiter_id = req.recruiter.recruiter_id;
+      if (!recruiter_id) {
+          await transaction.rollback();
+          return res.status(401).json({
+              success: false,
+              message: "Authentication required. Please log in again."
+          });
+      }
+
+      // Validate location against cities.json
+      const validatedLocation = validateCity(jobDraft.locations);
+      if (!validatedLocation) {
+          await transaction.rollback();
+          return res.status(400).json({
+              success: false,
+              message: "Invalid location in draft. Please provide a valid city name."
+          });
+      }
+
+      // Format the end date or use default (30 days from now)
+      let formattedEndDate;
+      if (end_date) {
+          formattedEndDate = formatDateToDDMMYY(end_date);
+      } else {
+          const defaultEndDate = new Date();
+          defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+          formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+      }
+
+      // Create the permanent job post
+      const newJob = await JobPost.create({
+          recruiter_id,
+          jobTitle: jobDraft.jobTitle,
+          employmentType: jobDraft.employmentType,
+          keySkills: jobDraft.keySkills,
+          department: jobDraft.department,
+          workMode: jobDraft.workMode,
+          locations: validatedLocation, // Use the validated location
+          industry: jobDraft.industry,
+          diversityHiring: jobDraft.diversityHiring,
+          jobDescription: jobDraft.jobDescription,
+          multipleVacancies: jobDraft.multipleVacancies,
+          companyName: jobDraft.companyName,
+          companyInfo: jobDraft.companyInfo,
+          companyAddress: jobDraft.companyAddress,
+          min_salary: jobDraft.min_salary,
+          max_salary: jobDraft.max_salary,
+          min_experience: jobDraft.min_experience,
+          max_experience: jobDraft.max_experience,
+          job_creation_date: new Date(),
+          end_date: formattedEndDate, // Add the end_date field
+          is_active: true,
+          status: "pending"  // Set default status to pending
+      }, { transaction });
+
+      // Delete the draft after creating the permanent job
+      await jobDraft.destroy({ transaction });
+      
+      // Commit the transaction
+      await transaction.commit();
+      
+      return res.status(200).json({
+          success: true,
+          message: "Job created successfully from draft!",
+          job: newJob
+      });
+  } catch (error) {
+      // Rollback transaction in case of error
+      await transaction.rollback();
+      console.error('Error creating job from draft:', error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to create job from draft.",
+          error: error.message
+      });
+  }
+};
+
+// Create a job draft
+exports.createJobDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+      const {
+          jobTitle, employmentType, keySkills, department, workMode, locations, industry,
+          diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
+          companyAddress, min_salary, max_salary, min_experience, max_experience, end_date
+      } = req.body;
+
+      // Validate required fields
+      if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
+          await transaction.rollback();
+          return res.status(400).json({
+              success: false,
+              message: "Missing required fields for job draft"
+          });
+      }
+
+      // Validate location against cities.json
+      const validatedLocation = validateCity(locations);
+      if (!validatedLocation) {
+          await transaction.rollback();
+          return res.status(400).json({
+              success: false,
+              message: "Invalid location. Please provide a valid city name."
+          });
+      }
+
+      // Get the recruiter_id from the authenticated user
+      const recruiter_id = req.recruiter.recruiter_id;
+      if (!recruiter_id) {
+          await transaction.rollback();
+          return res.status(401).json({
+              success: false,
+              message: "Authentication required. Please log in again."
+          });
+      }
+
+      // Generate a new session ID
+      const sessionId = generateUniqueSessionId();
+
+      // Format the end date or use default (30 days from now)
+      let formattedEndDate;
+      if (end_date) {
+          formattedEndDate = formatDateToDDMMYY(end_date);
+      } else {
+          const defaultEndDate = new Date();
+          defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+          formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+      }
+
+      // Create new draft
+      const jobDraft = await TempJobPost.create({
+          session_id: sessionId,
+          recruiter_id,
+          jobTitle, 
+          employmentType, 
+          keySkills, 
+          department, 
+          workMode, 
+          locations: validatedLocation, // Use the validated location
+          industry,
+          diversityHiring, 
+          jobDescription, 
+          multipleVacancies, 
+          companyName, 
+          companyInfo,
+          companyAddress, 
+          min_salary, 
+          max_salary, 
+          min_experience, 
+          max_experience,
+          end_date: formattedEndDate, // Add the end_date field
+          created_by: recruiter_id,
+          expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
+      }, { transaction });
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return res.status(200).json({
+          success: true,
+          message: "Job draft created successfully!",
+          draft: jobDraft,
+          session_id: sessionId
+      });
+  } catch (error) {
+      await transaction.rollback();
+      console.error('Error creating job draft:', error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to create job draft.",
+          error: error.message
+      });
+  }
+};
+
+// Update an existing job draft (PATCH)
+exports.updateJobDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+      const {
+          session_id, jobTitle, employmentType, keySkills, department, workMode, locations, industry, 
+          diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
+          companyAddress, min_salary, max_salary, min_experience, max_experience, end_date
+      } = req.body;
+
+      if (!session_id) {
+          await transaction.rollback();
+          return res.status(400).json({
+              success: false,
+              message: "Session ID is required for updating the job draft"
+          });
+      }
+
+      // Check if draft exists
+      const existingDraft = await TempJobPost.findOne({
+          where: { session_id: session_id }
+      });
+
+      if (!existingDraft) {
+          await transaction.rollback();
+          return res.status(404).json({
+              success: false,
+              message: "Job draft not found"
+          });
+      }
+
+      // Get the recruiter_id from the authenticated user
+      const recruiter_id = req.recruiter.recruiter_id;
+      if (!recruiter_id) {
+          await transaction.rollback();
+          return res.status(401).json({
+              success: false,
+              message: "Authentication required. Please log in again."
+          });
+      }
+
+      // Validate location against cities.json if location field is being updated
+      let validatedLocation = existingDraft.locations; // Keep existing if not updating
+      if (locations) {
+          validatedLocation = validateCity(locations);
+          if (!validatedLocation) {
+              await transaction.rollback();
+              return res.status(400).json({
+                  success: false,
+                  message: "Invalid location. Please provide a valid city name."
+              });
+          }
+      }
+
+      // Format the end date if provided
+      let formattedEndDate = existingDraft.end_date; // Keep existing if not updating
+      if (end_date) {
+          formattedEndDate = formatDateToDDMMYY(end_date);
+      }
+
+      // Update draft
+      const updatedDraft = await existingDraft.update({
+          jobTitle: jobTitle || existingDraft.jobTitle, 
+          employmentType: employmentType || existingDraft.employmentType, 
+          keySkills: keySkills || existingDraft.keySkills, 
+          department: department || existingDraft.department, 
+          workMode: workMode || existingDraft.workMode, 
+          locations: validatedLocation,
+          industry: industry || existingDraft.industry,
+          diversityHiring: diversityHiring !== undefined ? diversityHiring : existingDraft.diversityHiring, 
+          jobDescription: jobDescription || existingDraft.jobDescription, 
+          multipleVacancies: multipleVacancies !== undefined ? multipleVacancies : existingDraft.multipleVacancies, 
+          companyName: companyName || existingDraft.companyName, 
+          companyInfo: companyInfo || existingDraft.companyInfo,
+          companyAddress: companyAddress || existingDraft.companyAddress, 
+          min_salary: min_salary || existingDraft.min_salary, 
+          max_salary: max_salary || existingDraft.max_salary, 
+          min_experience: min_experience !== undefined ? min_experience : existingDraft.min_experience, 
+          max_experience: max_experience !== undefined ? max_experience : existingDraft.max_experience,
+          end_date: formattedEndDate, // Add the end_date field
+          created_by: recruiter_id,
+          expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Reset expiry to 24 hours
+      }, { transaction });
+
+      await transaction.commit();
+
+      return res.status(200).json({
+          success: true,
+          message: "Job draft updated successfully!",
+          draft: updatedDraft,
+          session_id: session_id
+      });
+  } catch (error) {
+      await transaction.rollback();
+      console.error('Error updating job draft:', error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Failed to update job draft.",
+          error: error.message
+      });
+  }
+};*/
+
+
+// Helper function to format date in DD/MM/YY format
+const formatDateToDDMMYY = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+};
+
+// Helper function to validate text length
+const validateTextLength = (text, fieldName, maxLength = 3000) => {
+  if (!text) return { valid: true };
+  
+  if (text.length > maxLength) {
+    return { 
+      valid: false, 
+      message: `${fieldName} cannot exceed ${maxLength} characters. Current length: ${text.length} characters.`
+    };
+  }
+  
+  return { valid: true };
+};
+
+exports.createJobFromDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { session_id, end_date } = req.body;
+    
+    if (!session_id) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required"
+      });
+    }
+    
+    // Find the job draft
+    const jobDraft = await TempJobPost.findOne({
+      where: { session_id }
+    });
+    
+    if (!jobDraft) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Job draft not found"
+      });
+    }
+
+    // Get recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      await transaction.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+
+    // Validate location against cities.json
+    const validatedLocation = validateCity(jobDraft.locations);
+    if (!validatedLocation) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location in draft. Please provide a valid city name."
+      });
+    }
+
+    // Validate character limits
+    const jobDescriptionValidation = validateTextLength(
+      jobDraft.jobDescription, 
+      'Job description'
+    );
+    
+    if (!jobDescriptionValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: jobDescriptionValidation.message
+      });
+    }
+    
+    const companyInfoValidation = validateTextLength(
+      jobDraft.companyInfo, 
+      'Company information'
+    );
+    
+    if (!companyInfoValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: companyInfoValidation.message
+      });
+    }
+
+    // Format the end date or use default (30 days from now)
+    let formattedEndDate;
+    if (end_date) {
+      formattedEndDate = formatDateToDDMMYY(end_date);
+    } else {
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+      formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+    }
+
+    // Create the permanent job post
+    const newJob = await JobPost.create({
+      recruiter_id,
+      jobTitle: jobDraft.jobTitle,
+      employmentType: jobDraft.employmentType,
+      keySkills: jobDraft.keySkills,
+      department: jobDraft.department,
+      workMode: jobDraft.workMode,
+      locations: validatedLocation, // Use the validated location
+      industry: jobDraft.industry,
+      diversityHiring: jobDraft.diversityHiring,
+      jobDescription: jobDraft.jobDescription,
+      multipleVacancies: jobDraft.multipleVacancies,
+      companyName: jobDraft.companyName,
+      companyInfo: jobDraft.companyInfo,
+      companyAddress: jobDraft.companyAddress,
+      min_salary: jobDraft.min_salary,
+      max_salary: jobDraft.max_salary,
+      min_experience: jobDraft.min_experience,
+      max_experience: jobDraft.max_experience,
+      job_creation_date: new Date(),
+      end_date: formattedEndDate, // Add the end_date field
+      is_active: true,
+      status: "pending"  // Set default status to pending
+    }, { transaction });
+
+    // Delete the draft after creating the permanent job
+    await jobDraft.destroy({ transaction });
+    
+    // Commit the transaction
+    await transaction.commit();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Job created successfully from draft!",
+      job: newJob
+    });
+  } catch (error) {
+    // Rollback transaction in case of error
+    await transaction.rollback();
+    console.error('Error creating job from draft:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create job from draft.",
+      error: error.message
+    });
+  }
+};
+
+// Create a job draft
+exports.createJobDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const {
+      jobTitle, employmentType, keySkills, department, workMode, locations, industry,
+      diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
+      companyAddress, min_salary, max_salary, min_experience, max_experience, end_date
+    } = req.body;
+
+    // Validate required fields
+    if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for job draft"
+      });
+    }
+
+    // Validate character limits
+    const jobDescriptionValidation = validateTextLength(
+      jobDescription, 
+      'Job description'
+    );
+    
+    if (!jobDescriptionValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: jobDescriptionValidation.message
+      });
+    }
+    
+    const companyInfoValidation = validateTextLength(
+      companyInfo, 
+      'Company information'
+    );
+    
+    if (!companyInfoValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: companyInfoValidation.message
+      });
+    }
+
+    // Validate location against cities.json
+    const validatedLocation = validateCity(locations);
+    if (!validatedLocation) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location. Please provide a valid city name."
+      });
+    }
+
+    // Get the recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      await transaction.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+
+    // Generate a new session ID
+    const sessionId = generateUniqueSessionId();
+
+    // Format the end date or use default (30 days from now)
+    let formattedEndDate;
+    if (end_date) {
+      formattedEndDate = formatDateToDDMMYY(end_date);
+    } else {
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+      formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+    }
+
+    // Create new draft
+    const jobDraft = await TempJobPost.create({
+      session_id: sessionId,
+      recruiter_id,
+      jobTitle, 
+      employmentType, 
+      keySkills, 
+      department, 
+      workMode, 
+      locations: validatedLocation, // Use the validated location
+      industry,
+      diversityHiring, 
+      jobDescription, 
+      multipleVacancies, 
+      companyName, 
+      companyInfo,
+      companyAddress, 
+      min_salary, 
+      max_salary, 
+      min_experience, 
+      max_experience,
+      end_date: formattedEndDate, // Add the end_date field
+      created_by: recruiter_id,
+      expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
+    }, { transaction });
+
+    // Commit the transaction
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Job draft created successfully!",
+      draft: jobDraft,
+      session_id: sessionId
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error creating job draft:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create job draft.",
+      error: error.message
+    });
+  }
+};
+
+// Update an existing job draft (PATCH)
+exports.updateJobDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const {
+      session_id, jobTitle, employmentType, keySkills, department, workMode, locations, industry, 
+      diversityHiring, jobDescription, multipleVacancies, companyName, companyInfo,
+      companyAddress, min_salary, max_salary, min_experience, max_experience, end_date
+    } = req.body;
+
+    if (!session_id) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required for updating the job draft"
+      });
+    }
+
+    // Check if draft exists
+    const existingDraft = await TempJobPost.findOne({
+      where: { session_id: session_id }
+    });
+
+    if (!existingDraft) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Job draft not found"
+      });
+    }
+
+    // Get the recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      await transaction.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+
+    // Validate character limits if fields are being updated
+    if (jobDescription) {
+      const jobDescriptionValidation = validateTextLength(
+        jobDescription, 
+        'Job description'
+      );
+      
+      if (!jobDescriptionValidation.valid) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: jobDescriptionValidation.message
+        });
+      }
+    }
+    
+    if (companyInfo) {
+      const companyInfoValidation = validateTextLength(
+        companyInfo, 
+        'Company information'
+      );
+      
+      if (!companyInfoValidation.valid) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: companyInfoValidation.message
+        });
+      }
+    }
+
+    // Validate location against cities.json if location field is being updated
+    let validatedLocation = existingDraft.locations; // Keep existing if not updating
+    if (locations) {
+      validatedLocation = validateCity(locations);
+      if (!validatedLocation) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Invalid location. Please provide a valid city name."
+        });
+      }
+    }
+
+    // Format the end date if provided
+    let formattedEndDate = existingDraft.end_date; // Keep existing if not updating
+    if (end_date) {
+      formattedEndDate = formatDateToDDMMYY(end_date);
+    }
+
+    // Update draft
+    const updatedDraft = await existingDraft.update({
+      jobTitle: jobTitle || existingDraft.jobTitle, 
+      employmentType: employmentType || existingDraft.employmentType, 
+      keySkills: keySkills || existingDraft.keySkills, 
+      department: department || existingDraft.department, 
+      workMode: workMode || existingDraft.workMode, 
+      locations: validatedLocation,
+      industry: industry || existingDraft.industry,
+      diversityHiring: diversityHiring !== undefined ? diversityHiring : existingDraft.diversityHiring, 
+      jobDescription: jobDescription || existingDraft.jobDescription, 
+      multipleVacancies: multipleVacancies !== undefined ? multipleVacancies : existingDraft.multipleVacancies, 
+      companyName: companyName || existingDraft.companyName, 
+      companyInfo: companyInfo || existingDraft.companyInfo,
+      companyAddress: companyAddress || existingDraft.companyAddress, 
+      min_salary: min_salary || existingDraft.min_salary, 
+      max_salary: max_salary || existingDraft.max_salary, 
+      min_experience: min_experience !== undefined ? min_experience : existingDraft.min_experience, 
+      max_experience: max_experience !== undefined ? max_experience : existingDraft.max_experience,
+      end_date: formattedEndDate, // Add the end_date field
+      created_by: recruiter_id,
+      expiry_time: new Date(Date.now() + 24 * 60 * 60 * 1000) // Reset expiry to 24 hours
+    }, { transaction });
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Job draft updated successfully!",
+      draft: updatedDraft,
+      session_id: session_id
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error updating job draft:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update job draft.",
+      error: error.message
+    });
+  }
+};
+
+
 
 // Delete a job draft
 exports.deleteJobDraft = async (req, res) => {
@@ -1507,6 +2628,1806 @@ exports.getRejectedJobs = async (req, res) => {
 };*/
 
 
+/*exports.getJobApplications = async (req, res) => {
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id, status, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Special case: If a specific job_id is requested, first check if it exists
+    if (job_id) {
+      const jobDetails = await JobPost.findOne({
+        where: {
+          job_id: job_id,
+          recruiter_id: recruiterId
+        },
+        attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+      });
+      
+      // If the job exists, check for applications
+      if (jobDetails) {
+        const applicationWhereClause = {
+          job_id: job_id
+        };
+        
+        if (status && ['pending', 'selected', 'rejected'].includes(status)) {
+          applicationWhereClause.status = status;
+        }
+        
+        const { count, rows } = await JobApplication.findAndCountAll({
+          where: applicationWhereClause,
+          include: [
+            {
+              model: JobPost,
+              attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+            },
+            {
+              model: CandidateProfile,
+              attributes: ['candidate_id', 'name', 'email', 'phone']
+            }
+          ],
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          order: [['applied_at', 'DESC']]
+        });
+        
+        // If no applications found, return job details in a dummy structure
+        if (count === 0) {
+          return res.status(200).json({
+            success: true,
+            count: 0,
+            totalPages: 0,
+            currentPage: parseInt(page),
+            applications: [{
+              application_id: null,
+              job_id: jobDetails.job_id,
+              candidate_id: null,
+              applied_at: null,
+              status: null,
+              JobPost: {
+                job_id: jobDetails.job_id,
+                jobTitle: jobDetails.jobTitle,
+                locations: jobDetails.locations,
+                companyName: jobDetails.companyName
+              },
+              candidate_profile: null
+            }]
+          });
+        }
+        
+        // Fetch user names from User table for all candidates
+        const candidateIds = rows.map(app => app.candidate_id);
+        const users = await User.findAll({
+          where: {
+            candidate_id: {
+              [Op.in]: candidateIds
+            }
+          },
+          attributes: ['candidate_id', 'name', 'email']
+        });
+        
+        // Create a map of candidate_id to user information
+        const userMap = {};
+        users.forEach(user => {
+          userMap[user.candidate_id] = user;
+        });
+        
+        // Enhance the application rows with user information
+        const enhancedRows = rows.map(application => {
+          const appJson = application.toJSON();
+          
+          // If candidate exists in the user table, update the profile info
+          if (userMap[appJson.candidate_id]) {
+            // If candidate_profile is null, initialize it
+            if (!appJson.candidate_profile) {
+              appJson.candidate_profile = {
+                candidate_id: appJson.candidate_id
+              };
+            }
+            
+            // Update name if it's empty in candidate_profile but exists in user
+            if ((!appJson.candidate_profile.name || appJson.candidate_profile.name === '') && 
+                userMap[appJson.candidate_id].name) {
+              appJson.candidate_profile.name = userMap[appJson.candidate_id].name;
+            }
+            
+            // Update email if it's null in candidate_profile but exists in user
+            if (appJson.candidate_profile.email === null && userMap[appJson.candidate_id].email) {
+              appJson.candidate_profile.email = userMap[appJson.candidate_id].email;
+            }
+          }
+          
+          return appJson;
+        });
+        
+        // If applications found, return them with enhanced information
+        return res.status(200).json({
+          success: true,
+          count,
+          totalPages: Math.ceil(count / limit),
+          currentPage: parseInt(page),
+          applications: enhancedRows
+        });
+      }
+    }
+    
+    // If no specific job_id is requested or job not found, proceed with original logic
+    const whereClause = { recruiter_id: recruiterId };
+    if (job_id) {
+      whereClause.job_id = job_id;
+    }
+    
+    const jobs = await JobPost.findAll({
+      where: whereClause,
+      attributes: ['job_id']
+    });
+    
+    if (jobs.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        applications: []
+      });
+    }
+    
+    const jobIds = jobs.map(job => job.job_id);
+    
+    const applicationWhereClause = {
+      job_id: { [Op.in]: jobIds }
+    };
+    
+    if (status && ['pending', 'selected', 'rejected'].includes(status)) {
+      applicationWhereClause.status = status;
+    }
+    
+    const { count, rows } = await JobApplication.findAndCountAll({
+      where: applicationWhereClause,
+      include: [
+        {
+          model: JobPost,
+          attributes: ['job_id', 'jobTitle', 'locations', 'companyName']
+        },
+        {
+          model: CandidateProfile,
+          attributes: ['candidate_id', 'name', 'email', 'phone']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['applied_at', 'DESC']]
+    });
+    
+    // If no applications found, return empty array
+    if (count === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        totalPages: 0,
+        currentPage: parseInt(page),
+        applications: []
+      });
+    }
+    
+    // Fetch user names from User table for all candidates
+    const candidateIds = rows.map(app => app.candidate_id);
+    const users = await User.findAll({
+      where: {
+        candidate_id: {
+          [Op.in]: candidateIds
+        }
+      },
+      attributes: ['candidate_id', 'name', 'email']
+    });
+    
+    // Create a map of candidate_id to user information
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.candidate_id] = user;
+    });
+    
+    // Enhance the application rows with user information
+    const enhancedRows = rows.map(application => {
+      const appJson = application.toJSON();
+      
+      // If candidate exists in the user table, update the profile info
+      if (userMap[appJson.candidate_id]) {
+        // If candidate_profile is null, initialize it
+        if (!appJson.candidate_profile) {
+          appJson.candidate_profile = {
+            candidate_id: appJson.candidate_id
+          };
+        }
+        
+        // Update name if it's empty in candidate_profile but exists in user
+        if ((!appJson.candidate_profile.name || appJson.candidate_profile.name === '') && 
+            userMap[appJson.candidate_id].name) {
+          appJson.candidate_profile.name = userMap[appJson.candidate_id].name;
+        }
+        
+        // Update email if it's null in candidate_profile but exists in user
+        if (appJson.candidate_profile.email === null && userMap[appJson.candidate_id].email) {
+          appJson.candidate_profile.email = userMap[appJson.candidate_id].email;
+        }
+      }
+      
+      return appJson;
+    });
+    
+    return res.status(200).json({
+      success: true,
+      count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      applications: enhancedRows
+    });
+  } catch (error) {
+    console.error('Error getting job applications:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error getting job applications',
+      error: error.message
+    });
+  }
+};
+
+// Get application details with candidate profile
+/*exports.getApplicationDetail = async (req, res) => {
+  try {
+      const recruiterId = req.recruiter.recruiter_id;
+      const { application_id } = req.params;
+      
+      const application = await JobApplication.findOne({
+          where: { application_id },
+          include: [
+              {
+                  model: JobPost,
+                  where: { recruiter_id: recruiterId },
+                  attributes: ['job_id', 'jobTitle', 'jobDescription', 'locations', 'job_creation_date']
+              },
+              {
+                  model: CandidateProfile,
+                  attributes: ['candidate_id', 'name', 'email', 'phone', 'location',
+                              'resume_headline', 'profile_summary','expected_salary']
+              }
+          ]
+      });
+      
+      if (!application) {
+          return res.status(404).json({
+              success: false,
+              message: 'Application not found or you do not have permission to view it'
+          });
+      }
+      
+      return res.status(200).json({
+          success: true,
+          application
+      });
+  } catch (error) {
+      console.error('Error getting application details:', error);
+      return res.status(500).json({
+          success: false,
+          message: 'Error getting application details',
+          error: error.message
+      });
+  }
+};*/
+
+// Update application status
+/*exports.updateApplicationStatus = async (req, res) => {
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    const { application_id } = req.params;
+    const { status } = req.body;
+    
+    if (!status || !['pending', 'selected', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status provided'
+      });
+    }
+    
+    // First check if this application belongs to the recruiter's job
+    const application = await JobApplication.findOne({
+      where: { application_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id', 'jobTitle', 'recruiter_id']
+        },
+        {
+          model: CandidateProfile,
+          attributes: ['candidate_id', 'name', 'email']
+        }
+      ]
+    });
+    
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or you do not have permission to update it'
+      });
+    }
+    
+    // Update the status
+    application.status = status;
+    await application.save();
+    
+    // Send email notification to candidate
+    const candidate = application.CandidateProfile;
+    const job = application.JobPost;
+    
+    if (candidate && candidate.email && (status === 'selected' || status === 'rejected')) {
+      console.log(`Attempting to send email to candidate: ${candidate.email}`);
+      
+      const subject = status === 'selected' 
+        ? `Congratulations! You've been selected for ${job.jobTitle}`
+        : `Update on your application for ${job.jobTitle}`;
+      
+      const content = status === 'selected'
+        ? `
+          <h2>Congratulations!</h2>
+          <p>Dear ${candidate.name},</p>
+          <p>We are pleased to inform you that you have been selected for the position of <strong>${job.jobTitle}</strong>.</p>
+          <p>Our HR team will contact you shortly with the next steps.</p>
+          <p>Thank you for your interest in joining our team!</p>
+        `
+        : `
+          <h2>Application Update</h2>
+          <p>Dear ${candidate.name},</p>
+          <p>Thank you for applying for the position of <strong>${job.jobTitle}</strong>.</p>
+          <p>After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications better match our current needs.</p>
+          <p>We appreciate your interest in our company and wish you success in your job search.</p>
+        `;
+      
+      const mailOptions = {
+        from: `"Job Portal" <${process.env.MAIL_USERNAME}>`,
+        to: candidate.email,
+        subject,
+        html: content
+      };
+      
+      try {
+        // Use async/await with a Promise wrapper for better error handling
+        const emailResult = await new Promise((resolve, reject) => {
+          transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+              console.error('Detailed email error:', error);
+              reject(error);
+            } else {
+              console.log('Email sent successfully:', info.response);
+              resolve(info);
+            }
+          });
+        });
+        
+        console.log(`Email notification sent to ${candidate.email}:`, emailResult.response);
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Continue with the function, don't return here
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: `Application status updated to ${status}`,
+      application
+    });
+  } catch (error) {
+    console.error('Error updating application status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating application status',
+      error: error.message
+    });
+  }
+};*/
+
+// Test email function to verify your configuration works
+/*exports.testEmail = async (req, res) => {
+  try {
+    // Log email configuration for debugging
+    console.log('Email Configuration:', {
+      username: process.env.MAIL_USERNAME,
+      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+    });
+    
+    // Create test email
+    const mailOptions = {
+      from: process.env.MAIL_USERNAME,
+      to: process.env.MAIL_USERNAME, // Send to yourself for testing
+      subject: 'Email Test from Job Portal',
+      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
+    };
+    
+    // Send email and wait for response
+    const info = await new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Detailed email error:', error);
+          reject(error);
+        } else {
+          resolve(info);
+        }
+      });
+    });
+    
+    console.log('Email test successful:', info.response);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Test email sent successfully',
+      emailInfo: info.response
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+  }
+};*/
+
+
+// Get the most recent job for a recruiter (regardless of status)
+exports.getMostRecentJob = async (req, res) => {
+  try {
+    console.log("Token Payload: ", req.recruiter);
+
+    // Get recruiter ID from auth token
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    // Find the most recently updated job (both approved and rejected)
+    const job = await JobPost.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        status: {
+          [Op.or]: ['approved', 'rejected', 'pending'] // Include all possible statuses
+        },
+        is_active: true
+      },
+      order: [['updatedAt', 'DESC']], // Most recently updated first
+      attributes: [
+        'job_id',
+        'jobTitle',
+        'locations',
+        'updatedAt',
+        'companyName',
+        'status',
+        'rejection_reason'
+      ]
+    });
+    
+    // If no job found, return appropriate response
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "No recent jobs found"
+      });
+    }
+    
+    // Get total number of applications for this job if it's approved
+    let applicationCount = 0;
+    if (job.status === 'approved') {
+      applicationCount = await JobApplication.count({
+        where: { job_id: job.job_id }
+      });
+    }
+    
+    // Format the date to DD/MM/YY
+    const jobData = job.toJSON();
+    
+    // Format updatedAt date
+    const updatedDate = new Date(jobData.updatedAt);
+    const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+    
+    // Return the most recent job with application count and formatted date
+    return res.status(200).json({
+      success: true,
+      job: {
+        ...jobData,
+        updatedAt: formattedDate,
+        applicationCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching most recent job:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching most recent job',
+      error: error.message
+    });
+  }
+};
+
+
+// Get all jobs for a recruiter regardless of status with formatted dates
+exports.getAllJobs = async (req, res) => {
+  try {
+    // Get recruiter ID from auth token
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: {
+        recruiter_id: recruiterId,
+        is_active: true
+      }
+    });
+    
+    // Find all active jobs for this recruiter
+    const jobs = await JobPost.findAll({
+      where: {
+        recruiter_id: recruiterId,
+        is_active: true
+      },
+      order: [['updatedAt', 'DESC']], // Most recently updated first
+      attributes: [
+        'job_id',
+        'jobTitle',
+        'locations',
+        'updatedAt',
+        'companyName',
+        'status',
+        'rejection_reason'
+      ],
+      limit: limit,
+      offset: offset
+    });
+    
+    // If no jobs found, return appropriate response
+    if (jobs.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No jobs found"
+      });
+    }
+    
+    // Process each job to add application count and format date
+    const processedJobs = await Promise.all(jobs.map(async (job) => {
+      const jobData = job.toJSON();
+      
+      // Format updatedAt date
+      const updatedDate = new Date(jobData.updatedAt);
+      const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+      
+      // Get application count - only count if job is approved
+      let applicationCount = 0;
+      if (job.status === 'approved') {
+        applicationCount = await JobApplication.count({
+          where: { job_id: job.job_id }
+        });
+      }
+      
+      return {
+        ...jobData,
+        updatedAt: formattedDate,
+        applicationCount
+      };
+    }));
+    
+    // Return all jobs with application counts and formatted dates
+    return res.status(200).json({
+      success: true,
+      count: processedJobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs: processedJobs
+    });
+  } catch (error) {
+    console.error('Error fetching all jobs:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching all jobs',
+      error: error.message
+    });
+  }
+};
+
+
+
+// Get candidate profile details with user information
+/*exports.getCandidateProfile = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate profile not found"
+      });
+    }
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
+    });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
+    
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Return combined profile
+    return res.status(200).json({
+      success: true,
+      candidateProfile: profileData
+    });
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching candidate profile",
+      error: error.message
+    });
+  }
+};*/
+
+
+/*const { generateDeviceFingerprint } = require('../middleware/deviceAuthMiddleware');
+
+// Verify OTP and generate JWT token with device checking
+exports.verifyLoginOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  
+  try {
+    // Validate OTP
+    const otpEntry = await OTP.findOne({ where: { email, otp } });
+    
+    if (!otpEntry || new Date() > otpEntry.otp_expiry) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    
+    // Get the recruiter details after OTP verification
+    const recruiter = await RecruiterSignin.findOne({ where: { email } });
+    
+    if (!recruiter) {
+      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
+    }
+    
+    // Check if the account is locked
+    if (recruiter.is_locked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been locked. Please contact an administrator.'
+      });
+    }
+    
+    // Get device fingerprint
+    const deviceInfo = generateDeviceFingerprint(req);
+    
+    // Check for active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiter.recruiter_id,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have an active subscription. Please contact admin.',
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+    
+    // Check if this device is already registered
+    const existingDevice = await ClientLoginDevice.findOne({
+      where: {
+        client_id: recruiter.recruiter_id,
+        fingerprint: deviceInfo.fingerprint,
+        is_active: true
+      }
+    });
+    
+    if (existingDevice) {
+      // Update last login time
+      await existingDevice.update({
+        last_login: new Date(),
+        user_agent: deviceInfo.userAgent
+      });
+    } else {
+      // Count active devices for this recruiter
+      const activeDeviceCount = await ClientLoginDevice.count({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        }
+      });
+      
+      // Check if recruiter has reached device limit
+      if (activeDeviceCount >= subscription.login_allowed) {
+        // Get list of active devices for informational purposes
+        const activeDevices = await ClientLoginDevice.findAll({
+          where: {
+            client_id: recruiter.recruiter_id,
+            is_active: true
+          },
+          attributes: ['login_id', 'last_login', 'user_agent'],
+          order: [['last_login', 'DESC']]
+        });
+        
+        // Format the devices for display
+        const formattedDevices = activeDevices.map(device => {
+          const lastLogin = new Date(device.last_login);
+          const formattedDate = `${lastLogin.toLocaleDateString()} ${lastLogin.toLocaleTimeString()}`;
+          return {
+            login_id: device.login_id,
+            last_login: formattedDate,
+            device_info: parseUserAgent(device.user_agent)
+          };
+        });
+        
+        return res.status(403).json({
+          success: false,
+          message: `You are already logged in on ${activeDeviceCount} device(s). Maximum allowed is ${subscription.login_allowed}. Please log out from another device or contact admin.`,
+          errorCode: 'DEVICE_LIMIT_REACHED',
+          activeDevices: formattedDevices
+        });
+      }
+      
+      // Register new device
+      await ClientLoginDevice.create({
+        client_id: recruiter.recruiter_id,
+        login_id: deviceInfo.loginId,
+        fingerprint: deviceInfo.fingerprint,
+        user_agent: deviceInfo.userAgent,
+        start_date: new Date(),
+        end_date: subscription.end_date,
+        last_login: new Date(),
+        is_active: true
+      });
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        recruiter_id: recruiter.recruiter_id, 
+        email,
+        name: recruiter.name,
+        company_name: recruiter.company_name
+      },
+      JWT_SECRET,
+      { expiresIn: '2400h' }
+    );
+    
+    // Store fingerprint in cookie for future device recognition
+    res.cookie('device_fingerprint', deviceInfo.fingerprint, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+    });
+    
+    // Clean up - delete the OTP
+    await OTP.destroy({ where: { email } });
+    
+    return res.status(200).json({
+      message: 'Login successful!',
+      token,
+      verified: true
+    });
+    
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
+  }
+};*/
+
+
+
+/*const CVViewTracker = require('../models/cvViewTracker');
+
+// Get candidate profile details with user information and track the view
+exports.getCandidateProfile = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id } = req.query; // Optional job_id parameter
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate profile not found"
+      });
+    }
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
+    });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
+    
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Check if recruiter has an active subscription with CV quota
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have an active subscription. Please contact admin.",
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+
+    // Check if recruiter has exceeded their CV view quota
+    // First, count how many CVs they've viewed this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const viewsThisMonth = await CVViewTracker.count({
+      where: {
+        recruiter_id: recruiterId,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    // Check if already viewed this CV this month to avoid double counting
+    const alreadyViewedThisMonth = await CVViewTracker.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        candidate_id,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    if (!alreadyViewedThisMonth) {
+      // If haven't viewed this CV this month, check quota
+      if (viewsThisMonth >= subscription.cv_download_quota && subscription.cv_download_quota > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `You have reached your CV view limit (${subscription.cv_download_quota}) for this month. Please contact admin to increase your quota.`,
+          errorCode: 'CV_QUOTA_EXCEEDED',
+          quota: {
+            total: subscription.cv_download_quota,
+            used: viewsThisMonth,
+            remaining: 0
+          }
+        });
+      }
+
+      // Track this CV view
+      await CVViewTracker.create({
+        recruiter_id: recruiterId,
+        candidate_id,
+        job_id: job_id || candidateApplications.JobPost.job_id,
+        view_date: new Date()
+      });
+    }
+
+    // Calculate remaining quota
+    const remainingQuota = subscription.cv_download_quota > 0 
+      ? subscription.cv_download_quota - viewsThisMonth 
+      : null; // null means unlimited
+
+    // Return combined profile with quota information
+    return res.status(200).json({
+      success: true,
+      candidateProfile: profileData,
+      quota: {
+        total: subscription.cv_download_quota,
+        used: viewsThisMonth,
+        remaining: remainingQuota
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching candidate profile",
+      error: error.message
+    });
+  }
+};*/
+
+// Get the recruiter's current devices
+/*exports.getMyDevices = async (req, res) => {
+  try {
+    const clientId = req.recruiter.recruiter_id;
+    
+    // Get subscription details
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: clientId,
+        is_active: true
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active subscription found'
+      });
+    }
+    
+    // Get all active devices
+    const devices = await ClientLoginDevice.findAll({
+      where: {
+        client_id: clientId,
+        is_active: true
+      },
+      order: [['last_login', 'DESC']],
+      attributes: [
+        'device_id', 
+        'login_id', 
+        'last_login', 
+        'start_date', 
+        'end_date',
+        'user_agent',
+        'ip_address'
+      ]
+    });
+    
+    // Process devices to add readable information
+    const processedDevices = devices.map(device => {
+      const deviceData = device.toJSON();
+      
+      // Format dates for display
+      deviceData.last_login_formatted = formatDate(deviceData.last_login);
+      deviceData.start_date_formatted = formatDate(deviceData.start_date);
+      deviceData.end_date_formatted = deviceData.end_date ? formatDate(deviceData.end_date) : 'No expiry';
+      
+      // Extract device info from user agent
+      deviceData.device_info = parseUserAgent(deviceData.user_agent);
+      
+      return deviceData;
+    });
+    
+    return res.status(200).json({
+      success: true,
+      subscription: {
+        login_allowed: subscription.login_allowed,
+        cv_download_quota: subscription.cv_download_quota,
+        start_date: subscription.start_date,
+        end_date: subscription.end_date
+      },
+      devices: processedDevices,
+      stats: {
+        total_devices: devices.length,
+        max_allowed: subscription.login_allowed,
+        remaining_slots: Math.max(0, subscription.login_allowed - devices.length)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching devices:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching devices',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to format dates
+function formatDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+// Helper function to parse user agent string
+function parseUserAgent(userAgent) {
+  if (!userAgent) return 'Unknown device';
+  
+  let deviceInfo = {};
+  
+  // Browser detection
+  if (userAgent.includes('Firefox')) {
+    deviceInfo.browser = 'Firefox';
+  } else if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+    deviceInfo.browser = 'Chrome';
+  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    deviceInfo.browser = 'Safari';
+  } else if (userAgent.includes('Edg')) {
+    deviceInfo.browser = 'Edge';
+  } else if (userAgent.includes('MSIE') || userAgent.includes('Trident')) {
+    deviceInfo.browser = 'Internet Explorer';
+  } else {
+    deviceInfo.browser = 'Unknown browser';
+  }
+  
+  // Device type detection
+  if (userAgent.includes('Mobile')) {
+    deviceInfo.type = 'Mobile';
+  } else if (userAgent.includes('Tablet')) {
+    deviceInfo.type = 'Tablet';
+  } else {
+    deviceInfo.type = 'Desktop';
+  }
+  
+  // OS detection
+  if (userAgent.includes('Windows')) {
+    deviceInfo.os = 'Windows';
+  } else if (userAgent.includes('Mac OS')) {
+    deviceInfo.os = 'macOS';
+  } else if (userAgent.includes('Linux')) {
+    deviceInfo.os = 'Linux';
+  } else if (userAgent.includes('Android')) {
+    deviceInfo.os = 'Android';
+  } else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+    deviceInfo.os = 'iOS';
+  } else {
+    deviceInfo.os = 'Unknown OS';
+  }
+  
+  return deviceInfo;
+}*/
+
+
+// Verify OTP and generate JWT token with session limiting
+exports.verifyLoginOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  
+  try {
+    // Validate OTP
+    const otpEntry = await OTP.findOne({ where: { email, otp } });
+    
+    if (!otpEntry || new Date() > otpEntry.otp_expiry) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    
+    // Get the recruiter details after OTP verification
+    const recruiter = await RecruiterSignin.findOne({ where: { email } });
+    
+    if (!recruiter) {
+      return res.status(404).json({ message: 'Recruiter not found. Please contact your admin.' });
+    }
+    
+    // Check if the account is locked
+    if (recruiter.is_locked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been locked. Please contact an administrator.'
+      });
+    }
+    
+    // Generate a unique login ID for this session
+    const loginId = `login_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    
+    // Check for active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiter.recruiter_id,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have an active subscription. Please contact admin.',
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+    
+    // Count active sessions for this recruiter
+    const activeSessionCount = await ClientLoginDevice.count({
+      where: {
+        client_id: recruiter.recruiter_id,
+        is_active: true
+      }
+    });
+    
+    // Check if recruiter has reached session limit
+    if (activeSessionCount >= subscription.login_allowed) {
+      // Get list of active sessions for informational purposes
+      const activeSessions = await ClientLoginDevice.findAll({
+        where: {
+          client_id: recruiter.recruiter_id,
+          is_active: true
+        },
+        attributes: ['device_id', 'last_login'],
+        order: [['last_login', 'DESC']]
+      });
+      
+      // Format the sessions for display
+      const formattedSessions = activeSessions.map(session => {
+        const lastLogin = new Date(session.last_login);
+        const formattedDate = `${lastLogin.toLocaleDateString()} ${lastLogin.toLocaleTimeString()}`;
+        
+        return {
+          session_id: session.device_id,
+          last_login: formattedDate
+        };
+      });
+      
+      return res.status(403).json({
+        success: false,
+        message: `Maximum number of sessions (${subscription.login_allowed}) already active. Please log out from another session or contact admin.`,
+        errorCode: 'SESSION_LIMIT_REACHED',
+        activeSessions: formattedSessions
+      });
+    }
+    
+    // Register new session
+    await ClientLoginDevice.create({
+      client_id: recruiter.recruiter_id,
+      login_id: loginId,
+      start_date: new Date(),
+      end_date: subscription.end_date,
+      last_login: new Date(),
+      is_active: true
+    });
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        recruiter_id: recruiter.recruiter_id, 
+        email,
+        name: recruiter.name,
+        company_name: recruiter.company_name,
+        login_id: loginId // Include login_id in token for session tracking
+      },
+      JWT_SECRET,
+      { expiresIn: '2400h' }
+    );
+    
+    // Clean up - delete the OTP
+    await OTP.destroy({ where: { email } });
+    
+    return res.status(200).json({
+      message: 'Login successful!',
+      token,
+      verified: true
+    });
+    
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    return res.status(500).json({ message: 'Error verifying OTP', error: error.message });
+  }
+};
+
+// Add middleware for tracking session activity and refreshing last_login timestamp
+exports.refreshSessionActivity = async (req, res, next) => {
+  try {
+    if (!req.recruiter || !req.recruiter.login_id) {
+      return next();
+    }
+    
+    const recruiterId = req.recruiter.recruiter_id;
+    const loginId = req.recruiter.login_id;
+    
+    // Update the last_login timestamp for this session
+    await ClientLoginDevice.update(
+      { last_login: new Date() },
+      { 
+        where: { 
+          client_id: recruiterId,
+          login_id: loginId,
+          is_active: true
+        }
+      }
+    );
+    
+    next();
+  } catch (error) {
+    console.error('Error refreshing session activity:', error);
+    next(); // Continue to the next middleware even if this fails
+  }
+};
+
+// Add a function to handle session logout
+exports.logoutSession = async (req, res) => {
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    const loginId = req.recruiter.login_id;
+    
+    if (!loginId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid session identifier'
+      });
+    }
+    
+    // Find the current session
+    const session = await ClientLoginDevice.findOne({
+      where: {
+        client_id: recruiterId,
+        login_id: loginId,
+        is_active: true
+      }
+    });
+    
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+    
+    // Deactivate the session
+    await session.update({
+      is_active: false,
+      end_date: new Date()
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Successfully logged out'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error during logout',
+      error: error.message
+    });
+  }
+};
+
+// Get candidate profile details with user information
+/*exports.getCandidateProfile = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id } = req.query; // Optional job_id parameter
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate profile not found"
+      });
+    }
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
+    });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
+    
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Check if recruiter has an active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have an active subscription. Please contact admin.",
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+
+    // Return combined profile
+    return res.status(200).json({
+      success: true,
+      candidateProfile: profileData
+    });
+  } catch (error) {
+    console.error('Error fetching candidate profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching candidate profile",
+      error: error.message
+    });
+  }
+};*/
+
+
+// Download candidate resume with CV quota tracking
+exports.downloadCandidateResume = async (req, res) => {
+  try {
+    const { candidate_id } = req.params;
+    const recruiterId = req.recruiter.recruiter_id;
+    const { job_id } = req.query; // Optional job_id parameter
+    
+    if (!candidate_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate ID is required"
+      });
+    }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
+    });
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only download resumes of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile with resume path
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id },
+      attributes: ['candidate_id', 'resume_path']
+    });
+
+    if (!candidateProfile || !candidateProfile.resume_path) {
+      return res.status(404).json({
+        success: false,
+        message: "Candidate resume not found"
+      });
+    }
+
+    // Check if recruiter has an active subscription with CV quota
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have an active subscription. Please contact admin.",
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+
+    // Check if recruiter has exceeded their CV download quota
+    // First, count how many CVs they've downloaded this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const downloadsThisMonth = await CVDownloadTracker.count({
+      where: {
+        recruiter_id: recruiterId,
+        download_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    // Check if already downloaded this CV this month to avoid double counting
+    const alreadyDownloadedThisMonth = await CVDownloadTracker.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        candidate_id,
+        download_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    if (!alreadyDownloadedThisMonth) {
+      // If haven't downloaded this CV this month, check quota
+      if (downloadsThisMonth >= subscription.cv_download_quota && subscription.cv_download_quota > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `You have reached your CV download limit (${subscription.cv_download_quota}) for this month. Please contact admin to increase your quota.`,
+          errorCode: 'CV_QUOTA_EXCEEDED',
+          quota: {
+            total: subscription.cv_download_quota,
+            used: downloadsThisMonth,
+            remaining: 0
+          }
+        });
+      }
+
+      // Track this CV download
+      await CVDownloadTracker.create({
+        recruiter_id: recruiterId,
+        candidate_id,
+        job_id: job_id || candidateApplications.JobPost.job_id,
+        download_date: new Date()
+      });
+    }
+
+    // Calculate remaining quota
+    const remainingQuota = subscription.cv_download_quota > 0 
+      ? subscription.cv_download_quota - downloadsThisMonth 
+      : null; // null means unlimited
+
+    // Here you would actually serve the file for download
+    // Since file serving depends on your file storage solution, this is just a placeholder
+    // In a real implementation, you would send the file as a response or return a download URL
+    
+    // For demonstration, just return success with quota information
+    return res.status(200).json({
+      success: true,
+      message: "Resume download successful",
+      resumePath: candidateProfile.resume_path,
+      quota: {
+        total: subscription.cv_download_quota,
+        used: downloadsThisMonth,
+        remaining: remainingQuota
+      }
+    });
+  } catch (error) {
+    console.error('Error downloading candidate resume:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Error downloading candidate resume",
+      error: error.message
+    });
+  }
+};
+
+// Get the recruiter's current active sessions
+exports.getMySessions = async (req, res) => {
+  try {
+    const clientId = req.recruiter.recruiter_id;
+    
+    // Get subscription details
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: clientId,
+        is_active: true
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active subscription found'
+      });
+    }
+    
+    // Get all active sessions
+    const sessions = await ClientLoginDevice.findAll({
+      where: {
+        client_id: clientId,
+        is_active: true
+      },
+      order: [['last_login', 'DESC']],
+      attributes: [
+        'device_id', 
+        'login_id', 
+        'last_login', 
+        'start_date', 
+        'end_date'
+      ]
+    });
+    
+    // Process sessions to add readable information
+    const processedSessions = sessions.map(session => {
+      const sessionData = session.toJSON();
+      
+      // Format dates for display
+      sessionData.last_login_formatted = formatDate(sessionData.last_login);
+      sessionData.start_date_formatted = formatDate(sessionData.start_date);
+      sessionData.end_date_formatted = sessionData.end_date ? formatDate(sessionData.end_date) : 'No expiry';
+      
+      // Add current session indicator
+      sessionData.is_current_session = (sessionData.login_id === req.recruiter.login_id);
+      
+      return sessionData;
+    });
+    
+    return res.status(200).json({
+      success: true,
+      subscription: {
+        login_allowed: subscription.login_allowed,
+        cv_download_quota: subscription.cv_download_quota,
+        start_date: subscription.start_date,
+        end_date: subscription.end_date
+      },
+      sessions: processedSessions,
+      stats: {
+        total_active_sessions: sessions.length,
+        max_allowed: subscription.login_allowed,
+        remaining_slots: Math.max(0, subscription.login_allowed - sessions.length)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching active sessions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching active sessions',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to format dates
+function formatDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+// Update Recruiter Password (by recruiter themselves)
+exports.updateRecruiterPassword = async (req, res) => {
+  const recruiterId = req.recruiter.recruiter_id; // Get recruiter ID from JWT token
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    // Input validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required"
+      });
+    }
+
+    // Password strength validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters long"
+      });
+    }
+
+    // Find the recruiter by ID - using RecruiterSignin model, not Recruiter
+    const recruiter = await RecruiterSignin.findByPk(recruiterId);
+    if (!recruiter) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Recruiter not found" 
+      });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, recruiter.password);
+    if (!isMatch) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Current password is incorrect" 
+      });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    recruiter.password = hashedPassword;
+    await recruiter.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+  } catch (err) {
+    console.error('Error updating recruiter password:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+};
+
+// Job Management Functions
+/*exports.getJobPosts = async (req, res) => {
+  try {
+    // Get the recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+    
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await JobPost.count({
+      where: { 
+        recruiter_id,
+        is_active: true 
+      }
+    });
+
+    const jobs = await JobPost.findAll({
+      where: { 
+        recruiter_id,
+        is_active: true 
+      },
+      order: [['job_creation_date', 'DESC']],
+      limit: limit,
+      offset: offset
+    });
+    
+    return res.status(200).json({
+      success: true,
+      count: jobs.length,
+      totalCount: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      jobs
+    });
+  } catch (error) {
+    console.error('Error fetching job posts:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch job posts.",
+      error: error.message
+    });
+  }
+};*/
+
+// Application Management Functions
 exports.getJobApplications = async (req, res) => {
   try {
     const recruiterId = req.recruiter.recruiter_id;
@@ -1753,243 +4674,404 @@ exports.getJobApplications = async (req, res) => {
 
 // Get application details with candidate profile
 exports.getApplicationDetail = async (req, res) => {
-  try {
-      const recruiterId = req.recruiter.recruiter_id;
-      const { application_id } = req.params;
-      
-      const application = await JobApplication.findOne({
-          where: { application_id },
-          include: [
-              {
-                  model: JobPost,
-                  where: { recruiter_id: recruiterId },
-                  attributes: ['job_id', 'jobTitle', 'jobDescription', 'locations', 'job_creation_date']
-              },
-              {
-                  model: CandidateProfile,
-                  attributes: ['candidate_id', 'name', 'email', 'phone', 'location',
-                              'resume_headline', 'profile_summary','expected_salary']
-              }
-          ]
-      });
-      
-      if (!application) {
-          return res.status(404).json({
-              success: false,
-              message: 'Application not found or you do not have permission to view it'
-          });
+try {
+  const recruiterId = req.recruiter.recruiter_id;
+  const { application_id } = req.params;
+  
+  const application = await JobApplication.findOne({
+    where: { application_id },
+    include: [
+      {
+        model: JobPost,
+        where: { recruiter_id: recruiterId },
+        attributes: ['job_id', 'jobTitle', 'jobDescription', 'locations', 'job_creation_date']
+      },
+      {
+        model: CandidateProfile,
+        attributes: ['candidate_id', 'name', 'email', 'phone', 'location',
+                    'resume_headline', 'profile_summary','expected_salary']
       }
-      
-      return res.status(200).json({
-          success: true,
-          application
-      });
-  } catch (error) {
-      console.error('Error getting application details:', error);
-      return res.status(500).json({
-          success: false,
-          message: 'Error getting application details',
-          error: error.message
-      });
+    ]
+  });
+  
+  if (!application) {
+    return res.status(404).json({
+      success: false,
+      message: 'Application not found or you do not have permission to view it'
+    });
   }
+  
+  return res.status(200).json({
+    success: true,
+    application
+  });
+} catch (error) {
+  console.error('Error getting application details:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Error getting application details',
+    error: error.message
+  });
+}
 };
 
 // Update application status
 exports.updateApplicationStatus = async (req, res) => {
-  try {
-    const recruiterId = req.recruiter.recruiter_id;
-    const { application_id } = req.params;
-    const { status } = req.body;
-    
-    if (!status || !['pending', 'selected', 'rejected'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status provided'
-      });
-    }
-    
-    // First check if this application belongs to the recruiter's job
-    const application = await JobApplication.findOne({
-      where: { application_id },
-      include: [
-        {
-          model: JobPost,
-          where: { recruiter_id: recruiterId },
-          attributes: ['job_id', 'jobTitle', 'recruiter_id']
-        },
-        {
-          model: CandidateProfile,
-          attributes: ['candidate_id', 'name', 'email']
-        }
-      ]
-    });
-    
-    if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: 'Application not found or you do not have permission to update it'
-      });
-    }
-    
-    // Update the status
-    application.status = status;
-    await application.save();
-    
-    // Send email notification to candidate
-    const candidate = application.CandidateProfile;
-    const job = application.JobPost;
-    
-    if (candidate && candidate.email && (status === 'selected' || status === 'rejected')) {
-      console.log(`Attempting to send email to candidate: ${candidate.email}`);
-      
-      const subject = status === 'selected' 
-        ? `Congratulations! You've been selected for ${job.jobTitle}`
-        : `Update on your application for ${job.jobTitle}`;
-      
-      const content = status === 'selected'
-        ? `
-          <h2>Congratulations!</h2>
-          <p>Dear ${candidate.name},</p>
-          <p>We are pleased to inform you that you have been selected for the position of <strong>${job.jobTitle}</strong>.</p>
-          <p>Our HR team will contact you shortly with the next steps.</p>
-          <p>Thank you for your interest in joining our team!</p>
-        `
-        : `
-          <h2>Application Update</h2>
-          <p>Dear ${candidate.name},</p>
-          <p>Thank you for applying for the position of <strong>${job.jobTitle}</strong>.</p>
-          <p>After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications better match our current needs.</p>
-          <p>We appreciate your interest in our company and wish you success in your job search.</p>
-        `;
-      
-      const mailOptions = {
-        from: `"Job Portal" <${process.env.MAIL_USERNAME}>`,
-        to: candidate.email,
-        subject,
-        html: content
-      };
-      
-      try {
-        // Use async/await with a Promise wrapper for better error handling
-        const emailResult = await new Promise((resolve, reject) => {
-          transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-              console.error('Detailed email error:', error);
-              reject(error);
-            } else {
-              console.log('Email sent successfully:', info.response);
-              resolve(info);
-            }
-          });
-        });
-        
-        console.log(`Email notification sent to ${candidate.email}:`, emailResult.response);
-      } catch (emailError) {
-        console.error('Error sending email notification:', emailError);
-        // Continue with the function, don't return here
-      }
-    }
-    
-    return res.status(200).json({
-      success: true,
-      message: `Application status updated to ${status}`,
-      application
-    });
-  } catch (error) {
-    console.error('Error updating application status:', error);
-    return res.status(500).json({
+try {
+  const recruiterId = req.recruiter.recruiter_id;
+  const { application_id } = req.params;
+  const { status } = req.body;
+  
+  if (!status || !['pending', 'selected', 'rejected'].includes(status)) {
+    return res.status(400).json({
       success: false,
-      message: 'Error updating application status',
-      error: error.message
+      message: 'Invalid status provided'
     });
   }
+  
+  // First check if this application belongs to the recruiter's job
+  const application = await JobApplication.findOne({
+    where: { application_id },
+    include: [
+      {
+        model: JobPost,
+        where: { recruiter_id: recruiterId },
+        attributes: ['job_id', 'jobTitle', 'recruiter_id']
+      },
+      {
+        model: CandidateProfile,
+        attributes: ['candidate_id', 'name', 'email']
+      }
+    ]
+  });
+  
+  if (!application) {
+    return res.status(404).json({
+      success: false,
+      message: 'Application not found or you do not have permission to update it'
+    });
+  }
+  
+  // Update the status
+  application.status = status;
+  await application.save();
+  
+  // Send email notification to candidate
+  const candidate = application.CandidateProfile;
+  const job = application.JobPost;
+  
+  if (candidate && candidate.email && (status === 'selected' || status === 'rejected')) {
+    console.log(`Attempting to send email to candidate: ${candidate.email}`);
+    
+    const subject = status === 'selected' 
+      ? `Congratulations! You've been selected for ${job.jobTitle}`
+      : `Update on your application for ${job.jobTitle}`;
+    
+    const content = status === 'selected'
+      ? `
+        <h2>Congratulations!</h2>
+        <p>Dear ${candidate.name},</p>
+        <p>We are pleased to inform you that you have been selected for the position of <strong>${job.jobTitle}</strong>.</p>
+        <p>Our HR team will contact you shortly with the next steps.</p>
+        <p>Thank you for your interest in joining our team!</p>
+      `
+      : `
+        <h2>Application Update</h2>
+        <p>Dear ${candidate.name},</p>
+        <p>Thank you for applying for the position of <strong>${job.jobTitle}</strong>.</p>
+        <p>After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications better match our current needs.</p>
+        <p>We appreciate your interest in our company and wish you success in your job search.</p>
+      `;
+    
+    const mailOptions = {
+      from: `"Job Portal" <${process.env.MAIL_USERNAME}>`,
+      to: candidate.email,
+      subject,
+      html: content
+    };
+    
+    try {
+      // Use async/await with a Promise wrapper for better error handling
+      const emailResult = await new Promise((resolve, reject) => {
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error('Detailed email error:', error);
+            reject(error);
+          } else {
+            console.log('Email sent successfully:', info.response);
+            resolve(info);
+          }
+        });
+      });
+      
+      console.log(`Email notification sent to ${candidate.email}:`, emailResult.response);
+    } catch (emailError) {
+      console.error('Error sending email notification:', emailError);
+      // Continue with the function, don't return here
+    }
+  }
+  
+  return res.status(200).json({
+    success: true,
+    message: `Application status updated to ${status}`,
+    application
+  });
+} catch (error) {
+  console.error('Error updating application status:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Error updating application status',
+    error: error.message
+  });
+}
+};
+
+// Get CV download quota information
+exports.getCVDownloadQuota = async (req, res) => {
+try {
+  const recruiterId = req.recruiter.recruiter_id;
+  
+  // Check if recruiter has an active subscription with CV quota
+  const subscription = await ClientSubscription.findOne({
+    where: {
+      client_id: recruiterId,
+      is_active: true,
+      start_date: { [Op.lte]: new Date() },
+      end_date: { 
+        [Op.or]: [
+          { [Op.is]: null }, // No end date (unlimited)
+          { [Op.gte]: new Date() } // End date is in the future
+        ]
+      }
+    }
+  });
+
+  if (!subscription) {
+    return res.status(403).json({
+      success: false,
+      message: "You don't have an active subscription. Please contact admin.",
+      errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+    });
+  }
+
+  // Count how many CVs they've downloaded this month
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const endOfMonth = new Date();
+  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  endOfMonth.setDate(0);
+  endOfMonth.setHours(23, 59, 59, 999);
+
+  const downloadsThisMonth = await CVDownloadTracker.count({
+    where: {
+      recruiter_id: recruiterId,
+      download_date: {
+        [Op.between]: [startOfMonth, endOfMonth]
+      }
+    }
+  });
+
+  // Calculate remaining quota
+  const remainingQuota = subscription.cv_download_quota > 0 
+    ? subscription.cv_download_quota - downloadsThisMonth 
+    : null; // null means unlimited
+
+  return res.status(200).json({
+    success: true,
+    quota: {
+      total: subscription.cv_download_quota,
+      used: downloadsThisMonth,
+      remaining: remainingQuota,
+      unlimited: subscription.cv_download_quota <= 0
+    },
+    subscription: {
+      start_date: subscription.start_date,
+      end_date: subscription.end_date
+    }
+  });
+} catch (error) {
+  console.error('Error getting CV download quota:', error);
+  return res.status(500).json({
+    success: false,
+    message: "Error getting CV download quota",
+    error: error.message
+  });
+}
 };
 
 // Test email function to verify your configuration works
 exports.testEmail = async (req, res) => {
-  try {
-    // Log email configuration for debugging
-    console.log('Email Configuration:', {
-      username: process.env.MAIL_USERNAME,
-      password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+try {
+  // Log email configuration for debugging
+  console.log('Email Configuration:', {
+    username: process.env.MAIL_USERNAME,
+    password: process.env.MAIL_PASSWORD ? 'Set (value hidden)' : 'Not set'
+  });
+  
+  // Create test email
+  const mailOptions = {
+    from: process.env.MAIL_USERNAME,
+    to: process.env.MAIL_USERNAME, // Send to yourself for testing
+    subject: 'Email Test from Job Portal',
+    html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
+  };
+  
+  // Send email and wait for response
+  const info = await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Detailed email error:', error);
+        reject(error);
+      } else {
+        resolve(info);
+      }
     });
-    
-    // Create test email
-    const mailOptions = {
-      from: process.env.MAIL_USERNAME,
-      to: process.env.MAIL_USERNAME, // Send to yourself for testing
-      subject: 'Email Test from Job Portal',
-      html: '<h2>Email Configuration Test</h2><p>This is a test email to verify that your email configuration is working correctly.</p>'
-    };
-    
-    // Send email and wait for response
-    const info = await new Promise((resolve, reject) => {
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error('Detailed email error:', error);
-          reject(error);
-        } else {
-          resolve(info);
-        }
-      });
-    });
-    
-    console.log('Email test successful:', info.response);
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Test email sent successfully',
-      emailInfo: info.response
-    });
-  } catch (error) {
-    console.error('Error sending test email:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error sending test email',
-      error: error.message
-    });
-  }
+  });
+  
+  console.log('Email test successful:', info.response);
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Test email sent successfully',
+    emailInfo: info.response
+  });
+} catch (error) {
+  console.error('Error sending test email:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Error sending test email',
+    error: error.message
+  });
+}
 };
 
-
 // Get the most recent job for a recruiter (regardless of status)
-exports.getMostRecentJob = async (req, res) => {
-  try {
-    console.log("Token Payload: ", req.recruiter);
-
-    // Get recruiter ID from auth token
-    const recruiterId = req.recruiter.recruiter_id;
-    
-    // Find the most recently updated job (both approved and rejected)
-    const job = await JobPost.findOne({
-      where: {
-        recruiter_id: recruiterId,
-        status: {
-          [Op.or]: ['approved', 'rejected', 'pending'] // Include all possible statuses
-        },
-        is_active: true
+/*exports.getMostRecentJob = async (req, res) => {
+try {
+  // Get recruiter ID from auth token
+  const recruiterId = req.recruiter.recruiter_id;
+  
+  // Find the most recently updated job (both approved and rejected)
+  const job = await JobPost.findOne({
+    where: {
+      recruiter_id: recruiterId,
+      status: {
+        [Op.or]: ['approved', 'rejected', 'pending'] // Include all possible statuses
       },
-      order: [['updatedAt', 'DESC']], // Most recently updated first
-      attributes: [
-        'job_id',
-        'jobTitle',
-        'locations',
-        'updatedAt',
-        'companyName',
-        'status',
-        'rejection_reason'
-      ]
+      is_active: true
+    },
+    order: [['updatedAt', 'DESC']], // Most recently updated first
+    attributes: [
+      'job_id',
+      'jobTitle',
+      'locations',
+      'updatedAt',
+      'companyName',
+      'status',
+      'rejection_reason'
+    ]
+  });
+  
+  // If no job found, return appropriate response
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      message: "No recent jobs found"
     });
-    
-    // If no job found, return appropriate response
-    if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "No recent jobs found"
-      });
+  }
+  
+  // Get total number of applications for this job if it's approved
+  let applicationCount = 0;
+  if (job.status === 'approved') {
+    applicationCount = await JobApplication.count({
+      where: { job_id: job.job_id }
+    });
+  }
+  
+  // Format the date to DD/MM/YY
+  const jobData = job.toJSON();
+  
+  // Format updatedAt date
+  const updatedDate = new Date(jobData.updatedAt);
+  const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+  
+  // Return the most recent job with application count and formatted date
+  return res.status(200).json({
+    success: true,
+    job: {
+      ...jobData,
+      updatedAt: formattedDate,
+      applicationCount
     }
+  });
+} catch (error) {
+  console.error('Error fetching most recent job:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Error fetching most recent job',
+    error: error.message
+  });
+}
+};*/
+
+// Get all jobs for a recruiter regardless of status with formatted dates
+/*exports.getAllJobs = async (req, res) => {
+try {
+  // Get recruiter ID from auth token
+  const recruiterId = req.recruiter.recruiter_id;
+  
+  // Pagination parameters
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  // Get total count for pagination
+  const totalCount = await JobPost.count({
+    where: {
+      recruiter_id: recruiterId,
+      is_active: true
+    }
+  });
+  
+  // Find all active jobs for this recruiter
+  const jobs = await JobPost.findAll({
+    where: {
+      recruiter_id: recruiterId,
+      is_active: true
+    },
+    order: [['updatedAt', 'DESC']], // Most recently updated first
+    attributes: [
+      'job_id',
+      'jobTitle',
+      'locations',
+      'updatedAt',
+      'companyName',
+      'status',
+      'rejection_reason'
+    ],
+    limit: limit,
+    offset: offset
+  });
+  
+  // If no jobs found, return appropriate response
+  if (jobs.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No jobs found"
+    });
+  }
+  
+  // Process each job to add application count and format date
+  const processedJobs = await Promise.all(jobs.map(async (job) => {
+    const jobData = job.toJSON();
     
-    // Get total number of applications for this job if it's approved
+    // Format updatedAt date
+    const updatedDate = new Date(jobData.updatedAt);
+    const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+    
+    // Get application count - only count if job is approved
     let applicationCount = 0;
     if (job.status === 'approved') {
       applicationCount = await JobApplication.count({
@@ -1997,194 +5079,28 @@ exports.getMostRecentJob = async (req, res) => {
       });
     }
     
-    // Format the date to DD/MM/YY
-    const jobData = job.toJSON();
-    
-    // Format updatedAt date
-    const updatedDate = new Date(jobData.updatedAt);
-    const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
-    
-    // Return the most recent job with application count and formatted date
-    return res.status(200).json({
-      success: true,
-      job: {
-        ...jobData,
-        updatedAt: formattedDate,
-        applicationCount
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching most recent job:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error fetching most recent job',
-      error: error.message
-    });
-  }
-};
-
-
-// Get all jobs for a recruiter regardless of status with formatted dates
-exports.getAllJobs = async (req, res) => {
-  try {
-    // Get recruiter ID from auth token
-    const recruiterId = req.recruiter.recruiter_id;
-    
-    // Pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-
-    // Get total count for pagination
-    const totalCount = await JobPost.count({
-      where: {
-        recruiter_id: recruiterId,
-        is_active: true
-      }
-    });
-    
-    // Find all active jobs for this recruiter
-    const jobs = await JobPost.findAll({
-      where: {
-        recruiter_id: recruiterId,
-        is_active: true
-      },
-      order: [['updatedAt', 'DESC']], // Most recently updated first
-      attributes: [
-        'job_id',
-        'jobTitle',
-        'locations',
-        'updatedAt',
-        'companyName',
-        'status',
-        'rejection_reason'
-      ],
-      limit: limit,
-      offset: offset
-    });
-    
-    // If no jobs found, return appropriate response
-    if (jobs.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No jobs found"
-      });
-    }
-    
-    // Process each job to add application count and format date
-    const processedJobs = await Promise.all(jobs.map(async (job) => {
-      const jobData = job.toJSON();
-      
-      // Format updatedAt date
-      const updatedDate = new Date(jobData.updatedAt);
-      const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
-      
-      // Get application count - only count if job is approved
-      let applicationCount = 0;
-      if (job.status === 'approved') {
-        applicationCount = await JobApplication.count({
-          where: { job_id: job.job_id }
-        });
-      }
-      
-      return {
-        ...jobData,
-        updatedAt: formattedDate,
-        applicationCount
-      };
-    }));
-    
-    // Return all jobs with application counts and formatted dates
-    return res.status(200).json({
-      success: true,
-      count: processedJobs.length,
-      totalCount: totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
-      jobs: processedJobs
-    });
-  } catch (error) {
-    console.error('Error fetching all jobs:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error fetching all jobs',
-      error: error.message
-    });
-  }
-};
-
-
-
-// Get candidate profile details with user information
-exports.getCandidateProfile = async (req, res) => {
-  try {
-    const { candidate_id } = req.params;
-    const recruiterId = req.recruiter.recruiter_id;
-    
-    if (!candidate_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Candidate ID is required"
-      });
-    }
-
-    // First, check if this recruiter has any jobs that the candidate has applied to
-    const candidateApplications = await JobApplication.findOne({
-      where: { candidate_id },
-      include: [
-        {
-          model: JobPost,
-          where: { recruiter_id: recruiterId },
-          attributes: ['job_id']
-        }
-      ]
-    });
-
-    if (!candidateApplications) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only view profiles of candidates who have applied to your job postings"
-      });
-    }
-
-    // Get the candidate profile data
-    const candidateProfile = await CandidateProfile.findOne({
-      where: { candidate_id }
-    });
-
-    if (!candidateProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "Candidate profile not found"
-      });
-    }
-
-    // Get user information from signin table
-    const userInfo = await User.findOne({
-      where: { candidate_id },
-      attributes: ['name', 'email']
-    });
-
-    // Combine the candidate profile with user information
-    const profileData = candidateProfile.toJSON();
-    
-    if (userInfo) {
-      // Add user info from signin table
-      profileData.name = userInfo.name;
-      profileData.email = userInfo.email;
-    }
-
-    // Return combined profile
-    return res.status(200).json({
-      success: true,
-      candidateProfile: profileData
-    });
-  } catch (error) {
-    console.error('Error fetching candidate profile:', error);
-    return res.status(500).json({
-      success: false,
-      message: "Error fetching candidate profile",
-      error: error.message
-    });
-  }
-};
+    return {
+      ...jobData,
+      updatedAt: formattedDate,
+      applicationCount
+    };
+  }));
+  
+  // Return all jobs with application counts and formatted dates
+  return res.status(200).json({
+    success: true,
+    count: processedJobs.length,
+    totalCount: totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+    jobs: processedJobs
+  });
+} catch (error) {
+  console.error('Error fetching all jobs:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Error fetching all jobs',
+    error: error.message
+  });
+}
+};*/

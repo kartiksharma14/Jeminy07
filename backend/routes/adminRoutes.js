@@ -25,6 +25,33 @@ router.post('/signin', adminController.signin);
 // Admin password update route
 router.post('/update-password', adminAuth, adminController.updatePassword);
 
+// Client management routes
+router.post('/clients', adminAuth, adminController.createClient);
+router.get('/clients', adminAuth, adminController.getAllClients);
+router.get('/clients/search', adminAuth, adminController.searchClients);
+router.get('/clients/recent', adminAuth, adminController.getRecentClients);
+router.get('/clients/:clientId', adminAuth, adminController.getClientById);
+router.patch('/clients/:clientId', adminAuth, adminController.updateClient);
+router.delete('/clients/:clientId', adminAuth, adminController.deleteClient);
+
+
+// Client subscription routes
+router.post('/subscriptions', adminAuth, adminController.createClientSubscription);
+router.get('/subscriptions', adminAuth, adminController.getAllClientSubscriptions);
+router.get('/subscriptions/expiring', adminAuth, adminController.getExpiringSubscriptions);
+router.get('/subscriptions/:subscriptionId', adminAuth, adminController.getClientSubscriptionById);
+router.get('/clients/:clientId/subscription', adminAuth, adminController.getClientSubscriptionByClientId);
+router.patch('/subscriptions/:subscriptionId', adminAuth, adminController.updateClientSubscription);
+router.post('/subscriptions/:subscriptionId/deactivate', adminAuth, adminController.deactivateClientSubscription);
+router.post('/subscriptions/:subscriptionId/renew', adminAuth, adminController.renewClientSubscription);
+
+
+// Device management routes
+router.get('/recruiters/devices', adminAuth, adminController.getRecruitersDeviceUsage);
+router.get('/recruiters/:recruiterId/devices', adminAuth, adminController.getRecruiterDevices);
+router.delete('/recruiters/:recruiterId/devices/:deviceId', adminAuth, adminController.removeRecruiterDevice);
+router.put('/recruiters/:recruiterId/subscription', adminAuth, adminController.updateRecruiterSubscription);
+
 // Protected Routes (require JWT authentication)
 router.post('/recruiters', adminAuth, adminController.createRecruiter);
 router.get('/recruiters/recent', adminAuth, adminController.getRecentRecruiters);

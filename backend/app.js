@@ -79,6 +79,24 @@ const initializeAssociations = () => {
 // Call the initialize associations function
 initializeAssociations();
 
+
+// Add this to your app.js after importing all models but before using them
+const MasterClient = require('./models/masterClient');
+const ClientSubscription = require('./models/clientSubscription');
+
+// Set up associations
+MasterClient.hasMany(ClientSubscription, { 
+  foreignKey: 'client_id',
+  as: 'subscriptions'
+});
+
+ClientSubscription.belongsTo(MasterClient, { 
+  foreignKey: 'client_id',
+  as: 'client'
+});
+
+console.log('Model associations established');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -88,6 +106,7 @@ const candidateProfileRoutes = require("./routes/candidateProfileRoutes");
 const recruiterRoutes = require("./routes/recruiterRoutes");
 const adminRoutes = require('./routes/adminRoutes');
 //const jobApprovalRoutes = require('./routes/jobApprovalRoutes');
+
 
 
 // Middleware
