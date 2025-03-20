@@ -1,13 +1,28 @@
-/* EmploymentModal.css */
+/* Global Box Sizing */
+* {
+  box-sizing: border-box;
+}
+
+/* Modal Fade In Animation */
+@keyframes em-modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 /* Modal Overlay */
-.modal-overlay {
+.em-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background */
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -15,30 +30,30 @@
 }
 
 /* Modal Content */
-.modal-content.employment-modal {
-  background: #fff;
+.em-modal-content {
+  background: #ffffff;
   width: 90%;
   max-width: 700px;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
   max-height: 90vh;
   position: relative;
-  /* Hide Scrollbar */
-  -ms-overflow-style: none; /* IE */
-  scrollbar-width: none; /* Firefox */
+  animation: em-modalFadeIn 0.3s ease;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.modal-content.employment-modal::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+.em-modal-content::-webkit-scrollbar {
+  display: none;
 }
 
 /* Close Button */
-.close-btn {
+.em-close-btn {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -50,50 +65,42 @@
   transition: color 0.3s ease;
 }
 
-.close-btn:hover {
+.em-close-btn:hover {
   color: #007bff;
 }
 
-/* Form Container */
-.employment-form {
-  background-color: #f7f9fc;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.employment-form h3 {
-  margin-bottom: 16px;
-  font-size: 20px;
-  color: #333;
-}
-
 /* Form Rows and Groups */
-.form-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.form-group {
-  flex: 1;
-  min-width: 200px;
+.em-form-row {
   display: flex;
   flex-direction: column;
+  margin-bottom: 16px;
 }
 
-.form-group label {
+.em-inline-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.em-form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.em-form-group label {
   font-size: 14px;
   font-weight: 600;
-  color: #555;
+  color: #333;
   margin-bottom: 4px;
 }
 
-.form-group input[type="text"],
-.form-group input[type="date"],
-.form-group input[type="number"],
-.form-group textarea,
-.form-group select {
+/* Input, Select, Textarea Styles */
+.em-form-group input[type="text"],
+.em-form-group input[type="date"],
+.em-form-group input[type="number"],
+.em-form-group textarea,
+.em-form-group select {
   padding: 12px;
   font-size: 14px;
   border: 1px solid #ddd;
@@ -102,23 +109,23 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.form-group input[type="text"]:focus,
-.form-group input[type="date"]:focus,
-.form-group input[type="number"]:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.em-form-group input[type="text"]:focus,
+.em-form-group input[type="date"]:focus,
+.em-form-group input[type="number"]:focus,
+.em-form-group textarea:focus,
+.em-form-group select:focus {
   border-color: #007bff;
   background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
 }
 
-.form-group input::placeholder,
-.form-group textarea::placeholder {
+.em-form-group input::placeholder,
+.em-form-group textarea::placeholder {
   color: #aaa;
 }
 
 /* Modern Select Dropdowns */
-.form-group select {
+.em-form-group select {
   appearance: none;
   background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%23007bff"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>');
   background-repeat: no-repeat;
@@ -127,114 +134,121 @@
   padding-right: 40px;
 }
 
-/* Existing Records List */
-.existing-records {
-  background-color: #f7f9fc;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.existing-records h3 {
-  font-size: 20px;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.record {
+/* Radio Group */
+.em-radio-group {
   display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
-.record-info p {
-  margin: 4px 0;
-  font-size: 14px;
-  color: #555;
+.em-radio-group label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-weight: normal !important;
+  white-space: nowrap;
 }
 
-.record-actions {
+.em-radio-group input[type="radio"] {
+  margin: 0 !important;
+  vertical-align: middle;
+}
+
+/* Form Actions */
+.em-form-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  justify-content: center;
+  margin-top: 16px;
 }
 
-.record-actions button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.edit-btn {
-  background-color: #007bff;
-  color: #fff;
-}
-
-.edit-btn:hover {
-  background-color: #0056b3;
-}
-
-.delete-btn {
-  background-color: #dc3545;
-  color: #fff;
-}
-
-.delete-btn:hover {
-  background-color: #c82333;
-}
-
-/* Footer Buttons */
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-}
-
-.save-btn,
-.cancel-btn {
+.em-save-btn {
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.save-btn {
   background-color: #007bff;
   color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.save-btn:hover {
+.em-save-btn:hover {
   background-color: #0056b3;
 }
 
-.cancel-btn {
-  background-color: #f5f5f5;
-  color: #333;
+/* Delete and Cancel Buttons for Edit Modal */
+.em-delete-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #dc3545;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 8px;
 }
 
-.cancel-btn:hover {
+.em-delete-btn:hover {
+  background-color: #c82333;
+}
+
+.em-cancel-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 8px;
+}
+
+.em-cancel-btn:hover {
   background-color: #e0e0e0;
+}
+
+/* Additional Styles for Subtitle, Error, and Word Count */
+.em-subtitle {
+  font-size: 15px;
+  color: #666;
+  margin-top: -8px;
+}
+
+.em-error-message {
+  color: #d8000c;
+  background-color: #ffbaba;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.em-success-message {
+  color: #4f8a10;
+  background-color: #dff2bf;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.em-word-count {
+  font-size: 12px;
+  color: #999;
+  text-align: right;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .modal-content.employment-modal {
+  .em-modal-content {
     width: 95%;
     max-height: 85vh;
     padding: 20px;
   }
-
-  .form-row {
+  .em-inline-row {
     flex-direction: column;
   }
 }

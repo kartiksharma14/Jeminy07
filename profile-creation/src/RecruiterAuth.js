@@ -49,7 +49,7 @@ const RecruiterAuth = () => {
       
       // Use the verified flag or check if the message includes 'successful'
       if (response.data.verified || (response.data.message && response.data.message.toLowerCase().includes("successful"))) {
-        localStorage.setItem("authToken", response.data.token); // Store token
+        localStorage.setItem("RecruiterToken", response.data.token); // Store token
         navigate("/recruiter"); // Redirect to recruiter dashboard
       } else {
         setOtpError(response.data.message);

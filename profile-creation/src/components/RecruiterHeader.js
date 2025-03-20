@@ -1,11 +1,14 @@
+// src/components/RecruiterHeader.js
 import React, { useState } from "react";
-import "./RecruiterHeader.css";
+import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import "./RecruiterHeader.css";
 
 const RecruiterHeader = () => {
-  // Set debug to true to force dropdowns to remain open while you debug.
+  // Set debug to true to force dropdowns to remain open while debugging.
   const debug = true;
   const [openDropdown, setOpenDropdown] = useState(null);
+  const navigate = useNavigate();
 
   const handleMouseEnter = (menu) => {
     setOpenDropdown(menu); // Open the specific dropdown
@@ -20,16 +23,22 @@ const RecruiterHeader = () => {
     }
   };
 
-  const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem("RecruiterToken");
   let nmae = "";
   if (token) {
     try {
       const decoded = jwtDecode(token);
-      nmae = decoded.nmae || "N/A"; // Adjust key if necessary
+      nmae = decoded.name || "N/A"; // Adjust key if necessary
     } catch (error) {
       console.error("Error decoding token:", error);
     }
   }
+
+  // Logout function: clear authToken and navigate to recruiter login
+  const handleLogout = () => {
+    localStorage.removeItem("RecruiterToken");
+    navigate("/recruiter/login");
+  };
 
   return (
     <header className="recruiter-header">
@@ -55,7 +64,7 @@ const RecruiterHeader = () => {
           {(openDropdown === "jobs" || debug) && (
             <div className="dropdown">
               <a href="/post-job">Post a Hot Vacancy</a>
-              <a href="/manage-jobs">Manage Jobs & Responses</a>
+              <a href="/manage-responses">Manage Jobs & Responses</a>
             </div>
           )}
         </div>
@@ -92,22 +101,6 @@ const RecruiterHeader = () => {
 
       {/* 3. Search Bar */}
       <div className="search-bar-container">
-        <div className="search-wrapper">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search for jobs, candidates, etc..."
-          />
-          <button className="search-button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M11 4a7 7 0 100 14 7 7 0 000-14zm-9 7a9 9 0 1116.32 5.91l4.4 4.4-1.42 1.42-4.4-4.4A9 9 0 012 11z"
-              />
-            </svg>
-          </button>
-        </div>
       </div>
 
       {/* 4. Profile Section */}
@@ -130,7 +123,13 @@ const RecruiterHeader = () => {
             <a href="/change-password">Change Password</a>
             <a href="/faqs">FAQs</a>
             <a href="/usage-guidelines">Usage Guidelines</a>
-            <a href="/logout">Logout</a>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="profile-dropdown"
+            >
+              Logout
+            </button>
           </div>
         )}
       </div>

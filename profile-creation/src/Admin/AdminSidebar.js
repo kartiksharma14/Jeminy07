@@ -42,6 +42,12 @@ const AdminSidebar = () => {
         >
           Settings
         </NavLink>
+        <NavLink 
+          to="/admin/admin-reports" 
+          className={({ isActive }) => `as-nav-link ${isActive ? 'active' : ''}`}
+        >
+          Reports
+        </NavLink>
         <button className="as-nav-link logout-button" onClick={logout}>
           Logout
         </button>

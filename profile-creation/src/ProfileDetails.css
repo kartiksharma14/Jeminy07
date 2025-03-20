@@ -133,7 +133,7 @@
   margin-right: 10px;
 }
 
-.edit-button {
+.edit-button-profile {
   color: #007bff;
   background-color: transparent;
   border: none;
@@ -143,7 +143,7 @@
   transition: color 0.3s ease;
 }
 
-.edit-button:hover {
+.edit-button-profile:hover {
   background-color: #0056b3;
 }
 
@@ -268,7 +268,7 @@
     font-size: 14px;
   }
   
-  .edit-button {
+  .edit-button-profile {
     padding: 4px 8px;
     font-size: 12px;
   }
