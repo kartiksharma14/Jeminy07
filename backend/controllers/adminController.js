@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const bcrypt = require('bcryptjs');
 const { Sequelize } = require('sequelize');
 const { sequelize } = require('../db');
-const { Op } = require('sequelize');
+const { Op, fn, col, where } = require('sequelize');
 const Admin = require('../models/adminModel');
 const Signin = require("../models/user");
 const Recruiter = require('../models/recruiterSignin');
@@ -20,7 +20,17 @@ const ClientLoginDevice = require('../models/clientLoginDevice');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const e = require('express');
+const PDFDocument = require('pdfkit');
+const CandidateProfile = require('../models/candidateProfile');
+const User = require('../models/user'); // Ensure this path is correct
+const Projects = require('../models/projects');
+const keyskills = require('../models/keyskills');
+const itSkills = require('../models/itSkills');
+const EmploymentDetails = require('../models/employmentdetails');
+const Education = require('../models/education');
 require('dotenv').config();
+
+
 
 // Helper Functions
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -210,6 +220,880 @@ async function getDashboardMetrics() {
     };
   }
 }
+
+// In adminController.js or a new reportController.js file
+exports.getCandidateReportExcel = async (req, res) => {
+  try {
+    // Check if fullReport is requested (full report or paginated)
+    const fullReport = req.query.fullReport === 'true';
+
+    let candidates;
+    if (fullReport) {
+      // Fetch all candidates (basic details only)
+      candidates = await Signin.findAll({
+        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
+        order: [['last_login', 'DESC']]
+      });
+    } else {
+      // Get pagination parameters (defaults: page 1, limit 10)
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      const result = await Signin.findAndCountAll({
+        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
+        offset,
+        limit,
+        order: [['last_login', 'DESC']]
+      });
+      candidates = result.rows;
+    }
+
+    // Map candidates to include desired fields with formatted last login date.
+    const formattedCandidates = candidates.map(candidate => {
+      const { candidate_id, name, email, phone } = candidate.dataValues;
+      let formattedLastLogin = '';
+      if (candidate.last_login) {
+        const lastLoginDate = new Date(candidate.last_login);
+        formattedLastLogin = lastLoginDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+      return { candidate_id, name, email, phone, formattedLastLogin };
+    });
+
+    // Build an array-of-arrays (AOA) with headers.
+    const wsData = [
+      ["Candidate ID", "Name", "Email", "Phone", "Last Login"]
+    ];
+    formattedCandidates.forEach(candidate => {
+      wsData.push([
+        candidate.candidate_id,
+        candidate.name,
+        candidate.email,
+        candidate.phone,
+        candidate.formattedLastLogin
+      ]);
+    });
+
+    // Create a new workbook and worksheet from the AOA data.
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
+
+    // Write workbook to binary string then convert to a Buffer.
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers to indicate a file attachment.
+    res.setHeader('Content-Disposition', 'attachment; filename="candidates.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    
+    // Send the Buffer as the response.
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error('Error generating candidate report Excel:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+exports.getCandidateReport = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || "";
+
+    // Expanded search condition: Signin fields and CandidateProfile fields.
+    const whereCondition = search
+      ? {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } },
+            { phone: { [Op.like]: `%${search}%` } },
+            where(
+              fn('COALESCE', fn('TRIM', fn('DATE_FORMAT', col('last_login'), '%b %e')), ''),
+              { [Op.like]: `%${search}%` }
+            ),
+            { '$candidate_profile.location$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.fresher_experience$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.availability_to_join$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.gender$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.marital_status$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.category$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.differently_abled$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.career_break$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_permit_to_usa$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_permit_to_country$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.permanent_address$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.home_town$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.pin_code$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.language_proficiency$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.current_industry$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.department$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.desired_job_type$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.desired_employment_type$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.preferred_shift$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.preferred_work_location$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.expected_salary$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.resume_headline$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.summary$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.software_name$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.software_version$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.certification_name$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.certification_url$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_title$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_sample_url$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_sample_description$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.profile_summary$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.online_profile$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.work_sample$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.white_paper$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.presentation$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.patent$': { [Op.like]: `%${search}%` } },
+            { '$candidate_profile.certification$': { [Op.like]: `%${search}%` } }
+          ]
+        }
+      : {};
+
+    // Query with distinct: true to avoid duplicate count rows.
+    const { count, rows: candidates } = await Signin.findAndCountAll({
+      attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
+      where: whereCondition,
+      include: [
+        {
+          model: CandidateProfile,
+          as: 'candidate_profile',
+          required: true,
+          include: [
+            { model: Education, as: 'Education' },
+            { model: EmploymentDetails, as: 'EmploymentDetails' },
+            { model: itSkills, as: 'itSkills' },
+            { model: JobApplication, as: 'JobApplications' },
+            { model: keyskills, as: 'keyskills' },
+            { model: Projects, as: 'Projects' }
+          ]
+        }
+      ],
+      distinct: true, // Ensures count returns unique Signin rows.
+      offset,
+      limit,
+      order: [['last_login', 'DESC']]
+    });
+
+    // Format candidates and include candidate_profile details.
+    const formattedCandidates = candidates.map(candidate => {
+      const { candidate_id, name, email, phone, last_login, candidate_profile } = candidate.dataValues;
+      let formattedLastLogin = last_login
+        ? new Date(last_login).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          })
+        : null;
+
+      let profile = candidate_profile ? { ...candidate_profile.dataValues } : null;
+      if (profile) {
+        if (profile.profile_last_updated) {
+          profile.profile_last_updated = new Date(profile.profile_last_updated).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+        }
+        if (profile.dob) {
+          profile.dob = new Date(profile.dob).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+        }
+      }
+
+      return { candidate_id, name, email, phone, formattedLastLogin, profile };
+    });
+
+    const totalCandidates = count;
+    const totalPages = Math.ceil(totalCandidates / limit);
+
+    res.status(200).json({
+      success: true,
+      totalCandidates,
+      currentPage: page,
+      totalPages,
+      candidates: formattedCandidates
+    });
+  } catch (error) {
+    console.error('Error fetching candidate report:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+
+exports.getCandidateProfilePdf = async (req, res) => {
+  try {
+    const candidateId = req.params.candidateId;
+    // Fetch candidate basic info along with profile details and related arrays.
+    const candidate = await User.findOne({
+      where: { candidate_id: candidateId },
+      attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login', 'resume'],
+      include: [
+        {
+          model: CandidateProfile,
+          as: 'candidate_profile', // Must match your association alias
+          include: [
+            { model: Education, as: 'Education' },
+            { model: EmploymentDetails, as: 'EmploymentDetails' },
+            { model: itSkills, as: 'itSkills' },
+            { model: JobApplication, as: 'JobApplications' },
+            { model: keyskills, as: 'keyskills' },
+            { model: Projects, as: 'Projects' }
+          ]
+        }
+      ]
+    });
+    if (!candidate)
+      return res.status(404).json({ error: "Candidate not found" });
+
+    const basic = candidate.dataValues;
+    // Get profile details; if not present, set to an empty object.
+    const profile = basic.candidate_profile ? basic.candidate_profile.dataValues : {};
+
+    // Create a new PDF document with margin.
+    const doc = new PDFDocument({ margin: 50 });
+
+    // Set response headers for PDF download.
+    res.setHeader('Content-Disposition', `attachment; filename="candidate_${candidateId}_profile.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+
+    // Pipe the PDF into the response stream.
+    doc.pipe(res);
+
+    // Title.
+    doc.fontSize(20).text('Candidate Profile Details', { align: 'center' });
+    doc.moveDown();
+
+    // Helper function to print a field.
+    const printField = (label, value) => {
+      doc.fontSize(12)
+         .fillColor('black')
+         .text(`${label}: ${value !== undefined && value !== null ? value : 'N/A'}`);
+      doc.moveDown(0.2);
+    };
+
+    // --- Basic Information (from User model) ---
+    doc.fontSize(16).text('Basic Information', { underline: true });
+    doc.moveDown();
+    printField('Candidate ID', basic.candidate_id);
+    printField('Name', basic.name);
+    printField('Email', basic.email);
+    printField('Phone', basic.phone);
+    if (basic.last_login) {
+      const lastLoginFormatted = new Date(basic.last_login).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      printField('Last Login', lastLoginFormatted);
+    } else {
+      printField('Last Login', 'N/A');
+    }
+    printField(
+      'Resume File Present',
+      basic.resume && basic.resume.data && basic.resume.data.length > 0 ? 'Yes' : 'No'
+    );
+    doc.moveDown();
+
+    // --- Candidate Profile Details ---
+    doc.fontSize(16).text('Profile Details', { underline: true });
+    doc.moveDown();
+    printField('Photo Present', basic.photo ? 'Yes' : 'No');
+    if (profile.profile_last_updated) {
+      const updated = new Date(profile.profile_last_updated).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      printField('Profile Last Updated', updated);
+    } else {
+      printField('Profile Last Updated', 'N/A');
+    }
+    printField('Location', profile.location);
+    printField('Fresher/Experience', profile.fresher_experience);
+    printField('Availability to Join', profile.availability_to_join);
+    printField('Gender', profile.gender);
+    printField('Marital Status', profile.marital_status);
+    if (profile.dob) {
+      const dobFormatted = new Date(profile.dob).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      printField('Date of Birth', dobFormatted);
+    } else {
+      printField('Date of Birth', 'N/A');
+    }
+    printField('Category', profile.category);
+    printField('Differently Abled', profile.differently_abled);
+    printField('Career Break', profile.career_break);
+    printField('Work Permit to USA', profile.work_permit_to_usa);
+    printField('Work Permit to Country', profile.work_permit_to_country);
+    printField('Permanent Address', profile.permanent_address);
+    printField('Home Town', profile.home_town);
+    printField('Pin Code', profile.pin_code);
+    printField('Language Proficiency', profile.language_proficiency);
+    printField('Current Industry', profile.current_industry);
+    printField('Department', profile.department);
+    printField('Desired Job Type', profile.desired_job_type);
+    printField('Desired Employment Type', profile.desired_employment_type);
+    printField('Preferred Shift', profile.preferred_shift);
+    printField('Preferred Work Location', profile.preferred_work_location);
+    printField('Expected Salary', profile.expected_salary);
+    printField('Resume Headline', profile.resume_headline);
+    printField('Summary', profile.summary);
+    printField('Software Name', profile.software_name);
+    printField('Software Version', profile.software_version);
+    printField('Certification Name', profile.certification_name);
+    printField('Certification URL', profile.certification_url);
+    printField('Work Title', profile.work_title);
+    printField('Work Sample URL', profile.work_sample_url);
+    printField('Work Sample Description', profile.work_sample_description);
+    printField('Profile Summary', profile.profile_summary);
+    printField('Online Profile', profile.online_profile);
+    printField('Work Sample', profile.work_sample);
+    printField('White Paper', profile.white_paper);
+    printField('Presentation', profile.presentation);
+    printField('Patent', profile.patent);
+    printField('Certification', profile.certification);
+    doc.moveDown();
+
+    // --- Education Section (alias: Education) ---
+    if (profile.Education && Array.isArray(profile.Education) && profile.Education.length > 0) {
+      doc.fontSize(16).text('Education', { underline: true });
+      doc.moveDown();
+      profile.Education.forEach((edu, index) => {
+        doc.fontSize(12).fillColor('black').text(`Education ${index + 1}:`);
+        printField('Education Level', edu.education_level);
+        printField('University', edu.university);
+        printField('Course', edu.course);
+        printField('Specialization', edu.specialization);
+        printField('Course Start Year', edu.coursestart_year);
+        printField('Course End Year', edu.courseend_year);
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // --- Employment History Section (alias: EmploymentDetails) ---
+    if (profile.EmploymentDetails && Array.isArray(profile.EmploymentDetails) && profile.EmploymentDetails.length > 0) {
+      doc.fontSize(16).text('Employment History', { underline: true });
+      doc.moveDown();
+      profile.EmploymentDetails.forEach((job, index) => {
+        doc.fontSize(12).fillColor('black').text(`Job ${index + 1}:`);
+        printField('Current Employment', job.current_employment);
+        printField('Employment Type', job.employment_type);
+        printField('Current Company', job.current_company_name);
+        printField('Current Job Title', job.current_job_title);
+        printField('Job Profile', job.job_profile);
+        printField('Current Salary', job.current_salary);
+        printField('Experience (Years)', job.experience_in_year);
+        printField('Experience (Months)', job.experience_in_months);
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // --- IT Skills Section (alias: itSkills) ---
+    if (profile.itSkills && Array.isArray(profile.itSkills) && profile.itSkills.length > 0) {
+      doc.fontSize(16).text('IT Skills', { underline: true });
+      doc.moveDown();
+      profile.itSkills.forEach((skill, index) => {
+        doc.fontSize(12).fillColor('black').text(`IT Skill ${index + 1}:`);
+        printField('Skill', skill.itskills_name);
+        printField('Proficiency', skill.itskills_proficiency);
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // --- Key Skills Section (alias: keyskills) ---
+    if (profile.keyskills && Array.isArray(profile.keyskills) && profile.keyskills.length > 0) {
+      doc.fontSize(16).text('Key Skills', { underline: true });
+      doc.moveDown();
+      profile.keyskills.forEach((keySkill, index) => {
+        doc.fontSize(12).fillColor('black').text(`Key Skill ${index + 1}:`);
+        printField('Skill', keySkill.keyskillsname);
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // --- Projects Section (alias: Projects) ---
+    if (profile.Projects && Array.isArray(profile.Projects) && profile.Projects.length > 0) {
+      doc.fontSize(16).text('Projects', { underline: true });
+      doc.moveDown();
+      profile.Projects.forEach((project, index) => {
+        doc.fontSize(12).fillColor('black').text(`Project ${index + 1}:`);
+        printField('Title', project.project_title);
+        printField('Client', project.client);
+        printField('Status', project.project_status);
+        printField('Start Date', project.project_start_date);
+        printField('End Date', project.project_end_date);
+        printField('Work Duration', project.work_duration);
+        printField('Technologies', project.technology_used);
+        printField('Details', project.details_of_project);
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // --- Job Applications Section (alias: JobApplications) ---
+    if (profile.JobApplications && Array.isArray(profile.JobApplications) && profile.JobApplications.length > 0) {
+      doc.fontSize(16).text('Job Applications', { underline: true });
+      doc.moveDown();
+      profile.JobApplications.forEach((application, index) => {
+        doc.fontSize(12).fillColor('black').text(`Application ${index + 1}:`);
+        printField('Application ID', application.application_id);
+        if (application.applied_at) {
+          const appliedFormatted = new Date(application.applied_at).toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+          printField('Applied At', appliedFormatted);
+        } else {
+          printField('Applied At', 'N/A');
+        }
+        printField('Status', application.status);
+        if (application.JobPost) {
+          printField('Job Title', application.JobPost.jobTitle);
+          printField('Location', application.JobPost.locations);
+          if (application.JobPost.job_creation_date) {
+            const jobCreationFormatted = new Date(application.JobPost.job_creation_date).toLocaleDateString('en-US', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            });
+            printField('Job Creation Date', jobCreationFormatted);
+          } else {
+            printField('Job Creation Date', 'N/A');
+          }
+        }
+        doc.moveDown();
+      });
+      doc.moveDown();
+    }
+
+    // Finalize PDF document.
+    doc.end();
+  } catch (err) {
+    console.error('Error generating candidate profile PDF:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getCandidateReportXls = async (req, res) => {
+  try {
+    // Determine if a full report (all records) is requested.
+    const fullReport = req.query.fullReport === 'true';
+    let candidates;
+    let totalCount = 0;
+
+    if (fullReport) {
+      // Fetch all candidates with their CandidateProfile details (full report)
+      candidates = await User.findAll({
+        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
+        include: [
+          {
+            model: CandidateProfile,
+            as: 'candidate_profile',
+            required: true,
+            attributes: [
+              'photo',
+              'profile_last_updated',
+              'location',
+              'fresher_experience',
+              'availability_to_join',
+              'gender',
+              'marital_status',
+              'dob',
+              'category',
+              'differently_abled',
+              'career_break',
+              'work_permit_to_usa',
+              'work_permit_to_country',
+              'permanent_address',
+              'home_town',
+              'pin_code',
+              'language_proficiency',
+              'current_industry',
+              'department',
+              'desired_job_type',
+              'desired_employment_type',
+              'preferred_shift',
+              'preferred_work_location',
+              'expected_salary',
+              'resume_headline',
+              'resume', // For binary fields, we indicate presence
+              'summary',
+              'software_name',
+              'software_version',
+              'certification_name',
+              'certification_url',
+              'work_title',
+              'work_sample_url',
+              'work_sample_description',
+              'profile_summary',
+              'online_profile',
+              'work_sample',
+              'white_paper',
+              'presentation',
+              'patent',
+              'certification'
+            ]
+          }
+        ],
+        order: [['last_login', 'DESC']]
+      });
+      totalCount = candidates.length;
+    } else {
+      // Paginated mode: use page and limit query parameters.
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      const result = await User.findAndCountAll({
+        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
+        include: [
+          {
+            model: CandidateProfile,
+            as: 'candidate_profile',
+            required: true,
+            attributes: [
+              'photo',
+              'profile_last_updated',
+              'location',
+              'fresher_experience',
+              'availability_to_join',
+              'gender',
+              'marital_status',
+              'dob',
+              'category',
+              'differently_abled',
+              'career_break',
+              'work_permit_to_usa',
+              'work_permit_to_country',
+              'permanent_address',
+              'home_town',
+              'pin_code',
+              'language_proficiency',
+              'current_industry',
+              'department',
+              'desired_job_type',
+              'desired_employment_type',
+              'preferred_shift',
+              'preferred_work_location',
+              'expected_salary',
+              'resume_headline',
+              'resume',
+              'summary',
+              'software_name',
+              'software_version',
+              'certification_name',
+              'certification_url',
+              'work_title',
+              'work_sample_url',
+              'work_sample_description',
+              'profile_summary',
+              'online_profile',
+              'work_sample',
+              'white_paper',
+              'presentation',
+              'patent',
+              'certification'
+            ]
+          }
+        ],
+        offset,
+        limit,
+        order: [['last_login', 'DESC']]
+      });
+      candidates = result.rows;
+      totalCount = result.count;
+    }
+
+    // Map each candidate to a flat object combining User and CandidateProfile details.
+    const mappedData = candidates.map(c => {
+      const basic = c.dataValues;
+      const profile = basic.candidate_profile ? basic.candidate_profile.dataValues : {};
+
+      // Format last_login date.
+      let formattedLastLogin = "";
+      if (basic.last_login) {
+        const dt = new Date(basic.last_login);
+        formattedLastLogin = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      // Format profile_last_updated date.
+      let formattedProfileUpdated = "";
+      if (profile.profile_last_updated) {
+        const dt = new Date(profile.profile_last_updated);
+        formattedProfileUpdated = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      // Format date of birth.
+      let formattedDob = "";
+      if (profile.dob) {
+        const dt = new Date(profile.dob);
+        formattedDob = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      // For BLOB fields (photo, resume), indicate if data exists.
+      const photoPresent = profile.photo ? 'Yes' : 'No';
+      const resumePresent = profile.resume ? 'Yes' : 'No';
+
+      return {
+        candidate_id: basic.candidate_id,
+        name: basic.name,
+        email: basic.email,
+        phone: basic.phone,
+        last_login: formattedLastLogin,
+        profile_last_updated: formattedProfileUpdated,
+        photoPresent,
+        location: profile.location || '',
+        fresher_experience: profile.fresher_experience || '',
+        availability_to_join: profile.availability_to_join || '',
+        gender: profile.gender || '',
+        marital_status: profile.marital_status || '',
+        dob: formattedDob,
+        category: profile.category || '',
+        differently_abled: profile.differently_abled || '',
+        career_break: profile.career_break || '',
+        work_permit_to_usa: profile.work_permit_to_usa || '',
+        work_permit_to_country: profile.work_permit_to_country || '',
+        permanent_address: profile.permanent_address || '',
+        home_town: profile.home_town || '',
+        pin_code: profile.pin_code || '',
+        language_proficiency: profile.language_proficiency || '',
+        current_industry: profile.current_industry || '',
+        department: profile.department || '',
+        desired_job_type: profile.desired_job_type || '',
+        desired_employment_type: profile.desired_employment_type || '',
+        preferred_shift: profile.preferred_shift || '',
+        preferred_work_location: profile.preferred_work_location || '',
+        expected_salary: profile.expected_salary || '',
+        resume_headline: profile.resume_headline || '',
+        resumePresent,
+        summary: profile.summary || '',
+        software_name: profile.software_name || '',
+        software_version: profile.software_version || '',
+        certification_name: profile.certification_name || '',
+        certification_url: profile.certification_url || '',
+        work_title: profile.work_title || '',
+        work_sample_url: profile.work_sample_url || '',
+        work_sample_description: profile.work_sample_description || '',
+        profile_summary: profile.profile_summary || '',
+        online_profile: profile.online_profile || '',
+        work_sample: profile.work_sample || '',
+        white_paper: profile.white_paper || '',
+        presentation: profile.presentation || '',
+        patent: profile.patent || '',
+        certification: profile.certification || ''
+      };
+    });
+
+    // Build an array-of-arrays (AOA) for XLSX data with a header row.
+    const wsData = [
+      [
+        "Candidate ID",
+        "Name",
+        "Email",
+        "Phone",
+        "Last Login",
+        "Profile Last Updated",
+        "Photo Present",
+        "Location",
+        "Fresher/Experience",
+        "Availability to Join",
+        "Gender",
+        "Marital Status",
+        "DOB",
+        "Category",
+        "Differently Abled",
+        "Career Break",
+        "Work Permit to USA",
+        "Work Permit to Country",
+        "Permanent Address",
+        "Home Town",
+        "Pin Code",
+        "Language Proficiency",
+        "Current Industry",
+        "Department",
+        "Desired Job Type",
+        "Desired Employment Type",
+        "Preferred Shift",
+        "Preferred Work Location",
+        "Expected Salary",
+        "Resume Headline",
+        "Resume Present",
+        "Summary",
+        "Software Name",
+        "Software Version",
+        "Certification Name",
+        "Certification URL",
+        "Work Title",
+        "Work Sample URL",
+        "Work Sample Description",
+        "Profile Summary",
+        "Online Profile",
+        "Work Sample",
+        "White Paper",
+        "Presentation",
+        "Patent",
+        "Certification"
+      ]
+    ];
+
+    // Push each candidate's data as a row.
+    mappedData.forEach(row => {
+      wsData.push([
+        row.candidate_id,
+        row.name,
+        row.email,
+        row.phone,
+        row.last_login,
+        row.profile_last_updated,
+        row.photoPresent,
+        row.location,
+        row.fresher_experience,
+        row.availability_to_join,
+        row.gender,
+        row.marital_status,
+        row.dob,
+        row.category,
+        row.differently_abled,
+        row.career_break,
+        row.work_permit_to_usa,
+        row.work_permit_to_country,
+        row.permanent_address,
+        row.home_town,
+        row.pin_code,
+        row.language_proficiency,
+        row.current_industry,
+        row.department,
+        row.desired_job_type,
+        row.desired_employment_type,
+        row.preferred_shift,
+        row.preferred_work_location,
+        row.expected_salary,
+        row.resume_headline,
+        row.resumePresent,
+        row.summary,
+        row.software_name,
+        row.software_version,
+        row.certification_name,
+        row.certification_url,
+        row.work_title,
+        row.work_sample_url,
+        row.work_sample_description,
+        row.profile_summary,
+        row.online_profile,
+        row.work_sample,
+        row.white_paper,
+        row.presentation,
+        row.patent,
+        row.certification
+      ]);
+    });
+
+    // Create a new workbook and worksheet from the AOA data.
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Candidate Report');
+
+    // Write the workbook to a binary string then convert to a Buffer.
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers for file download.
+    res.setHeader('Content-Disposition', 'attachment; filename="candidate_report.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    // Send the file.
+    res.status(200).send(buf);
+  } catch (err) {
+    console.error('Error generating candidate report XLS:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+
+
+
+
+// Get Recruiter Report
+exports.getRecruiterReport = async (req, res) => {
+  try {
+    // Fetch recruiter details (adjust attributes as needed)
+    const recruiters = await Recruiter.findAll({
+      attributes: ['recruiter_id', 'name', 'email', 'company_name', 'createdAt']
+    });
+
+    // Aggregate: total recruiters count
+    const totalRecruiters = recruiters.length;
+
+    res.status(200).json({
+      success: true,
+      totalRecruiters,
+      recruiters
+    });
+  } catch (error) {
+    console.error('Error fetching recruiter report:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+// Get Application Report
+exports.getApplicationReport = async (req, res) => {
+  try {
+    // Fetch application details along with candidate and job post info
+    const applications = await JobApplication.findAll({
+      attributes: ['application_id', 'candidate_id', 'job_id', 'status', 'createdAt'],
+      include: [
+        {
+          model: Signin,
+          attributes: ['name', 'email']
+        },
+        {
+          model: JobPost,
+          attributes: ['jobTitle']
+        }
+      ]
+    });
+
+    // Optionally, compute aggregate metrics by status
+    const statusAggregates = await JobApplication.findAll({
+      attributes: [
+        'status',
+        [JobApplication.sequelize.fn('COUNT', JobApplication.sequelize.col('application_id')), 'count']
+      ],
+      group: ['status']
+    });
+
+    res.status(200).json({
+      success: true,
+      totalApplications: applications.length,
+      aggregates: statusAggregates,
+      applications
+    });
+  } catch (error) {
+    console.error('Error fetching application report:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 
 
