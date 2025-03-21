@@ -14,3 +14,14 @@ DELETE FROM recruiter_signin WHERE email = 'pushkarpiyush464@gmail.com' limit 1;
 ALTER TABLE recruiter_signin
 ADD COLUMN company_name VARCHAR(255);
 
+ALTER TABLE recruiter_signin
+ADD COLUMN client_id INT,
+ADD COLUMN is_active BOOLEAN DEFAULT true,
+ADD FOREIGN KEY (client_id) REFERENCES master_clients(client_id);
+
+ALTER TABLE recruiter_signin
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+alter table recruiter_signin
+drop column created_at
+

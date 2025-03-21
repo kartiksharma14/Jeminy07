@@ -29,6 +29,8 @@ router.post('/update-password', adminAuth, adminController.updatePassword);
 router.post('/clients', adminAuth, adminController.createClient);
 router.get('/clients', adminAuth, adminController.getAllClients);
 router.get('/clients/search', adminAuth, adminController.searchClients);
+router.get('/clients-dropdown', adminAuth, adminController.getClientsForDropdown);
+router.get('/clients/:clientId/recruiters', adminAuth, adminController.getClientRecruiters);
 router.get('/clients/recent', adminAuth, adminController.getRecentClients);
 router.get('/clients/:clientId', adminAuth, adminController.getClientById);
 router.patch('/clients/:clientId', adminAuth, adminController.updateClient);

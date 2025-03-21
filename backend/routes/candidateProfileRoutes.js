@@ -66,6 +66,7 @@ const {
   getCandidateApplicationDetail,
   withdrawApplication
 } = require("../controllers/JobApplicationController");
+const adminAuth = require("../middleware/adminAuth");
 
 console.log("searchCandidatesByCity:", searchCandidatesByCity);
 console.log("All imported functions:", {

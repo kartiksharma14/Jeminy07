@@ -102,24 +102,6 @@ exports.verifyOtp = async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   };
-  
-// Admin Signin
-/*exports.signin = async (req, res) => {
-    const { email, password } = req.body;
-  
-    try {
-      const admin = await Admin.findOne({ where: { email } });
-      if (!admin) return res.status(404).json({ error: 'Admin not found' });
-  
-      const isMatch = await bcrypt.compare(password, admin.password);
-      if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
-  
-      const token = jwt.sign({ id: admin.admin_id }, 'your-secret-key', { expiresIn: '10000h' });
-      res.status(200).json({ token });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  };*/
 
 
   // Admin Signin with Dashboard Metrics using Sequelize ORM
@@ -136,7 +118,7 @@ exports.signin = async (req, res) => {
     // Get dashboard metrics
     const dashboardMetrics = await getDashboardMetrics();
     
-    const token = jwt.sign({ id: admin.admin_id }, 'your_super_secret_key', { expiresIn: '10000h' });
+    const token = jwt.sign({ id: admin.admin_id }, 'your-secret-key', { expiresIn: '10000h' });
     
     res.status(200).json({ 
       token,
@@ -152,73 +134,6 @@ exports.signin = async (req, res) => {
   }
 };
 
-
-/*async function getDashboardMetrics() {
-try {
-  // Count total recruiters using Sequelize count()
-  const totalRecruiters = await Recruiter.count();
-  
-  // Count total jobs posted
-  const totalJobs = await JobPost.count();
-  
-  // Count total applications
-  const totalApplications = await JobApplication.count();
-  
-  // Count unique candidates who applied
-  const uniqueCandidates = await JobApplication.count({
-    distinct: true,
-    col: 'candidate_id'
-  });
-  
-  // Additional metrics you might want
-  
-  // Count active jobs
-  const activeJobs = await JobPost.count({
-    where: { is_active: true }
-  });
-  
-  // Count approved jobs
-  const approvedJobs = await JobPost.count({
-    where: { status: 'approved' }
-  });
-  
-  // Count pending jobs
-  const pendingJobs = await JobPost.count({
-    where: { status: 'pending' }
-  });
-  
-  // Count rejected jobs
-  const rejectedJobs = await JobPost.count({
-    where: { status: 'rejected' }
-  });
-  
-  return {
-    totalRecruiters,
-    totalJobs,
-    totalApplications,
-    uniqueCandidates,
-    activeJobs,
-    approvedJobs,
-    pendingJobs,
-    rejectedJobs
-  };
-} catch (error) {
-  console.error('Error getting dashboard metrics:', error);
-  return {
-    totalRecruiters: 0,
-    totalJobs: 0,
-    totalApplications: 0,
-    uniqueCandidates: 0,
-    activeJobs: 0,
-    approvedJobs: 0,
-    pendingJobs: 0,
-    rejectedJobs: 0
-  };
-}
-}*/
-
-// Move the getDashboardMetrics function outside of the signin method
-// and make it an exported controller method
 
 // Add this to your exports
 exports.getDashboardMetrics = async (req, res) => {
@@ -299,7 +214,7 @@ async function getDashboardMetrics() {
 
 
 // Admin creates recruiter
-exports.createRecruiter = async (req, res) => {
+/*exports.createRecruiter = async (req, res) => {
   const { email, password, name, company_name } = req.body;
   const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token
 
@@ -359,7 +274,114 @@ The Admin Team`
     console.error('Error creating recruiter:', err);
     res.status(500).json({ error: err.message });
   }
-};  
+};  */
+
+
+
+// Modified createRecruiter function to associate recruiters with clients
+exports.createRecruiter = async (req, res) => {
+  const { email, password, name, client_id } = req.body;
+  const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token
+
+  try {
+    // Check if recruiter already exists
+    const existingRecruiter = await Recruiter.findOne({ where: { email } });
+    if (existingRecruiter) {
+      return res.status(400).json({ error: 'Recruiter already exists' });
+    }
+    
+    // Validate if client exists and has a subscription
+    if (!client_id) {
+      return res.status(400).json({ error: 'Client ID is required. Please select a client from the dropdown.' });
+    }
+    
+    const client = await MasterClient.findByPk(client_id);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    // Check if client has an active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(400).json({ error: 'Client does not have an active subscription. Please create a subscription for this client first.' });
+    }
+    
+    // Check if client has reached the allowed number of recruiters (login_allowed)
+    const activeRecruiters = await Recruiter.count({
+      where: { 
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (activeRecruiters >= subscription.login_allowed) {
+      return res.status(400).json({ 
+        error: `Client has reached the maximum allowed recruiters (${subscription.login_allowed})`
+      });
+    }
+    
+    // Create the recruiter with associated admin_id and client_id
+    const recruiter = await Recruiter.create({
+      name: name || 'Recruiter', // Default if name is not provided
+      email,
+      password, // The beforeSave hook will handle password hashing
+      company_name: client.client_name, // Use client name as company name for consistency
+      client_id, // Associate the recruiter with the client
+      admin_id: adminId, // Associate the recruiter with the admin
+      is_active: true
+    });
+    
+    // Send email notification to the recruiter
+    const mailOptions = {
+      from: process.env.MAIL_DEFAULT_SENDER || process.env.MAIL_USERNAME,
+      to: email,
+      subject: "Your Recruiter Account Credentials",
+      text: `Hello ${name || 'Recruiter'},
+
+Your recruiter account for ${client.client_name} has been created successfully.
+
+Your login credentials are:
+Email: ${email}
+Password: ${password}
+
+Please change your password after logging in for security purposes.
+
+Best regards,
+The Admin Team`
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent to recruiter: ${email}`);
+    } catch (emailError) {
+      console.error(`Error sending email to ${email}:`, emailError);
+      // We still continue as the account creation was successful
+    }
+
+    res.status(200).json({ 
+      message: 'Recruiter created successfully and notification email sent',
+      recruiter: {
+        id: recruiter.recruiter_id,
+        email: recruiter.email,
+        name: recruiter.name,
+        company_name: recruiter.company_name,
+        client_id: recruiter.client_id
+      }
+    });
+  } catch (err) {
+    console.error('Error creating recruiter:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 
 // Edit Job
 exports.editJob = async (req, res) => {
@@ -380,7 +402,7 @@ exports.editJob = async (req, res) => {
 };
 
 
-// Bulk Data Upload 
+// Bulk Candidate Data Upload 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -462,19 +484,6 @@ exports.bulkUploadCandidates = async (req, res) => {
   }
 };
 
-
-// Get All Pending Jobs for Approval
-/*exports.getPendingJobs = async (req, res) => {
-  try {
-    const jobs = await JobPost.findAll({
-      where: { status: 'pending' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 
 exports.getPendingJobs = async (req, res) => {
@@ -582,35 +591,6 @@ exports.rejectJob = async (req, res) => {
   }
 };
 
-// Get All Approved Jobs by Admin
-/*exports.getApprovedJobs = async (req, res) => {
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const jobs = await JobPost.findAll({
-      where: { approvedBy: adminId, status: 'approved' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
-
-// Get All Rejected Jobs by Admin
-/*exports.getRejectedJobs = async (req, res) => {
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const jobs = await JobPost.findAll({
-      where: { rejectedBy: adminId, status: 'rejected' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 
 exports.getRejectedJobs = async (req, res) => {
@@ -773,19 +753,6 @@ exports.deleteJob = async (req, res) => {
   }
 };
 
-// Get All Recruiters
-/*exports.getRecruiters = async (req, res) => {
-  try {
-    const recruiters = await Recruiter.findAll({
-      attributes: ['recruiter_id', 'name', 'email', 'company_name'],
-      order: [['recruiter_id', 'DESC']]
-    });
-    
-    res.status(200).json(recruiters);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 // Get All Recruiters with Pagination
 exports.getRecruiters = async (req, res) => {
@@ -1098,26 +1065,12 @@ exports.downloadJobTemplate = (req, res) => {
   try {
     // Define the template headers and sample data
     const templateHeaders = [
-      'recruiter_id',
-      'jobTitle',
-      'employmentType',
-      'keySkills',
-      'department',
-      'workMode',
-      'locations',
-      'industry',
-      'diversityHiring',
-      'jobDescription',
-      'multipleVacancies',
-      'companyName',
-      'companyInfo',
-      'companyAddress',
-      'min_salary',
-      'max_salary',
-      'min_experience',
-      'max_experience',
-      'is_active',
-      'status'
+      'recruiter_id','jobTitle','employmentType','keySkills','department',
+      'workMode','locations','industry',
+      'diversityHiring','jobDescription','multipleVacancies',
+      'companyName','companyInfo',
+      'companyAddress','min_salary','max_salary','min_experience',
+      'max_experience','is_active','status'
     ];
 
     const sampleData = [
@@ -1252,7 +1205,6 @@ exports.updatePassword = async (req, res) => {
         message: "Current password and new password are required"
       });
     }
-
     // Password strength validation
     if (newPassword.length < 8) {
       return res.status(400).json({
@@ -1260,7 +1212,6 @@ exports.updatePassword = async (req, res) => {
         message: "New password must be at least 8 characters long"
       });
     }
-
     // Find the admin by ID
     const admin = await Admin.findByPk(adminId);
     if (!admin) {
@@ -1269,7 +1220,6 @@ exports.updatePassword = async (req, res) => {
         message: "Admin not found" 
       });
     }
-
     // Verify current password
     const isMatch = await bcrypt.compare(currentPassword, admin.password);
     if (!isMatch) {
@@ -1394,7 +1344,6 @@ exports.deleteRecruiter = async (req, res) => {
   }
 };
 
-
 // Get all recruiters with their device usage
 exports.getRecruitersDeviceUsage = async (req, res) => {
   try {
@@ -1425,7 +1374,6 @@ exports.getRecruitersDeviceUsage = async (req, res) => {
           is_active: true
         }
       });
-      
       // Count active devices
       const activeDevicesCount = await ClientLoginDevice.count({
         where: {
@@ -1433,7 +1381,6 @@ exports.getRecruitersDeviceUsage = async (req, res) => {
           is_active: true
         }
       });
-      
       // Get most recent login
       const mostRecentDevice = await ClientLoginDevice.findOne({
         where: {
@@ -1734,6 +1681,56 @@ function parseUserAgent(userAgent) {
 }
 
 
+// Create a new client
+/*exports.createClient = async (req, res) => {
+  const { client_name, address, contact_person, email, phone } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Client name is required"
+      });
+    }
+    
+    // Check if client with same email already exists
+    if (email) {
+      const existingClient = await MasterClient.findOne({ 
+        where: { email }
+      });
+      
+      if (existingClient) {
+        return res.status(400).json({
+          success: false,
+          message: "A client with this email already exists"
+        });
+      }
+    }
+    
+    // Create the client
+    const client = await MasterClient.create({
+      client_name,
+      address,
+      contact_person,
+      email,
+      phone
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client created successfully",
+      data: client
+    });
+  } catch (err) {
+    console.error('Error creating client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client",
+      error: err.message
+    });
+  }
+};*/
 
 // Create a new client
 exports.createClient = async (req, res) => {
@@ -1785,6 +1782,69 @@ exports.createClient = async (req, res) => {
     });
   }
 };
+
+// Create a new client subscription
+exports.createClientSubscription = async (req, res) => {
+  const { client_id, cv_download_quota, login_allowed, start_date, end_date } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_id || !cv_download_quota || !login_allowed) {
+      return res.status(400).json({
+        success: false,
+        message: "Client ID, CV download quota, and login allowed count are required"
+      });
+    }
+    
+    // Check if client exists
+    const client = await MasterClient.findByPk(client_id);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    // Check if an active subscription already exists
+    const existingSubscription = await ClientSubscription.findOne({
+      where: {
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (existingSubscription) {
+      return res.status(400).json({
+        success: false,
+        message: "An active subscription already exists for this client",
+        data: existingSubscription
+      });
+    }
+    // Create the subscription
+    const subscription = await ClientSubscription.create({
+      client_id,
+      cv_download_quota,
+      login_allowed,
+      start_date: start_date || new Date(),
+      end_date,
+      is_active: true
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client subscription created successfully",
+      data: subscription
+    });
+  } catch (err) {
+    console.error('Error creating client subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client subscription",
+      error: err.message
+    });
+  }
+};
+
+
 
 // Get all clients with pagination
 exports.getAllClients = async (req, res) => {
@@ -2039,9 +2099,8 @@ exports.getRecentClients = async (req, res) => {
 };
 
 
-
 // Create a new client subscription
-exports.createClientSubscription = async (req, res) => {
+/*exports.createClientSubscription = async (req, res) => {
   const { client_id, cv_download_quota, login_allowed, start_date, end_date } = req.body;
   
   try {
@@ -2061,7 +2120,6 @@ exports.createClientSubscription = async (req, res) => {
         message: "Client not found"
       });
     }
-    
     // Check if an active subscription already exists
     const existingSubscription = await ClientSubscription.findOne({
       where: {
@@ -2077,7 +2135,6 @@ exports.createClientSubscription = async (req, res) => {
         data: existingSubscription
       });
     }
-    
     // Create the subscription
     const subscription = await ClientSubscription.create({
       client_id,
@@ -2098,55 +2155,6 @@ exports.createClientSubscription = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating client subscription",
-      error: err.message
-    });
-  }
-};
-
-// Get all client subscriptions
-/*exports.getAllClientSubscriptions = async (req, res) => {
-  try {
-    // Get pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-    
-    // Get total count
-    const totalCount = await ClientSubscription.count();
-    
-    // Get paginated subscriptions with client details
-    const subscriptions = await ClientSubscription.findAll({
-      include: [
-        {
-          model: MasterClient,
-          attributes: ['client_id', 'client_name', 'email', 'phone']
-        }
-      ],
-      order: [['subscription_id', 'DESC']],
-      limit,
-      offset
-    });
-    
-    // Calculate total pages
-    const totalPages = Math.ceil(totalCount / limit);
-    
-    res.status(200).json({
-      success: true,
-      data: subscriptions,
-      pagination: {
-        currentPage: page,
-        itemsPerPage: limit,
-        totalItems: totalCount,
-        totalPages: totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
-    });
-  } catch (err) {
-    console.error('Error fetching client subscriptions:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching client subscriptions",
       error: err.message
     });
   }
@@ -2204,7 +2212,6 @@ exports.getAllClientSubscriptions = async (req, res) => {
 };
 
 // Get subscription by ID
-// Update the getClientSubscriptionById function in adminController.js
 exports.getClientSubscriptionById = async (req, res) => {
   const { subscriptionId } = req.params;
   
@@ -2218,14 +2225,12 @@ exports.getClientSubscriptionById = async (req, res) => {
         }
       ]
     });
-    
     if (!subscription) {
       return res.status(404).json({
         success: false,
         message: "Subscription not found"
       });
     }
-    
     res.status(200).json({
       success: true,
       data: subscription
@@ -2254,7 +2259,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
         message: "Client not found"
       });
     }
-    
     // Get active subscription
     const subscription = await ClientSubscription.findOne({
       where: {
@@ -2269,7 +2273,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
         message: "No active subscription found for this client"
       });
     }
-    
     res.status(200).json({
       success: true,
       data: {
@@ -2293,8 +2296,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
 };
 
 
-// Update client subscription
-// Update client subscription
 exports.updateClientSubscription = async (req, res) => {
   const { subscriptionId } = req.params;
   const { cv_download_quota, login_allowed, start_date, end_date, is_active } = req.body;
@@ -2308,7 +2309,6 @@ exports.updateClientSubscription = async (req, res) => {
         message: "Subscription not found"
       });
     }
-    
     // Prepare update object
     const updateFields = {};
     if (cv_download_quota !== undefined) updateFields.cv_download_quota = cv_download_quota;
@@ -2316,10 +2316,8 @@ exports.updateClientSubscription = async (req, res) => {
     if (start_date !== undefined) updateFields.start_date = start_date;
     if (end_date !== undefined) updateFields.end_date = end_date;
     if (is_active !== undefined) updateFields.is_active = is_active;
-    
     // Update the subscription
     await subscription.update(updateFields);
-    
     // Get the updated subscription with client details
     const updatedSubscription = await ClientSubscription.findByPk(subscriptionId, {
       include: [
@@ -2330,7 +2328,6 @@ exports.updateClientSubscription = async (req, res) => {
         }
       ]
     });
-    
     res.status(200).json({
       success: true,
       message: "Subscription updated successfully",
@@ -2359,7 +2356,6 @@ exports.deactivateClientSubscription = async (req, res) => {
         message: "Subscription not found"
       });
     }
-    
     // Check if already inactive
     if (!subscription.is_active) {
       return res.status(400).json({
@@ -2367,7 +2363,6 @@ exports.deactivateClientSubscription = async (req, res) => {
         message: "Subscription is already inactive"
       });
     }
-    
     // Deactivate the subscription
     await subscription.update({ is_active: false });
     
@@ -2384,6 +2379,7 @@ exports.deactivateClientSubscription = async (req, res) => {
     });
   }
 };
+
 
 // Get active subscriptions that are expiring soon
 exports.getExpiringSubscriptions = async (req, res) => {
@@ -2417,7 +2413,6 @@ exports.getExpiringSubscriptions = async (req, res) => {
       ],
       order: [['end_date', 'ASC']] // Soonest expiring first
     });
-    
     res.status(200).json({
       success: true,
       count: subscriptions.length,
@@ -2434,11 +2429,9 @@ exports.getExpiringSubscriptions = async (req, res) => {
 };
 
 
-// Renew a subscription
 exports.renewClientSubscription = async (req, res) => {
   const { subscriptionId } = req.params;
   const { cv_download_quota, login_allowed, duration_days, end_date } = req.body;
-  
   // Validate that either duration_days or end_date is provided
   if (!duration_days && !end_date) {
     return res.status(400).json({
@@ -2446,9 +2439,8 @@ exports.renewClientSubscription = async (req, res) => {
       message: "Either duration_days or end_date must be provided"
     });
   }
-  
   const transaction = await sequelize.transaction();
-  
+
   try {
     // Find the subscription
     const subscription = await ClientSubscription.findByPk(subscriptionId, { transaction });
@@ -2500,6 +2492,100 @@ exports.renewClientSubscription = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error renewing subscription",
+      error: err.message
+    });
+  }
+};
+
+// Get clients for recruiter creation dropdown
+exports.getClientsForDropdown = async (req, res) => {
+  try {
+    // Get all active clients that have active subscriptions
+    const clients = await MasterClient.findAll({
+      include: [
+        {
+          model: ClientSubscription,
+          as: 'subscriptions',
+          where: { is_active: true },
+          required: true
+        }
+      ],
+      attributes: ['client_id', 'client_name'],
+      order: [['client_name', 'ASC']]
+    });
+    
+    // Format for dropdown
+    const dropdownData = clients.map(client => ({
+      value: client.client_id,
+      label: client.client_name
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: dropdownData
+    });
+  } catch (err) {
+    console.error('Error fetching clients for dropdown:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching clients for dropdown",
+      error: err.message
+    });
+  }
+};
+
+
+// Get recruiters for a specific client
+exports.getClientRecruiters = async (req, res) => {
+  const { clientId } = req.params;
+  
+  try {
+    // Verify client exists
+    const client = await MasterClient.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const totalCount = await Recruiter.count({
+      where: { client_id: clientId }
+    });
+    
+    // Get recruiters for this client
+    const recruiters = await Recruiter.findAll({
+      where: { client_id: clientId },
+      attributes: ['recruiter_id', 'name', 'email', 'is_active'],
+      order: [['recruiter_id', 'DESC']],
+      limit,
+      offset
+    });
+    
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      client: {
+        id: client.client_id,
+        name: client.client_name
+      },
+      count: recruiters.length,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      recruiters
+    });
+  } catch (err) {
+    console.error('Error fetching client recruiters:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client recruiters",
       error: err.message
     });
   }

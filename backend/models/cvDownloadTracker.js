@@ -16,6 +16,10 @@ const CVDownloadTracker = sequelize.define('CVDownloadTracker', {
       key: 'recruiter_id'
     }
   },
+  client_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
   candidate_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -32,6 +36,10 @@ const CVDownloadTracker = sequelize.define('CVDownloadTracker', {
       key: 'job_id'
     }
   },
+  ip_address: {
+    type: DataTypes.STRING(45),
+    allowNull: true
+  },
   download_date: {
     type: DataTypes.DATE,
     allowNull: false,
@@ -39,9 +47,8 @@ const CVDownloadTracker = sequelize.define('CVDownloadTracker', {
   }
 }, {
   tableName: 'cv_download_tracker',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  timestamps: false,
+
 });
 
 module.exports = CVDownloadTracker;

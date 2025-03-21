@@ -78,6 +78,20 @@ const Recruiter = sequelize.define('Recruiter', {
       key: 'admin_id',
     },
   },
+
+  // In models/recruiterSignin.js - add these fields to your model:
+client_id: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+  references: {
+    model: 'master_clients',
+    key: 'client_id'
+  }
+},
+is_active: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: true
+}
 }, {
   tableName: 'recruiter_signin',
   timestamps: false,

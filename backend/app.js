@@ -122,8 +122,7 @@ app.use('/api', candidateProfileRoutes);
 app.use("/api/candidate", candidateProfileRoutes);
 app.use('/api/recruiter', recruiterRoutes);
 
-// admin routes
-app.use('/api/admin', adminRoutes);
+
 //app.use('/api/job-approval', jobApprovalRoutes);
 
 app.post("/upload", upload.single("resume"), (req, res) => {
@@ -140,6 +139,10 @@ console.log("authController:", authController);
 console.log("Imported candidateProfileController functions:", candidateProfileController);
 console.log("Imported recruiterController functions:", recruiterController);
 console.log("Imported adminController functions:", adminController);
+
+// Add to your associations setup in app.js
+Recruiter.belongsTo(MasterClient, { foreignKey: 'client_id', as: 'client' });
+MasterClient.hasMany(Recruiter, { foreignKey: 'client_id', as: 'recruiters' });
 
 // Database connection and server start
 testConnection();
