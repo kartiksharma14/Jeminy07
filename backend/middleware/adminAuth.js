@@ -12,7 +12,7 @@ module.exports = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = jwt.verify(token, 'your_super_secret_key');
     req.admin = decoded; // Attach admin data to the request object
     next();
   } catch (err) {

@@ -268,7 +268,7 @@ const ProfileDetails = () => {
                   <button
                     type="button"
                     onClick={() => handleEditToggle("location")}
-                    className="edit-button"
+                    className="edit-button-profile"
                   >
                     {isEditing.location ? "Save" : "Edit"}
                   </button>
@@ -289,7 +289,7 @@ const ProfileDetails = () => {
                   <button
                     type="button"
                     onClick={() => handleEditToggle("availability")}
-                    className="edit-button"
+                    className="edit-button-profile"
                   >
                     {isEditing.availability ? "Save" : "Edit"}
                   </button>
@@ -330,7 +330,7 @@ const ProfileDetails = () => {
                   <button
                     type="button"
                     onClick={() => handleEditToggle("mobile")}
-                    className="edit-button"
+                    className="edit-button-profile"
                   >
                     {isEditing.mobile ? "Save" : "Edit"}
                   </button>

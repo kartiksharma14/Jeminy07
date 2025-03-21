@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Star, Facebook, Linkedin, Twitter } from 'lucide-react';
 import './JobPreview.css';
 import axios from 'axios';
+import RecruiterHeader from '../components/RecruiterHeader';
+import RecruiterFooter from '../components/RecruiterFooter';
 
 const JobPreview = () => {
   const location = useLocation();
@@ -58,7 +60,7 @@ const JobPreview = () => {
 
   const handlePost = async () => {
     try {
-      const jwtToken = localStorage.getItem("authToken");
+      const jwtToken = localStorage.getItem("RecruiterToken");
       const response = await axios.post(
         "http://localhost:5000/api/recruiter/jobs/publish",
         { session_id: jobData.session_id },
@@ -83,54 +85,55 @@ const JobPreview = () => {
   
 
   return (
-    <div className="job-preview-container">
-      <div className="preview-wrapper">
-        <h1 className="preview-title">Job preview</h1>
+    <div className="rc-job-preview-container">
+      <RecruiterHeader/>
+      <div className="rc-preview-wrapper">
+        <h1 className="rc-preview-title">Job preview</h1>
         
         {/* Main Job Card */}
-        <div className="card">
-          <div className="job-header">
+        <div className="rc-card">
+          <div className="rc-job-header">
             <div>
-              <h2 className="job-title">{jobData.jobTitle || 'Not specified'}</h2>
-              <p className="company-name">{jobData.companyName || 'Not specified'}</p>
+              <h2 className="rc-job-title">{jobData.jobTitle || 'Not specified'}</h2>
+              <p className="rc-company-name">{jobData.companyName || 'Not specified'}</p>
               
-              <div className="job-meta">
+              <div className="rc-job-meta">
                 <span>{formatExperience(jobData.min_experience, jobData.max_experience)}</span>
                 <span>{formatSalary(jobData.min_salary, jobData.max_salary)}</span>
                 <span>{jobData.locations || 'Not specified'}</span>
               </div>
             </div>
 
-            <button className="btn-link">Send me jobs like this</button>
+            <button className="rc-btn rc-btn-link">Send me jobs like this</button>
           </div>
 
-          <div className="job-stats">
+          <div className="rc-job-stats">
             <span>Posted: Just now</span>
             <span>Openings: {jobData.multipleVacancies ? 'Multiple' : '1'}</span>
             <span>Applicants: Less than 10</span>
           </div>
 
-          <div className="button-group">
-            <button className="btn btn-secondary">Save for later</button>
-            <button className="btn btn-primary">Apply</button>
+          <div className="rc-button-group">
+            <button className="rc-btn rc-btn-secondary">Save for later</button>
+            <button className="rc-btn rc-btn-primary">Apply</button>
           </div>
         </div>
 
         {/* Job Highlights Section */}
-        <div className="card">
-          <h2 className="section-title">Job highlights</h2>
-          <ul className="list-container">
+        <div className="rc-card">
+          <h2 className="rc-section-title">Job highlights</h2>
+          <ul className="rc-list-container">
             {generateHighlights().map((highlight, index) => (
-              <li key={index} className="list-item">{highlight}</li>
+              <li key={index} className="rc-list-item">{highlight}</li>
             ))}
           </ul>
         </div>
 
         {/* Job Description Card */}
-        <div className="card">
-          <h2 className="section-title">Job description</h2>
+        <div className="rc-card">
+          <h2 className="rc-section-title">Job description</h2>
           
-          <div className="job-description-content">
+          <div className="rc-job-description-content">
             {jobData.jobDescription ? (
               <div dangerouslySetInnerHTML={{ __html: jobData.jobDescription }} />
             ) : (
@@ -138,37 +141,37 @@ const JobPreview = () => {
             )}
           </div>
 
-          <div className="details-grid">
-            <div className="detail-row">
-              <span className="detail-label">Role:</span>
-              <span className="detail-value">{jobData.department || 'Not specified'}</span>
+          <div className="rc-details-grid">
+            <div className="rc-detail-row">
+              <span className="rc-detail-label">Role:</span>
+              <span className="rc-detail-value">{jobData.department || 'Not specified'}</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Industry Type:</span>
-              <span className="detail-value">{jobData.industry || 'Not specified'}</span>
+            <div className="rc-detail-row">
+              <span className="rc-detail-label">Industry Type:</span>
+              <span className="rc-detail-value">{jobData.industry || 'Not specified'}</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Employment Type:</span>
-              <span className="detail-value">{jobData.employmentType || 'Not specified'}</span>
+            <div className="rc-detail-row">
+              <span className="rc-detail-label">Employment Type:</span>
+              <span className="rc-detail-value">{jobData.employmentType || 'Not specified'}</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Work Mode:</span>
-              <span className="detail-value">{jobData.workMode || 'Not specified'}</span>
+            <div className="rc-detail-row">
+              <span className="rc-detail-label">Work Mode:</span>
+              <span className="rc-detail-value">{jobData.workMode || 'Not specified'}</span>
             </div>
           </div>
 
           {/* Education Section */}
-          <div className="education-section">
-            <h3 className="subsection-title">Education</h3>
+          <div className="rc-education-section">
+            <h3 className="rc-subsection-title">Education</h3>
             <p>Not specified</p>
           </div>
 
           {/* Skills Section */}
-          <div className="skills-container">
-            <h3 className="subsection-title">Key Skills</h3>
+          <div className="rc-skills-container">
+            <h3 className="rc-subsection-title">Key Skills</h3>
             {jobData.keySkills && Array.isArray(jobData.keySkills) && jobData.keySkills.length > 0 ? (
               jobData.keySkills.map((skill, index) => (
-                <div key={index} className="skill-tag">
+                <div key={index} className="rc-skill-tag">
                   {index < 2 && <Star className="w-4 h-4" />}
                   <span>{skill}</span>
                 </div>
@@ -179,21 +182,21 @@ const JobPreview = () => {
           </div>
 
           {/* Social Media Links */}
-          <div className="social-links">
-            <Facebook className="social-icon facebook" />
-            <Twitter className="social-icon twitter" />
-            <Linkedin className="social-icon linkedin" />
+          <div className="rc-social-links">
+            <Facebook className="rc-social-icon rc-facebook" />
+            <Twitter className="rc-social-icon rc-twitter" />
+            <Linkedin className="rc-social-icon rc-linkedin" />
           </div>
 
           {/* Company Information */}
-          <div className="company-info">
-            <h3 className="subsection-title">About company</h3>
-            <p className="company-description">
+          <div className="rc-company-info">
+            <h3 className="rc-subsection-title">About company</h3>
+            <p className="rc-company-description">
               {jobData.companyInfo || 'Not specified'}
             </p>
             {jobData.companyAddress && (
-              <div className="company-address">
-                <h4 className="address-title">Address:</h4>
+              <div className="rc-company-address">
+                <h4 className="rc-address-title">Address:</h4>
                 <p>{jobData.companyAddress}</p>
               </div>
             )}
@@ -201,15 +204,16 @@ const JobPreview = () => {
         </div>
 
         {/* Bottom Buttons */}
-        <div className="bottom-buttons">
-          <button className="btn btn-primary" onClick={handlePost}>
+        <div className="rc-bottom-buttons">
+          <button className="rc-btn rc-btn-primary" onClick={handlePost}>
             Create Job
           </button>
-          <button className="btn btn-secondary" onClick={handleEdit}>
+          <button className="rc-btn rc-btn-secondary" onClick={handleEdit}>
             Edit Job
           </button>
         </div>
       </div>
+      <RecruiterFooter/>
     </div>
   );
 };

@@ -78,6 +78,18 @@ router.get('/download-job-template', adminAuth, adminController.downloadJobTempl
 //router.get('/download-sample', adminAuth, adminController.downloadSample);
 router.get('/dashboard-metrics', adminAuth, adminController.getDashboardMetrics);
 router.delete('/recruiters/:recruiterId', adminAuth, adminController.deleteRecruiter);
+// Candidate report route
+router.get('/reports/candidates/fullxls', adminAuth, adminController.getCandidateReportExcel);
+router.get('/reports/candidates', adminAuth, adminController.getCandidateReport);
+// Route to get candidate profile PDF
+router.get('/candidate-profile/:candidateId/pdf', adminAuth, adminController.getCandidateProfilePdf);
+// Route to get full candidate report including profile details
+router.get('/reports/candidates/fullCandidateReportXls', adminAuth, adminController.getCandidateReportXls);
 
+// Recruiter report route
+router.get('/reports/recruiters', adminAuth, adminController.getRecruiterReport);
+
+// Application report route
+router.get('/reports/applications', adminAuth, adminController.getApplicationReport);
 
 module.exports = router;
