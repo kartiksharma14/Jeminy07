@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const bcrypt = require('bcryptjs');
 const { Sequelize } = require('sequelize');
 const { sequelize } = require('../db');
-const { Op, fn, col, where } = require('sequelize');
+const { Op } = require('sequelize');
 const Admin = require('../models/adminModel');
 const Signin = require("../models/user");
 const Recruiter = require('../models/recruiterSignin');
@@ -20,17 +20,7 @@ const ClientLoginDevice = require('../models/clientLoginDevice');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const e = require('express');
-const PDFDocument = require('pdfkit');
-const CandidateProfile = require('../models/candidateProfile');
-const User = require('../models/user'); // Ensure this path is correct
-const Projects = require('../models/projects');
-const keyskills = require('../models/keyskills');
-const itSkills = require('../models/itSkills');
-const EmploymentDetails = require('../models/employmentdetails');
-const Education = require('../models/education');
 require('dotenv').config();
-
-
 
 // Helper Functions
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -112,24 +102,6 @@ exports.verifyOtp = async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   };
-  
-// Admin Signin
-/*exports.signin = async (req, res) => {
-    const { email, password } = req.body;
-  
-    try {
-      const admin = await Admin.findOne({ where: { email } });
-      if (!admin) return res.status(404).json({ error: 'Admin not found' });
-  
-      const isMatch = await bcrypt.compare(password, admin.password);
-      if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
-  
-      const token = jwt.sign({ id: admin.admin_id }, 'your-secret-key', { expiresIn: '10000h' });
-      res.status(200).json({ token });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  };*/
 
 
   // Admin Signin with Dashboard Metrics using Sequelize ORM
@@ -146,7 +118,7 @@ exports.signin = async (req, res) => {
     // Get dashboard metrics
     const dashboardMetrics = await getDashboardMetrics();
     
-    const token = jwt.sign({ id: admin.admin_id }, 'your_super_secret_key', { expiresIn: '10000h' });
+    const token = jwt.sign({ id: admin.admin_id }, 'your-secret-key', { expiresIn: '10000h' });
     
     res.status(200).json({ 
       token,
@@ -162,73 +134,6 @@ exports.signin = async (req, res) => {
   }
 };
 
-
-/*async function getDashboardMetrics() {
-try {
-  // Count total recruiters using Sequelize count()
-  const totalRecruiters = await Recruiter.count();
-  
-  // Count total jobs posted
-  const totalJobs = await JobPost.count();
-  
-  // Count total applications
-  const totalApplications = await JobApplication.count();
-  
-  // Count unique candidates who applied
-  const uniqueCandidates = await JobApplication.count({
-    distinct: true,
-    col: 'candidate_id'
-  });
-  
-  // Additional metrics you might want
-  
-  // Count active jobs
-  const activeJobs = await JobPost.count({
-    where: { is_active: true }
-  });
-  
-  // Count approved jobs
-  const approvedJobs = await JobPost.count({
-    where: { status: 'approved' }
-  });
-  
-  // Count pending jobs
-  const pendingJobs = await JobPost.count({
-    where: { status: 'pending' }
-  });
-  
-  // Count rejected jobs
-  const rejectedJobs = await JobPost.count({
-    where: { status: 'rejected' }
-  });
-  
-  return {
-    totalRecruiters,
-    totalJobs,
-    totalApplications,
-    uniqueCandidates,
-    activeJobs,
-    approvedJobs,
-    pendingJobs,
-    rejectedJobs
-  };
-} catch (error) {
-  console.error('Error getting dashboard metrics:', error);
-  return {
-    totalRecruiters: 0,
-    totalJobs: 0,
-    totalApplications: 0,
-    uniqueCandidates: 0,
-    activeJobs: 0,
-    approvedJobs: 0,
-    pendingJobs: 0,
-    rejectedJobs: 0
-  };
-}
-}*/
-
-// Move the getDashboardMetrics function outside of the signin method
-// and make it an exported controller method
 
 // Add this to your exports
 exports.getDashboardMetrics = async (req, res) => {
@@ -306,884 +211,10 @@ async function getDashboardMetrics() {
   }
 }
 
-// In adminController.js or a new reportController.js file
-exports.getCandidateReportExcel = async (req, res) => {
-  try {
-    // Check if fullReport is requested (full report or paginated)
-    const fullReport = req.query.fullReport === 'true';
-
-    let candidates;
-    if (fullReport) {
-      // Fetch all candidates (basic details only)
-      candidates = await Signin.findAll({
-        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
-        order: [['last_login', 'DESC']]
-      });
-    } else {
-      // Get pagination parameters (defaults: page 1, limit 10)
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const offset = (page - 1) * limit;
-
-      const result = await Signin.findAndCountAll({
-        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
-        offset,
-        limit,
-        order: [['last_login', 'DESC']]
-      });
-      candidates = result.rows;
-    }
-
-    // Map candidates to include desired fields with formatted last login date.
-    const formattedCandidates = candidates.map(candidate => {
-      const { candidate_id, name, email, phone } = candidate.dataValues;
-      let formattedLastLogin = '';
-      if (candidate.last_login) {
-        const lastLoginDate = new Date(candidate.last_login);
-        formattedLastLogin = lastLoginDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-      return { candidate_id, name, email, phone, formattedLastLogin };
-    });
-
-    // Build an array-of-arrays (AOA) with headers.
-    const wsData = [
-      ["Candidate ID", "Name", "Email", "Phone", "Last Login"]
-    ];
-    formattedCandidates.forEach(candidate => {
-      wsData.push([
-        candidate.candidate_id,
-        candidate.name,
-        candidate.email,
-        candidate.phone,
-        candidate.formattedLastLogin
-      ]);
-    });
-
-    // Create a new workbook and worksheet from the AOA data.
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
-
-    // Write workbook to binary string then convert to a Buffer.
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-    const buf = Buffer.from(wbout, 'binary');
-
-    // Set response headers to indicate a file attachment.
-    res.setHeader('Content-Disposition', 'attachment; filename="candidates.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    
-    // Send the Buffer as the response.
-    res.status(200).send(buf);
-  } catch (error) {
-    console.error('Error generating candidate report Excel:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-
-exports.getCandidateReport = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || "";
-
-    // Expanded search condition: Signin fields and CandidateProfile fields.
-    const whereCondition = search
-      ? {
-          [Op.or]: [
-            { name: { [Op.like]: `%${search}%` } },
-            { email: { [Op.like]: `%${search}%` } },
-            { phone: { [Op.like]: `%${search}%` } },
-            where(
-              fn('COALESCE', fn('TRIM', fn('DATE_FORMAT', col('last_login'), '%b %e')), ''),
-              { [Op.like]: `%${search}%` }
-            ),
-            { '$candidate_profile.location$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.fresher_experience$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.availability_to_join$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.gender$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.marital_status$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.category$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.differently_abled$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.career_break$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_permit_to_usa$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_permit_to_country$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.permanent_address$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.home_town$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.pin_code$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.language_proficiency$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.current_industry$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.department$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.desired_job_type$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.desired_employment_type$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.preferred_shift$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.preferred_work_location$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.expected_salary$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.resume_headline$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.summary$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.software_name$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.software_version$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.certification_name$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.certification_url$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_title$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_sample_url$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_sample_description$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.profile_summary$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.online_profile$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.work_sample$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.white_paper$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.presentation$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.patent$': { [Op.like]: `%${search}%` } },
-            { '$candidate_profile.certification$': { [Op.like]: `%${search}%` } }
-          ]
-        }
-      : {};
-
-    // Query with distinct: true to avoid duplicate count rows.
-    const { count, rows: candidates } = await Signin.findAndCountAll({
-      attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
-      where: whereCondition,
-      include: [
-        {
-          model: CandidateProfile,
-          as: 'candidate_profile',
-          required: true,
-          include: [
-            { model: Education, as: 'Education' },
-            { model: EmploymentDetails, as: 'EmploymentDetails' },
-            { model: itSkills, as: 'itSkills' },
-            { model: JobApplication, as: 'JobApplications' },
-            { model: keyskills, as: 'keyskills' },
-            { model: Projects, as: 'Projects' }
-          ]
-        }
-      ],
-      distinct: true, // Ensures count returns unique Signin rows.
-      offset,
-      limit,
-      order: [['last_login', 'DESC']]
-    });
-
-    // Format candidates and include candidate_profile details.
-    const formattedCandidates = candidates.map(candidate => {
-      const { candidate_id, name, email, phone, last_login, candidate_profile } = candidate.dataValues;
-      let formattedLastLogin = last_login
-        ? new Date(last_login).toLocaleDateString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          })
-        : null;
-
-      let profile = candidate_profile ? { ...candidate_profile.dataValues } : null;
-      if (profile) {
-        if (profile.profile_last_updated) {
-          profile.profile_last_updated = new Date(profile.profile_last_updated).toLocaleDateString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          });
-        }
-        if (profile.dob) {
-          profile.dob = new Date(profile.dob).toLocaleDateString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          });
-        }
-      }
-
-      return { candidate_id, name, email, phone, formattedLastLogin, profile };
-    });
-
-    const totalCandidates = count;
-    const totalPages = Math.ceil(totalCandidates / limit);
-
-    res.status(200).json({
-      success: true,
-      totalCandidates,
-      currentPage: page,
-      totalPages,
-      candidates: formattedCandidates
-    });
-  } catch (error) {
-    console.error('Error fetching candidate report:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-
-
-
-exports.getCandidateProfilePdf = async (req, res) => {
-  try {
-    const candidateId = req.params.candidateId;
-    // Fetch candidate basic info along with profile details and related arrays.
-    const candidate = await User.findOne({
-      where: { candidate_id: candidateId },
-      attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login', 'resume'],
-      include: [
-        {
-          model: CandidateProfile,
-          as: 'candidate_profile', // Must match your association alias
-          include: [
-            { model: Education, as: 'Education' },
-            { model: EmploymentDetails, as: 'EmploymentDetails' },
-            { model: itSkills, as: 'itSkills' },
-            { model: JobApplication, as: 'JobApplications' },
-            { model: keyskills, as: 'keyskills' },
-            { model: Projects, as: 'Projects' }
-          ]
-        }
-      ]
-    });
-    if (!candidate)
-      return res.status(404).json({ error: "Candidate not found" });
-
-    const basic = candidate.dataValues;
-    // Get profile details; if not present, set to an empty object.
-    const profile = basic.candidate_profile ? basic.candidate_profile.dataValues : {};
-
-    // Create a new PDF document with margin.
-    const doc = new PDFDocument({ margin: 50 });
-
-    // Set response headers for PDF download.
-    res.setHeader('Content-Disposition', `attachment; filename="candidate_${candidateId}_profile.pdf"`);
-    res.setHeader('Content-Type', 'application/pdf');
-
-    // Pipe the PDF into the response stream.
-    doc.pipe(res);
-
-    // Title.
-    doc.fontSize(20).text('Candidate Profile Details', { align: 'center' });
-    doc.moveDown();
-
-    // Helper function to print a field.
-    const printField = (label, value) => {
-      doc.fontSize(12)
-         .fillColor('black')
-         .text(`${label}: ${value !== undefined && value !== null ? value : 'N/A'}`);
-      doc.moveDown(0.2);
-    };
-
-    // --- Basic Information (from User model) ---
-    doc.fontSize(16).text('Basic Information', { underline: true });
-    doc.moveDown();
-    printField('Candidate ID', basic.candidate_id);
-    printField('Name', basic.name);
-    printField('Email', basic.email);
-    printField('Phone', basic.phone);
-    if (basic.last_login) {
-      const lastLoginFormatted = new Date(basic.last_login).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-      printField('Last Login', lastLoginFormatted);
-    } else {
-      printField('Last Login', 'N/A');
-    }
-    printField(
-      'Resume File Present',
-      basic.resume && basic.resume.data && basic.resume.data.length > 0 ? 'Yes' : 'No'
-    );
-    doc.moveDown();
-
-    // --- Candidate Profile Details ---
-    doc.fontSize(16).text('Profile Details', { underline: true });
-    doc.moveDown();
-    printField('Photo Present', basic.photo ? 'Yes' : 'No');
-    if (profile.profile_last_updated) {
-      const updated = new Date(profile.profile_last_updated).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-      printField('Profile Last Updated', updated);
-    } else {
-      printField('Profile Last Updated', 'N/A');
-    }
-    printField('Location', profile.location);
-    printField('Fresher/Experience', profile.fresher_experience);
-    printField('Availability to Join', profile.availability_to_join);
-    printField('Gender', profile.gender);
-    printField('Marital Status', profile.marital_status);
-    if (profile.dob) {
-      const dobFormatted = new Date(profile.dob).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-      printField('Date of Birth', dobFormatted);
-    } else {
-      printField('Date of Birth', 'N/A');
-    }
-    printField('Category', profile.category);
-    printField('Differently Abled', profile.differently_abled);
-    printField('Career Break', profile.career_break);
-    printField('Work Permit to USA', profile.work_permit_to_usa);
-    printField('Work Permit to Country', profile.work_permit_to_country);
-    printField('Permanent Address', profile.permanent_address);
-    printField('Home Town', profile.home_town);
-    printField('Pin Code', profile.pin_code);
-    printField('Language Proficiency', profile.language_proficiency);
-    printField('Current Industry', profile.current_industry);
-    printField('Department', profile.department);
-    printField('Desired Job Type', profile.desired_job_type);
-    printField('Desired Employment Type', profile.desired_employment_type);
-    printField('Preferred Shift', profile.preferred_shift);
-    printField('Preferred Work Location', profile.preferred_work_location);
-    printField('Expected Salary', profile.expected_salary);
-    printField('Resume Headline', profile.resume_headline);
-    printField('Summary', profile.summary);
-    printField('Software Name', profile.software_name);
-    printField('Software Version', profile.software_version);
-    printField('Certification Name', profile.certification_name);
-    printField('Certification URL', profile.certification_url);
-    printField('Work Title', profile.work_title);
-    printField('Work Sample URL', profile.work_sample_url);
-    printField('Work Sample Description', profile.work_sample_description);
-    printField('Profile Summary', profile.profile_summary);
-    printField('Online Profile', profile.online_profile);
-    printField('Work Sample', profile.work_sample);
-    printField('White Paper', profile.white_paper);
-    printField('Presentation', profile.presentation);
-    printField('Patent', profile.patent);
-    printField('Certification', profile.certification);
-    doc.moveDown();
-
-    // --- Education Section (alias: Education) ---
-    if (profile.Education && Array.isArray(profile.Education) && profile.Education.length > 0) {
-      doc.fontSize(16).text('Education', { underline: true });
-      doc.moveDown();
-      profile.Education.forEach((edu, index) => {
-        doc.fontSize(12).fillColor('black').text(`Education ${index + 1}:`);
-        printField('Education Level', edu.education_level);
-        printField('University', edu.university);
-        printField('Course', edu.course);
-        printField('Specialization', edu.specialization);
-        printField('Course Start Year', edu.coursestart_year);
-        printField('Course End Year', edu.courseend_year);
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // --- Employment History Section (alias: EmploymentDetails) ---
-    if (profile.EmploymentDetails && Array.isArray(profile.EmploymentDetails) && profile.EmploymentDetails.length > 0) {
-      doc.fontSize(16).text('Employment History', { underline: true });
-      doc.moveDown();
-      profile.EmploymentDetails.forEach((job, index) => {
-        doc.fontSize(12).fillColor('black').text(`Job ${index + 1}:`);
-        printField('Current Employment', job.current_employment);
-        printField('Employment Type', job.employment_type);
-        printField('Current Company', job.current_company_name);
-        printField('Current Job Title', job.current_job_title);
-        printField('Job Profile', job.job_profile);
-        printField('Current Salary', job.current_salary);
-        printField('Experience (Years)', job.experience_in_year);
-        printField('Experience (Months)', job.experience_in_months);
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // --- IT Skills Section (alias: itSkills) ---
-    if (profile.itSkills && Array.isArray(profile.itSkills) && profile.itSkills.length > 0) {
-      doc.fontSize(16).text('IT Skills', { underline: true });
-      doc.moveDown();
-      profile.itSkills.forEach((skill, index) => {
-        doc.fontSize(12).fillColor('black').text(`IT Skill ${index + 1}:`);
-        printField('Skill', skill.itskills_name);
-        printField('Proficiency', skill.itskills_proficiency);
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // --- Key Skills Section (alias: keyskills) ---
-    if (profile.keyskills && Array.isArray(profile.keyskills) && profile.keyskills.length > 0) {
-      doc.fontSize(16).text('Key Skills', { underline: true });
-      doc.moveDown();
-      profile.keyskills.forEach((keySkill, index) => {
-        doc.fontSize(12).fillColor('black').text(`Key Skill ${index + 1}:`);
-        printField('Skill', keySkill.keyskillsname);
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // --- Projects Section (alias: Projects) ---
-    if (profile.Projects && Array.isArray(profile.Projects) && profile.Projects.length > 0) {
-      doc.fontSize(16).text('Projects', { underline: true });
-      doc.moveDown();
-      profile.Projects.forEach((project, index) => {
-        doc.fontSize(12).fillColor('black').text(`Project ${index + 1}:`);
-        printField('Title', project.project_title);
-        printField('Client', project.client);
-        printField('Status', project.project_status);
-        printField('Start Date', project.project_start_date);
-        printField('End Date', project.project_end_date);
-        printField('Work Duration', project.work_duration);
-        printField('Technologies', project.technology_used);
-        printField('Details', project.details_of_project);
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // --- Job Applications Section (alias: JobApplications) ---
-    if (profile.JobApplications && Array.isArray(profile.JobApplications) && profile.JobApplications.length > 0) {
-      doc.fontSize(16).text('Job Applications', { underline: true });
-      doc.moveDown();
-      profile.JobApplications.forEach((application, index) => {
-        doc.fontSize(12).fillColor('black').text(`Application ${index + 1}:`);
-        printField('Application ID', application.application_id);
-        if (application.applied_at) {
-          const appliedFormatted = new Date(application.applied_at).toLocaleDateString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          });
-          printField('Applied At', appliedFormatted);
-        } else {
-          printField('Applied At', 'N/A');
-        }
-        printField('Status', application.status);
-        if (application.JobPost) {
-          printField('Job Title', application.JobPost.jobTitle);
-          printField('Location', application.JobPost.locations);
-          if (application.JobPost.job_creation_date) {
-            const jobCreationFormatted = new Date(application.JobPost.job_creation_date).toLocaleDateString('en-US', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric'
-            });
-            printField('Job Creation Date', jobCreationFormatted);
-          } else {
-            printField('Job Creation Date', 'N/A');
-          }
-        }
-        doc.moveDown();
-      });
-      doc.moveDown();
-    }
-
-    // Finalize PDF document.
-    doc.end();
-  } catch (err) {
-    console.error('Error generating candidate profile PDF:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-exports.getCandidateReportXls = async (req, res) => {
-  try {
-    // Determine if a full report (all records) is requested.
-    const fullReport = req.query.fullReport === 'true';
-    let candidates;
-    let totalCount = 0;
-
-    if (fullReport) {
-      // Fetch all candidates with their CandidateProfile details (full report)
-      candidates = await User.findAll({
-        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
-        include: [
-          {
-            model: CandidateProfile,
-            as: 'candidate_profile',
-            required: true,
-            attributes: [
-              'photo',
-              'profile_last_updated',
-              'location',
-              'fresher_experience',
-              'availability_to_join',
-              'gender',
-              'marital_status',
-              'dob',
-              'category',
-              'differently_abled',
-              'career_break',
-              'work_permit_to_usa',
-              'work_permit_to_country',
-              'permanent_address',
-              'home_town',
-              'pin_code',
-              'language_proficiency',
-              'current_industry',
-              'department',
-              'desired_job_type',
-              'desired_employment_type',
-              'preferred_shift',
-              'preferred_work_location',
-              'expected_salary',
-              'resume_headline',
-              'resume', // For binary fields, we indicate presence
-              'summary',
-              'software_name',
-              'software_version',
-              'certification_name',
-              'certification_url',
-              'work_title',
-              'work_sample_url',
-              'work_sample_description',
-              'profile_summary',
-              'online_profile',
-              'work_sample',
-              'white_paper',
-              'presentation',
-              'patent',
-              'certification'
-            ]
-          }
-        ],
-        order: [['last_login', 'DESC']]
-      });
-      totalCount = candidates.length;
-    } else {
-      // Paginated mode: use page and limit query parameters.
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const offset = (page - 1) * limit;
-
-      const result = await User.findAndCountAll({
-        attributes: ['candidate_id', 'name', 'email', 'phone', 'last_login'],
-        include: [
-          {
-            model: CandidateProfile,
-            as: 'candidate_profile',
-            required: true,
-            attributes: [
-              'photo',
-              'profile_last_updated',
-              'location',
-              'fresher_experience',
-              'availability_to_join',
-              'gender',
-              'marital_status',
-              'dob',
-              'category',
-              'differently_abled',
-              'career_break',
-              'work_permit_to_usa',
-              'work_permit_to_country',
-              'permanent_address',
-              'home_town',
-              'pin_code',
-              'language_proficiency',
-              'current_industry',
-              'department',
-              'desired_job_type',
-              'desired_employment_type',
-              'preferred_shift',
-              'preferred_work_location',
-              'expected_salary',
-              'resume_headline',
-              'resume',
-              'summary',
-              'software_name',
-              'software_version',
-              'certification_name',
-              'certification_url',
-              'work_title',
-              'work_sample_url',
-              'work_sample_description',
-              'profile_summary',
-              'online_profile',
-              'work_sample',
-              'white_paper',
-              'presentation',
-              'patent',
-              'certification'
-            ]
-          }
-        ],
-        offset,
-        limit,
-        order: [['last_login', 'DESC']]
-      });
-      candidates = result.rows;
-      totalCount = result.count;
-    }
-
-    // Map each candidate to a flat object combining User and CandidateProfile details.
-    const mappedData = candidates.map(c => {
-      const basic = c.dataValues;
-      const profile = basic.candidate_profile ? basic.candidate_profile.dataValues : {};
-
-      // Format last_login date.
-      let formattedLastLogin = "";
-      if (basic.last_login) {
-        const dt = new Date(basic.last_login);
-        formattedLastLogin = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-
-      // Format profile_last_updated date.
-      let formattedProfileUpdated = "";
-      if (profile.profile_last_updated) {
-        const dt = new Date(profile.profile_last_updated);
-        formattedProfileUpdated = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-
-      // Format date of birth.
-      let formattedDob = "";
-      if (profile.dob) {
-        const dt = new Date(profile.dob);
-        formattedDob = dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-
-      // For BLOB fields (photo, resume), indicate if data exists.
-      const photoPresent = profile.photo ? 'Yes' : 'No';
-      const resumePresent = profile.resume ? 'Yes' : 'No';
-
-      return {
-        candidate_id: basic.candidate_id,
-        name: basic.name,
-        email: basic.email,
-        phone: basic.phone,
-        last_login: formattedLastLogin,
-        profile_last_updated: formattedProfileUpdated,
-        photoPresent,
-        location: profile.location || '',
-        fresher_experience: profile.fresher_experience || '',
-        availability_to_join: profile.availability_to_join || '',
-        gender: profile.gender || '',
-        marital_status: profile.marital_status || '',
-        dob: formattedDob,
-        category: profile.category || '',
-        differently_abled: profile.differently_abled || '',
-        career_break: profile.career_break || '',
-        work_permit_to_usa: profile.work_permit_to_usa || '',
-        work_permit_to_country: profile.work_permit_to_country || '',
-        permanent_address: profile.permanent_address || '',
-        home_town: profile.home_town || '',
-        pin_code: profile.pin_code || '',
-        language_proficiency: profile.language_proficiency || '',
-        current_industry: profile.current_industry || '',
-        department: profile.department || '',
-        desired_job_type: profile.desired_job_type || '',
-        desired_employment_type: profile.desired_employment_type || '',
-        preferred_shift: profile.preferred_shift || '',
-        preferred_work_location: profile.preferred_work_location || '',
-        expected_salary: profile.expected_salary || '',
-        resume_headline: profile.resume_headline || '',
-        resumePresent,
-        summary: profile.summary || '',
-        software_name: profile.software_name || '',
-        software_version: profile.software_version || '',
-        certification_name: profile.certification_name || '',
-        certification_url: profile.certification_url || '',
-        work_title: profile.work_title || '',
-        work_sample_url: profile.work_sample_url || '',
-        work_sample_description: profile.work_sample_description || '',
-        profile_summary: profile.profile_summary || '',
-        online_profile: profile.online_profile || '',
-        work_sample: profile.work_sample || '',
-        white_paper: profile.white_paper || '',
-        presentation: profile.presentation || '',
-        patent: profile.patent || '',
-        certification: profile.certification || ''
-      };
-    });
-
-    // Build an array-of-arrays (AOA) for XLSX data with a header row.
-    const wsData = [
-      [
-        "Candidate ID",
-        "Name",
-        "Email",
-        "Phone",
-        "Last Login",
-        "Profile Last Updated",
-        "Photo Present",
-        "Location",
-        "Fresher/Experience",
-        "Availability to Join",
-        "Gender",
-        "Marital Status",
-        "DOB",
-        "Category",
-        "Differently Abled",
-        "Career Break",
-        "Work Permit to USA",
-        "Work Permit to Country",
-        "Permanent Address",
-        "Home Town",
-        "Pin Code",
-        "Language Proficiency",
-        "Current Industry",
-        "Department",
-        "Desired Job Type",
-        "Desired Employment Type",
-        "Preferred Shift",
-        "Preferred Work Location",
-        "Expected Salary",
-        "Resume Headline",
-        "Resume Present",
-        "Summary",
-        "Software Name",
-        "Software Version",
-        "Certification Name",
-        "Certification URL",
-        "Work Title",
-        "Work Sample URL",
-        "Work Sample Description",
-        "Profile Summary",
-        "Online Profile",
-        "Work Sample",
-        "White Paper",
-        "Presentation",
-        "Patent",
-        "Certification"
-      ]
-    ];
-
-    // Push each candidate's data as a row.
-    mappedData.forEach(row => {
-      wsData.push([
-        row.candidate_id,
-        row.name,
-        row.email,
-        row.phone,
-        row.last_login,
-        row.profile_last_updated,
-        row.photoPresent,
-        row.location,
-        row.fresher_experience,
-        row.availability_to_join,
-        row.gender,
-        row.marital_status,
-        row.dob,
-        row.category,
-        row.differently_abled,
-        row.career_break,
-        row.work_permit_to_usa,
-        row.work_permit_to_country,
-        row.permanent_address,
-        row.home_town,
-        row.pin_code,
-        row.language_proficiency,
-        row.current_industry,
-        row.department,
-        row.desired_job_type,
-        row.desired_employment_type,
-        row.preferred_shift,
-        row.preferred_work_location,
-        row.expected_salary,
-        row.resume_headline,
-        row.resumePresent,
-        row.summary,
-        row.software_name,
-        row.software_version,
-        row.certification_name,
-        row.certification_url,
-        row.work_title,
-        row.work_sample_url,
-        row.work_sample_description,
-        row.profile_summary,
-        row.online_profile,
-        row.work_sample,
-        row.white_paper,
-        row.presentation,
-        row.patent,
-        row.certification
-      ]);
-    });
-
-    // Create a new workbook and worksheet from the AOA data.
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Candidate Report');
-
-    // Write the workbook to a binary string then convert to a Buffer.
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-    const buf = Buffer.from(wbout, 'binary');
-
-    // Set response headers for file download.
-    res.setHeader('Content-Disposition', 'attachment; filename="candidate_report.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-    // Send the file.
-    res.status(200).send(buf);
-  } catch (err) {
-    console.error('Error generating candidate report XLS:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-
-
-
-
-
-// Get Recruiter Report
-exports.getRecruiterReport = async (req, res) => {
-  try {
-    // Fetch recruiter details (adjust attributes as needed)
-    const recruiters = await Recruiter.findAll({
-      attributes: ['recruiter_id', 'name', 'email', 'company_name', 'createdAt']
-    });
-
-    // Aggregate: total recruiters count
-    const totalRecruiters = recruiters.length;
-
-    res.status(200).json({
-      success: true,
-      totalRecruiters,
-      recruiters
-    });
-  } catch (error) {
-    console.error('Error fetching recruiter report:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-// Get Application Report
-exports.getApplicationReport = async (req, res) => {
-  try {
-    // Fetch application details along with candidate and job post info
-    const applications = await JobApplication.findAll({
-      attributes: ['application_id', 'candidate_id', 'job_id', 'status', 'createdAt'],
-      include: [
-        {
-          model: Signin,
-          attributes: ['name', 'email']
-        },
-        {
-          model: JobPost,
-          attributes: ['jobTitle']
-        }
-      ]
-    });
-
-    // Optionally, compute aggregate metrics by status
-    const statusAggregates = await JobApplication.findAll({
-      attributes: [
-        'status',
-        [JobApplication.sequelize.fn('COUNT', JobApplication.sequelize.col('application_id')), 'count']
-      ],
-      group: ['status']
-    });
-
-    res.status(200).json({
-      success: true,
-      totalApplications: applications.length,
-      aggregates: statusAggregates,
-      applications
-    });
-  } catch (error) {
-    console.error('Error fetching application report:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
 
 
 // Admin creates recruiter
-exports.createRecruiter = async (req, res) => {
+/*exports.createRecruiter = async (req, res) => {
   const { email, password, name, company_name } = req.body;
   const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token
 
@@ -1243,7 +274,114 @@ The Admin Team`
     console.error('Error creating recruiter:', err);
     res.status(500).json({ error: err.message });
   }
-};  
+};  */
+
+
+
+// Modified createRecruiter function to associate recruiters with clients
+exports.createRecruiter = async (req, res) => {
+  const { email, password, name, client_id } = req.body;
+  const adminId = req.admin.id;  // Assuming admin's ID comes from the JWT token
+
+  try {
+    // Check if recruiter already exists
+    const existingRecruiter = await Recruiter.findOne({ where: { email } });
+    if (existingRecruiter) {
+      return res.status(400).json({ error: 'Recruiter already exists' });
+    }
+    
+    // Validate if client exists and has a subscription
+    if (!client_id) {
+      return res.status(400).json({ error: 'Client ID is required. Please select a client from the dropdown.' });
+    }
+    
+    const client = await MasterClient.findByPk(client_id);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    // Check if client has an active subscription
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (!subscription) {
+      return res.status(400).json({ error: 'Client does not have an active subscription. Please create a subscription for this client first.' });
+    }
+    
+    // Check if client has reached the allowed number of recruiters (login_allowed)
+    const activeRecruiters = await Recruiter.count({
+      where: { 
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (activeRecruiters >= subscription.login_allowed) {
+      return res.status(400).json({ 
+        error: `Client has reached the maximum allowed recruiters (${subscription.login_allowed})`
+      });
+    }
+    
+    // Create the recruiter with associated admin_id and client_id
+    const recruiter = await Recruiter.create({
+      name: name || 'Recruiter', // Default if name is not provided
+      email,
+      password, // The beforeSave hook will handle password hashing
+      company_name: client.client_name, // Use client name as company name for consistency
+      client_id, // Associate the recruiter with the client
+      admin_id: adminId, // Associate the recruiter with the admin
+      is_active: true
+    });
+    
+    // Send email notification to the recruiter
+    const mailOptions = {
+      from: process.env.MAIL_DEFAULT_SENDER || process.env.MAIL_USERNAME,
+      to: email,
+      subject: "Your Recruiter Account Credentials",
+      text: `Hello ${name || 'Recruiter'},
+
+Your recruiter account for ${client.client_name} has been created successfully.
+
+Your login credentials are:
+Email: ${email}
+Password: ${password}
+
+Please change your password after logging in for security purposes.
+
+Best regards,
+The Admin Team`
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent to recruiter: ${email}`);
+    } catch (emailError) {
+      console.error(`Error sending email to ${email}:`, emailError);
+      // We still continue as the account creation was successful
+    }
+
+    res.status(200).json({ 
+      message: 'Recruiter created successfully and notification email sent',
+      recruiter: {
+        id: recruiter.recruiter_id,
+        email: recruiter.email,
+        name: recruiter.name,
+        company_name: recruiter.company_name,
+        client_id: recruiter.client_id
+      }
+    });
+  } catch (err) {
+    console.error('Error creating recruiter:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 
 // Edit Job
 exports.editJob = async (req, res) => {
@@ -1264,7 +402,7 @@ exports.editJob = async (req, res) => {
 };
 
 
-// Bulk Data Upload 
+// Bulk Candidate Data Upload 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -1346,19 +484,6 @@ exports.bulkUploadCandidates = async (req, res) => {
   }
 };
 
-
-// Get All Pending Jobs for Approval
-/*exports.getPendingJobs = async (req, res) => {
-  try {
-    const jobs = await JobPost.findAll({
-      where: { status: 'pending' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 
 exports.getPendingJobs = async (req, res) => {
@@ -1466,35 +591,6 @@ exports.rejectJob = async (req, res) => {
   }
 };
 
-// Get All Approved Jobs by Admin
-/*exports.getApprovedJobs = async (req, res) => {
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const jobs = await JobPost.findAll({
-      where: { approvedBy: adminId, status: 'approved' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
-
-// Get All Rejected Jobs by Admin
-/*exports.getRejectedJobs = async (req, res) => {
-  const adminId = req.admin.id; // Admin ID from JWT token
-
-  try {
-    const jobs = await JobPost.findAll({
-      where: { rejectedBy: adminId, status: 'rejected' },
-      include: [{ model: Recruiter, attributes: ['email','name'] }],
-    });
-    res.status(200).json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 
 exports.getRejectedJobs = async (req, res) => {
@@ -1657,19 +753,6 @@ exports.deleteJob = async (req, res) => {
   }
 };
 
-// Get All Recruiters
-/*exports.getRecruiters = async (req, res) => {
-  try {
-    const recruiters = await Recruiter.findAll({
-      attributes: ['recruiter_id', 'name', 'email', 'company_name'],
-      order: [['recruiter_id', 'DESC']]
-    });
-    
-    res.status(200).json(recruiters);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};*/
 
 // Get All Recruiters with Pagination
 exports.getRecruiters = async (req, res) => {
@@ -1982,26 +1065,12 @@ exports.downloadJobTemplate = (req, res) => {
   try {
     // Define the template headers and sample data
     const templateHeaders = [
-      'recruiter_id',
-      'jobTitle',
-      'employmentType',
-      'keySkills',
-      'department',
-      'workMode',
-      'locations',
-      'industry',
-      'diversityHiring',
-      'jobDescription',
-      'multipleVacancies',
-      'companyName',
-      'companyInfo',
-      'companyAddress',
-      'min_salary',
-      'max_salary',
-      'min_experience',
-      'max_experience',
-      'is_active',
-      'status'
+      'recruiter_id','jobTitle','employmentType','keySkills','department',
+      'workMode','locations','industry',
+      'diversityHiring','jobDescription','multipleVacancies',
+      'companyName','companyInfo',
+      'companyAddress','min_salary','max_salary','min_experience',
+      'max_experience','is_active','status'
     ];
 
     const sampleData = [
@@ -2136,7 +1205,6 @@ exports.updatePassword = async (req, res) => {
         message: "Current password and new password are required"
       });
     }
-
     // Password strength validation
     if (newPassword.length < 8) {
       return res.status(400).json({
@@ -2144,7 +1212,6 @@ exports.updatePassword = async (req, res) => {
         message: "New password must be at least 8 characters long"
       });
     }
-
     // Find the admin by ID
     const admin = await Admin.findByPk(adminId);
     if (!admin) {
@@ -2153,7 +1220,6 @@ exports.updatePassword = async (req, res) => {
         message: "Admin not found" 
       });
     }
-
     // Verify current password
     const isMatch = await bcrypt.compare(currentPassword, admin.password);
     if (!isMatch) {
@@ -2278,7 +1344,6 @@ exports.deleteRecruiter = async (req, res) => {
   }
 };
 
-
 // Get all recruiters with their device usage
 exports.getRecruitersDeviceUsage = async (req, res) => {
   try {
@@ -2309,7 +1374,6 @@ exports.getRecruitersDeviceUsage = async (req, res) => {
           is_active: true
         }
       });
-      
       // Count active devices
       const activeDevicesCount = await ClientLoginDevice.count({
         where: {
@@ -2317,7 +1381,6 @@ exports.getRecruitersDeviceUsage = async (req, res) => {
           is_active: true
         }
       });
-      
       // Get most recent login
       const mostRecentDevice = await ClientLoginDevice.findOne({
         where: {
@@ -2618,6 +1681,56 @@ function parseUserAgent(userAgent) {
 }
 
 
+// Create a new client
+/*exports.createClient = async (req, res) => {
+  const { client_name, address, contact_person, email, phone } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Client name is required"
+      });
+    }
+    
+    // Check if client with same email already exists
+    if (email) {
+      const existingClient = await MasterClient.findOne({ 
+        where: { email }
+      });
+      
+      if (existingClient) {
+        return res.status(400).json({
+          success: false,
+          message: "A client with this email already exists"
+        });
+      }
+    }
+    
+    // Create the client
+    const client = await MasterClient.create({
+      client_name,
+      address,
+      contact_person,
+      email,
+      phone
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client created successfully",
+      data: client
+    });
+  } catch (err) {
+    console.error('Error creating client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client",
+      error: err.message
+    });
+  }
+};*/
 
 // Create a new client
 exports.createClient = async (req, res) => {
@@ -2669,6 +1782,69 @@ exports.createClient = async (req, res) => {
     });
   }
 };
+
+// Create a new client subscription
+exports.createClientSubscription = async (req, res) => {
+  const { client_id, cv_download_quota, login_allowed, start_date, end_date } = req.body;
+  
+  try {
+    // Validate required fields
+    if (!client_id || !cv_download_quota || !login_allowed) {
+      return res.status(400).json({
+        success: false,
+        message: "Client ID, CV download quota, and login allowed count are required"
+      });
+    }
+    
+    // Check if client exists
+    const client = await MasterClient.findByPk(client_id);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    // Check if an active subscription already exists
+    const existingSubscription = await ClientSubscription.findOne({
+      where: {
+        client_id,
+        is_active: true
+      }
+    });
+    
+    if (existingSubscription) {
+      return res.status(400).json({
+        success: false,
+        message: "An active subscription already exists for this client",
+        data: existingSubscription
+      });
+    }
+    // Create the subscription
+    const subscription = await ClientSubscription.create({
+      client_id,
+      cv_download_quota,
+      login_allowed,
+      start_date: start_date || new Date(),
+      end_date,
+      is_active: true
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Client subscription created successfully",
+      data: subscription
+    });
+  } catch (err) {
+    console.error('Error creating client subscription:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error creating client subscription",
+      error: err.message
+    });
+  }
+};
+
+
 
 // Get all clients with pagination
 exports.getAllClients = async (req, res) => {
@@ -2923,9 +2099,8 @@ exports.getRecentClients = async (req, res) => {
 };
 
 
-
 // Create a new client subscription
-exports.createClientSubscription = async (req, res) => {
+/*exports.createClientSubscription = async (req, res) => {
   const { client_id, cv_download_quota, login_allowed, start_date, end_date } = req.body;
   
   try {
@@ -2945,7 +2120,6 @@ exports.createClientSubscription = async (req, res) => {
         message: "Client not found"
       });
     }
-    
     // Check if an active subscription already exists
     const existingSubscription = await ClientSubscription.findOne({
       where: {
@@ -2961,7 +2135,6 @@ exports.createClientSubscription = async (req, res) => {
         data: existingSubscription
       });
     }
-    
     // Create the subscription
     const subscription = await ClientSubscription.create({
       client_id,
@@ -2982,55 +2155,6 @@ exports.createClientSubscription = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating client subscription",
-      error: err.message
-    });
-  }
-};
-
-// Get all client subscriptions
-/*exports.getAllClientSubscriptions = async (req, res) => {
-  try {
-    // Get pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-    
-    // Get total count
-    const totalCount = await ClientSubscription.count();
-    
-    // Get paginated subscriptions with client details
-    const subscriptions = await ClientSubscription.findAll({
-      include: [
-        {
-          model: MasterClient,
-          attributes: ['client_id', 'client_name', 'email', 'phone']
-        }
-      ],
-      order: [['subscription_id', 'DESC']],
-      limit,
-      offset
-    });
-    
-    // Calculate total pages
-    const totalPages = Math.ceil(totalCount / limit);
-    
-    res.status(200).json({
-      success: true,
-      data: subscriptions,
-      pagination: {
-        currentPage: page,
-        itemsPerPage: limit,
-        totalItems: totalCount,
-        totalPages: totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
-    });
-  } catch (err) {
-    console.error('Error fetching client subscriptions:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching client subscriptions",
       error: err.message
     });
   }
@@ -3088,7 +2212,6 @@ exports.getAllClientSubscriptions = async (req, res) => {
 };
 
 // Get subscription by ID
-// Update the getClientSubscriptionById function in adminController.js
 exports.getClientSubscriptionById = async (req, res) => {
   const { subscriptionId } = req.params;
   
@@ -3102,14 +2225,12 @@ exports.getClientSubscriptionById = async (req, res) => {
         }
       ]
     });
-    
     if (!subscription) {
       return res.status(404).json({
         success: false,
         message: "Subscription not found"
       });
     }
-    
     res.status(200).json({
       success: true,
       data: subscription
@@ -3138,7 +2259,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
         message: "Client not found"
       });
     }
-    
     // Get active subscription
     const subscription = await ClientSubscription.findOne({
       where: {
@@ -3153,7 +2273,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
         message: "No active subscription found for this client"
       });
     }
-    
     res.status(200).json({
       success: true,
       data: {
@@ -3177,8 +2296,6 @@ exports.getClientSubscriptionByClientId = async (req, res) => {
 };
 
 
-// Update client subscription
-// Update client subscription
 exports.updateClientSubscription = async (req, res) => {
   const { subscriptionId } = req.params;
   const { cv_download_quota, login_allowed, start_date, end_date, is_active } = req.body;
@@ -3192,7 +2309,6 @@ exports.updateClientSubscription = async (req, res) => {
         message: "Subscription not found"
       });
     }
-    
     // Prepare update object
     const updateFields = {};
     if (cv_download_quota !== undefined) updateFields.cv_download_quota = cv_download_quota;
@@ -3200,10 +2316,8 @@ exports.updateClientSubscription = async (req, res) => {
     if (start_date !== undefined) updateFields.start_date = start_date;
     if (end_date !== undefined) updateFields.end_date = end_date;
     if (is_active !== undefined) updateFields.is_active = is_active;
-    
     // Update the subscription
     await subscription.update(updateFields);
-    
     // Get the updated subscription with client details
     const updatedSubscription = await ClientSubscription.findByPk(subscriptionId, {
       include: [
@@ -3214,7 +2328,6 @@ exports.updateClientSubscription = async (req, res) => {
         }
       ]
     });
-    
     res.status(200).json({
       success: true,
       message: "Subscription updated successfully",
@@ -3243,7 +2356,6 @@ exports.deactivateClientSubscription = async (req, res) => {
         message: "Subscription not found"
       });
     }
-    
     // Check if already inactive
     if (!subscription.is_active) {
       return res.status(400).json({
@@ -3251,7 +2363,6 @@ exports.deactivateClientSubscription = async (req, res) => {
         message: "Subscription is already inactive"
       });
     }
-    
     // Deactivate the subscription
     await subscription.update({ is_active: false });
     
@@ -3268,6 +2379,7 @@ exports.deactivateClientSubscription = async (req, res) => {
     });
   }
 };
+
 
 // Get active subscriptions that are expiring soon
 exports.getExpiringSubscriptions = async (req, res) => {
@@ -3301,7 +2413,6 @@ exports.getExpiringSubscriptions = async (req, res) => {
       ],
       order: [['end_date', 'ASC']] // Soonest expiring first
     });
-    
     res.status(200).json({
       success: true,
       count: subscriptions.length,
@@ -3318,11 +2429,9 @@ exports.getExpiringSubscriptions = async (req, res) => {
 };
 
 
-// Renew a subscription
 exports.renewClientSubscription = async (req, res) => {
   const { subscriptionId } = req.params;
   const { cv_download_quota, login_allowed, duration_days, end_date } = req.body;
-  
   // Validate that either duration_days or end_date is provided
   if (!duration_days && !end_date) {
     return res.status(400).json({
@@ -3330,9 +2439,8 @@ exports.renewClientSubscription = async (req, res) => {
       message: "Either duration_days or end_date must be provided"
     });
   }
-  
   const transaction = await sequelize.transaction();
-  
+
   try {
     // Find the subscription
     const subscription = await ClientSubscription.findByPk(subscriptionId, { transaction });
@@ -3384,6 +2492,100 @@ exports.renewClientSubscription = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error renewing subscription",
+      error: err.message
+    });
+  }
+};
+
+// Get clients for recruiter creation dropdown
+exports.getClientsForDropdown = async (req, res) => {
+  try {
+    // Get all active clients that have active subscriptions
+    const clients = await MasterClient.findAll({
+      include: [
+        {
+          model: ClientSubscription,
+          as: 'subscriptions',
+          where: { is_active: true },
+          required: true
+        }
+      ],
+      attributes: ['client_id', 'client_name'],
+      order: [['client_name', 'ASC']]
+    });
+    
+    // Format for dropdown
+    const dropdownData = clients.map(client => ({
+      value: client.client_id,
+      label: client.client_name
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: dropdownData
+    });
+  } catch (err) {
+    console.error('Error fetching clients for dropdown:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching clients for dropdown",
+      error: err.message
+    });
+  }
+};
+
+
+// Get recruiters for a specific client
+exports.getClientRecruiters = async (req, res) => {
+  const { clientId } = req.params;
+  
+  try {
+    // Verify client exists
+    const client = await MasterClient.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+    
+    // Get pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const totalCount = await Recruiter.count({
+      where: { client_id: clientId }
+    });
+    
+    // Get recruiters for this client
+    const recruiters = await Recruiter.findAll({
+      where: { client_id: clientId },
+      attributes: ['recruiter_id', 'name', 'email', 'is_active'],
+      order: [['recruiter_id', 'DESC']],
+      limit,
+      offset
+    });
+    
+    // Return with pagination metadata
+    res.status(200).json({
+      success: true,
+      client: {
+        id: client.client_id,
+        name: client.client_name
+      },
+      count: recruiters.length,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      recruiters
+    });
+  } catch (err) {
+    console.error('Error fetching client recruiters:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching client recruiters",
       error: err.message
     });
   }

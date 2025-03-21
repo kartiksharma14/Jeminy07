@@ -31,7 +31,9 @@ CREATE TABLE `temp_job_posts` (
 SELECT * FROM temp_job_posts;
 
 ALTER TABLE temp_job_posts ADD COLUMN recruiter_id INT NOT NULL AFTER created_by;
-
+alter table temp_job_posts
+add column end_date int;
 
 alter table temp_job_posts
+drop column end_date,
 ADD COLUMN end_date VARCHAR(10);

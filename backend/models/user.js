@@ -23,7 +23,6 @@ module.exports = { createUser, findUserByEmail};*/
 const { DataTypes, Op } = require("sequelize");
 const { sequelize } = require("../db");
 const cron = require('node-cron');
-const CandidateProfile = require('./candidateProfile');
 
 const User = sequelize.define(
   "signin",
@@ -89,9 +88,5 @@ User.deactivateInactiveUsers = async () => {
 
 // Initialize the cron job
 cron.schedule('0 0 * * *', User.deactivateInactiveUsers);
-// Define a one-to-one association using the alias 'candidate_profile'
-User.hasOne(CandidateProfile, { foreignKey: 'candidate_id', as: 'candidate_profile' });
 
-// Optionally, also define the reverse association:
-CandidateProfile.belongsTo(User, { foreignKey: 'candidate_id', as: 'candidate_profile' });
 module.exports = User;

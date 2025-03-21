@@ -51,7 +51,7 @@ router.post('/update-password', authenticateToken, recruiterController.updateRec
 
 router.get('/candidates/:candidate_id/resume', authenticateToken, recruiterController.downloadCandidateResume);
 router.get('/cv-quota', authenticateToken, recruiterController.getCVDownloadQuota);
-// Session management
+router.get('/download-cv/:candidate_id', authenticateToken, recruiterController.downloadCandidateCV);
 router.get('/my-sessions', authenticateToken, recruiterController.getMySessions);
 
 console.log('Controller Object:', recruiterController);
@@ -94,5 +94,11 @@ router.get('/applications/:application_id', authenticateToken, recruiterControll
 router.patch('/applications/:application_id/status', authenticateToken, recruiterController.updateApplicationStatus);
 // Add to your recruiterRoutes.js
 router.get('/test-email', authenticateToken, recruiterController.testEmail);
+
+
+// Add this to your routes file (e.g., routes/recruiterRoutes.js)
+
+// Candidate profile PDF generation
+router.get('/candidates/:candidate_id/pdf', authenticateToken, recruiterController.refreshSessionActivity, recruiterController.generateCandidatePDF);
 
 module.exports = router;
