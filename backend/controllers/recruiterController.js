@@ -1669,17 +1669,23 @@ exports.getMostRecentJob = async (req, res) => {
     // Get recruiter ID from auth token
     const recruiterId = req.recruiter.recruiter_id;
     
-    // Find the 5 most recently updated jobs (approved, rejected, and pending)
-    const jobs = await JobPost.findAll({
+    // Get pagination parameters from query (default: page 1, 5 items per page)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+    
+    // Find jobs with pagination
+    const { count, rows: jobs } = await JobPost.findAndCountAll({
       where: {
         recruiter_id: recruiterId,
         status: {
-          [Op.or]: ['approved', 'rejected', 'pending'] // Include all possible statuses
+          [Op.or]: ['approved', 'rejected', 'pending']
         },
         is_active: true
       },
-      order: [['updatedAt', 'DESC']], // Most recently updated first
-      limit: 5, // Limit to 5 records
+      order: [['updatedAt', 'DESC']],
+      limit: limit,
+      offset: offset,
       attributes: [
         'job_id',
         'jobTitle',
@@ -1695,7 +1701,7 @@ exports.getMostRecentJob = async (req, res) => {
     if (!jobs || jobs.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No recent jobs found"
+        message: "No jobs found"
       });
     }
     
@@ -1722,22 +1728,32 @@ exports.getMostRecentJob = async (req, res) => {
       };
     }));
     
-    // Return the 5 most recent jobs
+    // Calculate pagination metadata
+    const totalItems = count;
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    // Return paginated results
     return res.status(200).json({
       success: true,
-      jobs: processedJobs
+      jobs: processedJobs,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: totalItems,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
     });
   } catch (error) {
-    console.error('Error fetching recent jobs:', error);
+    console.error('Error fetching jobs:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error fetching recent jobs',
+      message: 'Error fetching jobs',
       error: error.message
     });
   }
 };
-
-
 // Get all jobs for a recruiter regardless of status with formatted dates
 exports.getAllJobs = async (req, res) => {
   try {
