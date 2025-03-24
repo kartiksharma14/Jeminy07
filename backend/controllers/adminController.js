@@ -2959,18 +2959,32 @@ exports.searchClients = async (req, res) => {
 // Get recent clients for dashboard
 exports.getRecentClients = async (req, res) => {
   try {
-    // Get count from query params or default to 5
-    const count = parseInt(req.query.count) || 5;
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page) || 1; // Default to page 1
+    const limit = parseInt(req.query.limit) || 5; // Default to 5 clients per page
+    const offset = (page - 1) * limit;
     
-    // Fetch the most recently created clients
-    const recentClients = await MasterClient.findAll({
+    // Fetch clients with pagination
+    const { count, rows: recentClients } = await MasterClient.findAndCountAll({
       order: [['created_at', 'DESC']], // Most recent first
-      limit: count
+      limit: limit,
+      offset: offset
     });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(count / limit);
     
     res.status(200).json({
       success: true,
-      data: recentClients
+      data: recentClients,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: count,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
     });
   } catch (err) {
     console.error('Error fetching recent clients:', err);
@@ -2981,7 +2995,6 @@ exports.getRecentClients = async (req, res) => {
     });
   }
 };
-
 
 // Create a new client subscription
 /*exports.createClientSubscription = async (req, res) => {
