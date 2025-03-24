@@ -93,7 +93,7 @@ const AdminLogin = () => {
     };
     return (
       <div className="modal-overlay">
-        <div className="modal-content-admin">
+        <div className="modal-content">
           <h2>Verify OTP</h2>
           <form onSubmit={handleSubmit}>
             <input 

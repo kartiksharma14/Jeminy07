@@ -76,21 +76,3 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   flex: 1 1 300px;
 }
-
-/* List styling for dynamic content in cards */
-.enterprise-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.enterprise-card li {
-  padding: 8px 0;
-  border-bottom: 1px solid #e0e6ed;
-  font-size: 14px;
-  color: #333;
-}
-
-.enterprise-card li:last-child {
-  border-bottom: none;
-}

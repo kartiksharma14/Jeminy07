@@ -428,45 +428,6 @@
   z-index: 999;
   animation: fadeIn 0.3s ease-in;
 }
-/* Pagination alignment and styling for ManageJobs */
-.mj-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.mj-pagination button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  font-size: 14px;
-  background: #2c3e50;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
-}
-
-.mj-pagination button:hover:not(:disabled) {
-  background: #1f2a38;
-  transform: translateY(-2px);
-}
-
-.mj-pagination button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.mj-pagination span {
-  display: inline-flex;
-  align-items: center;
-  font-size: 16px;
-  color: #2c3e50;
-}
 
 @keyframes fadeIn {
   from { opacity: 0; }

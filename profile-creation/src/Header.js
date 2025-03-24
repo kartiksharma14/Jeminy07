@@ -1,8 +1,6 @@
-// src/components/Header.js
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Header.css";
-import { FaSearch } from 'react-icons/fa';
 
 function Header() {
   const navigate = useNavigate();
@@ -16,12 +14,11 @@ function Header() {
   // Profile menu state (opens on hover)
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
-  const hideTimerRef = useRef(null);
 
   // Ref for the expanded search panel
   const searchPanelRef = useRef(null);
 
-  // Expand search panel when minimal search bar is clicked
+  // When minimal search bar is clicked, expand the search panel
   const handleExpandSearch = () => {
     setShowSearchPanel(true);
   };
@@ -43,37 +40,34 @@ function Header() {
     };
   }, [showSearchPanel]);
 
-  // Build query object and navigate to /job-list
-  const handleSearch = () => {
-    const query = {};
-    if (keyword.trim() !== "") query.keywords = keyword;
-    if (location.trim() !== "") query.locations = location;
-    if (experience !== "0") query.experience = experience;
-    navigate("/job-list", { state: { query } });
-  };
+  // Handle search action using unified endpoint:
+  // http://localhost:5000/api/search-all?keywords=...&locations=...&experience=...
+  const handleSearch = async () => {
+    try {
+      const baseUrl = "http://localhost:5000/api/search-all";
+      const queryParams = new URLSearchParams({
+        keywords: keyword,
+        locations: location,
+        experience: experience
+      }).toString();
+      const url = `${baseUrl}?${queryParams}`;
+      if (!url) return;
 
-  // Logout functionality: clear authToken and navigate to login page
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/candidate/login");
-  };
-  const toggleMenu = () => {
-    setShowProfileMenu((prev) => !prev);
-  };
-   // Clear any pending hide timer and show the menu on mouse enter
-   const handleMouseEnter = () => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
+      const token = localStorage.getItem("authToken");
+      console.log("Searching via:", url);
+      const res = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      console.log("Search results:", data);
+      // Optionally, navigate to a job results page with the data:
+      // navigate("/job", { state: { jobData: data } });
+    } catch (error) {
+      console.error("Search error:", error);
     }
-    setShowProfileMenu(true);
-  };
-
-  // Delay hiding the menu on mouse leave (e.g., 300ms)
-  const handleMouseLeave = () => {
-    hideTimerRef.current = setTimeout(() => {
-      setShowProfileMenu(false);
-    }, 300);
   };
 
   return (
@@ -81,7 +75,7 @@ function Header() {
       <header className="header-candidate">
         {/* Left Section: Logo */}
         <div className="header-left">
-          <a href="/homepage">
+          <a href="/">
             <img
               src="https://github.com/kartiksharma14/photos/blob/main/logo%203.png?raw=true"
               alt="Logo"
@@ -90,66 +84,45 @@ function Header() {
           </a>
         </div>
 
-        {/* Center Section: Minimal Search Bar */}
+        {/* Center Section: Minimal Search Bar (visible only when search panel is collapsed) */}
         <div className="header-center">
-      {!showSearchPanel && (
-        <div className="minimal-search" onClick={handleExpandSearch}>
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              placeholder="Search jobs here"
-              className="minimal-input"
-              readOnly
-            />
-            <button className="search-button-cad">
-              <FaSearch />
-            </button>
-          </div>
+          {!showSearchPanel && (
+            <div className="minimal-search" onClick={handleExpandSearch}>
+              <input
+                type="text"
+                placeholder="Search jobs here"
+                className="minimal-input"
+                readOnly
+              />
+              <button className="minimal-search-btn">Search</button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
 
-        {/* Right Section: Profile Icon & Dropdown Menu */}
+        {/* Right Section: Profile Icon & Menu (opens on hover) */}
         <div
-      className="header-right"
-      ref={profileMenuRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <button
-        type="button"
-        className="profile-icon-button"
-        onClick={toggleMenu}
-        aria-haspopup="true"
-        aria-expanded={showProfileMenu}
-        aria-label="User menu"
-      >
-        <div className="profile-icon-placeholder" href='' aria-hidden="true">
-          
+          className="header-right"
+          onMouseEnter={() => setShowProfileMenu(true)}
+          onMouseLeave={() => setShowProfileMenu(false)}
+          ref={profileMenuRef}
+        >
+          <div className="profile-icon-placeholder">
+            {/* Optionally, render a profile photo */}
+          </div>
+          {showProfileMenu && (
+            <div className="profile-menu-dropdown">
+              <Link to="/homepage" className="profile-menu-item">
+                Homepage
+              </Link>
+              <Link to="/home" className="profile-menu-item">
+                Candidate Profile
+              </Link>
+            </div>
+          )}
         </div>
-      </button>
-      {showProfileMenu && (
-        <div className="profile-menu-dropdown" role="menu">
-          <Link to="/homepage" className="profile-menu-item" role="menuitem">
-            Homepage
-          </Link>
-          <Link to="/home" className="profile-menu-item" role="menuitem">
-            Candidate Profile
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="profile-menu-item"
-            role="menuitem"
-          >
-            Logout
-          </button>
-        </div>
-      )}
-    </div>
       </header>
 
-      {/* Expanded Search Panel */}
+      {/* Expanded Search Panel (appears below header when activated) */}
       {showSearchPanel && (
         <div className="expanded-search-panel" ref={searchPanelRef}>
           <div className="expanded-search-content">

@@ -154,6 +154,9 @@ function PremiumCompanies() {
         {/* Filter Section */}
         <div className="filter-section">
           <div className="filter-chips-wrap">
+            <span className="filter-chip selected">All</span>
+            <span className="filter-chip">IT Services</span>
+            <span className="filter-chip">BFSI</span>
             {/* Add more filter chips as needed */}
           </div>
           <div className="filter-more-chips">+ more</div>

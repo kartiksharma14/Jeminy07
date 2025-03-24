@@ -7,7 +7,7 @@ const RecruiterFooter = () => {
             <div className="footer-container">
                 {/* Left Section */}
                 <div className="footer-left">
-                    <a href="/recruiter" className="footer-logo">
+                    <a href="https://stl.tech" className="footer-logo">
                         <img
                             alt="STL Logo"
                             className="footer-logo-img"

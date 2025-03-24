@@ -14,7 +14,7 @@ const FetchedUser = () => {
             setError(null);
             console.log("Candidate id ",id);
             // Retrieve the token from localStorage
-            const token = localStorage.getItem("RecruiterToken");
+            const token = localStorage.getItem("authToken");
 
             if (!token) {
                 setError("Authentication token not found. Please log in.");

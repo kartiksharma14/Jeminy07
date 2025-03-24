@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode"; // ✅ Correct import
 
 function PrivateRouteRecruiter({ children }) {
-  const token = localStorage.getItem("RecruiterToken");
+  const token = localStorage.getItem("authToken");
 
   console.log("Checking auth token in PrivateRouteRecruiter:", token);
 

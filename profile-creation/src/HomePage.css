@@ -1,246 +1,121 @@
-/* Overall Dashboard Container */
-.hp-dashboard {
-  background: #f3f4f6;
-  min-height: 100vh;
-  font-family: 'Roboto', sans-serif;
-}
+/* src/components/Header.css */
 
-/* Layout for Sidebar and Main Content */
-.hp-layout {
+/* Container styling */
+.header-candidate {
   display: flex;
-  gap: 20px;
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Shared Styles for Sidebar (.hp-left) & Main Content (.hp-right) */
-.hp-left,
-.hp-right {
-  background: #fff;
-  padding: 20px;
-  border: 1px solid #e0e6ed;
-  border-radius: 8px;
+.header-left .logo {
+  height: 40px;
+  width: auto;
 }
 
-.hp-left {
+.header-center {
   flex: 1;
-  max-width: 300px;
-  min-width: 250px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
 }
 
-.hp-right {
-  flex: 3;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.qsb {
+  display: flex;
+  align-items: center;
+  background: #f1f3f7;
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  gap: 6px;
 }
 
-/* Sidebar Profile Card */
-.hp-sidebar-card {
-  text-align: center;
-  margin-bottom: 20px;
+.searchIcon {
+  height: 20px;
+  margin-left: 6px;
 }
 
-.hp-profile-name {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 10px;
+.keywordSugg,
+.qsbExperience,
+.locationSugg {
+  display: flex;
+  align-items: center;
 }
 
-/* Sidebar Navigation */
-.hp-sidebar-nav ul,
-.sidebar-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.hp-sidebar-nav li,
-.sidebar-nav ul li {
-  margin: 12px 0;
-}
-
-.sidebar-nav ul li {
-  padding: 12px;
-  font-size: 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.sidebar-nav ul li:last-child {
-  border-bottom: none;
-}
-
-.hp-sidebar-nav li a,
-.sidebar-nav ul li a {
-  display: block;
-  text-decoration: none;
-  font-size: 1rem;
-  color: #2563eb;
-  transition: color 0.3s;
-}
-
-.hp-sidebar-nav li a:hover {
-  color: #1d4ed8;
-}
-
-.sidebar-nav ul li a:hover {
-  color: #007bff;
-}
-
-/* Recent Jobs Card in Main Content */
-.hp-recent-jobs-card {
-  background: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.hp-recent-jobs-card h2 {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 15px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .hp-layout {
-    flex-direction: column;
-    padding: 10px;
-  }
-  .hp-left,
-  .hp-right {
-    width: 100%;
-    margin: 10px 0;
-  }
-}
-
-/* Sidebar Container */
-.sidebar-container {
-  width: 100%;
-  max-width: 300px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-}
-
-/* Profile Section */
-.profile-section {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* Profile Image and Progress Ring */
-.profile-img-wrapper {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto;
-}
-
-.profile-ring,
-.progress-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-}
-
-.progress-ring-bg {
-  fill: none;
-  stroke: #e0e0e0;
-  stroke-width: 5;
-}
-
-.progress-ring-fill {
-  fill: none;
-  stroke: #4caf50;
-  stroke-width: 5;
-  stroke-dasharray: 251.2;
-  stroke-dashoffset: 100;
-}
-
-/* Profile Image */
-.profile-img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: block;
-  margin: auto;
-}
-
-/* Profile Name and Title */
-.profile-name {
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 10px;
-  color: #333;
-}
-
-.profile-title {
+.suggestor-input {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  width: 180px;
+  outline: none;
   font-size: 14px;
-  color: #555;
 }
 
-/* Profile Stats */
-.profile-stats {
-  text-align: center;
+.pipe {
+  width: 1px;
+  height: 28px;
+  background-color: #ccc;
+  margin: 0 8px;
+}
+
+.expDropdown {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  cursor: pointer;
+  outline: none;
   font-size: 14px;
-  color: #777;
 }
 
-/* Profile Links */
-.profile-links a {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 6px 12px;
-  background: #007bff;
+.qsbSubmit {
+  background-color: #2c3e50;
   color: #fff;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
   font-size: 14px;
-  text-decoration: none;
-  border-radius: 5px;
   transition: background 0.3s;
 }
 
-.profile-links a:hover {
-  background: #0056b3;
-}
-/* Pagination for HomePage (Recent Jobs) */
-.hp-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+.qsbSubmit:hover {
+  background-color: #1f2a38;
 }
 
-.hp-pagination button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  font-size: 14px;
-  background: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
+.header-right {
+  position: relative;
+}
+
+.profile-icon-placeholder {
+  width: 32px;
+  height: 32px;
+  background-color: #ddd;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
 }
 
-.hp-pagination button:hover:not(:disabled) {
-  background: #0056b3;
-  transform: translateY(-2px);
+/* Profile Menu */
+.profile-menu-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  z-index: 999;
 }
 
-.hp-pagination button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.hp-pagination span {
-  display: inline-flex;
-  align-items: center;
+.profile-menu-item {
+  padding: 10px;
   font-size: 14px;
-  color: #333;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.profile-menu-item:hover {
+  background: #f1f3f7;
 }

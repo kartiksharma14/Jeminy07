@@ -34,7 +34,7 @@ function CandidateLogin() {
         localStorage.setItem("authToken", token);
         localStorage.setItem("userId", userId);
         fetchUserProfile(token);
-        navigate("/homepage", { replace: true });
+        navigate("/home", { replace: true });
        
       } else {
         setError(response.data.message || "Invalid email or password.");

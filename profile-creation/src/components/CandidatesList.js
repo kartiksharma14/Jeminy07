@@ -3,15 +3,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import "./CandidatesList.css";
 import { FaBriefcase, FaWallet, FaMapMarkerAlt } from "react-icons/fa"; // Icons
-import RecruiterHeader from "../components/RecruiterHeader";
-import RecruiterFooter from "../components/RecruiterFooter";
 
 // CandidateModal: Displays detailed candidate information.
 const CandidateModal = ({ candidate, onClose, onToggleFavorite, isFavorite }) => {
   const [details, setDetails] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState(null);
-  const AUTH_TOKEN = localStorage.getItem("RecruiterToken");
+  const AUTH_TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjYsImVtYWlsIjoibmF2bmVldC5rYXVzaGlrQHN0bC50ZWNoIiwibm1hZSI6Ik5hdm5lZXQgS2F1c2hpayIsImNvbXBhbnlfbmFtZSI6IlNUTCIsImlhdCI6MTc0MTI1NzUzNCwiZXhwIjoxNzQ5ODk3NTM0fQ.Giv3hvdlLpnv2jfHNR0lawe3OV9QaErRf9OeL_v5ykE";
+  
   useEffect(() => {
     if (candidate) {
       setModalLoading(true);
@@ -50,6 +50,9 @@ const CandidateModal = ({ candidate, onClose, onToggleFavorite, isFavorite }) =>
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>
+          &times;
+        </button>
         {modalLoading ? (
           <div className="modal-loader">
             <ClipLoader size={40} color="#007bff" />
@@ -61,13 +64,18 @@ const CandidateModal = ({ candidate, onClose, onToggleFavorite, isFavorite }) =>
           <>
             {/* Modal Header with Candidate Name and Favorite Toggle */}
             <div className="modal-header">
-              <div className="modal-title-container">
+              <div className="modal-title">
                 <h2>{details.name || "Unnamed Candidate"}</h2>
-                <button className="modal-close" onClick={onClose}>&times;</button>
-              </div>  
-              {details.resume_headline && (
-              <p className="modal-subtitle">{details.resume_headline}</p>
-              )}
+                {details.resume_headline && (
+                  <p className="modal-subtitle">{details.resume_headline}</p>
+                )}
+              </div>
+              <button
+                className={`favorite-button ${isFavorite ? "favorited" : ""}`}
+                onClick={() => onToggleFavorite(details.candidate_id)}
+              >
+                {isFavorite ? "★" : "☆"}
+              </button>
             </div>
 
             {/* Candidate Photo */}
@@ -416,7 +424,9 @@ const [showPhone, setShowPhone] = useState(false);
 const CandidatesList = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const AUTH_TOKEN = localStorage.getItem("RecruiterToken");
+  const AUTH_TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWNydWl0ZXJfaWQiOjYsImVtYWlsIjoibmF2bmVldC5rYXVzaGlrQHN0bC50ZWNoIiwibm1hZSI6Ik5hdm5lZXQgS2F1c2hpayIsImNvbXBhbnlfbmFtZSI6IlNUTCIsImlhdCI6MTc0MTI1NzUzNCwiZXhwIjoxNzQ5ODk3NTM0fQ.Giv3hvdlLpnv2jfHNR0lawe3OV9QaErRf9OeL_v5ykE";
+
   // Candidate list states.
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -427,7 +437,8 @@ const CandidatesList = () => {
   const [sortOption, setSortOption] = useState("name-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const candidatesPerPage = 8;
-  const [favorites, setFavorites] = useState([]);  const [candidateDetailsMap, setCandidateDetailsMap] = useState({});
+  const [favorites, setFavorites] = useState([]);
+  const [candidateDetailsMap, setCandidateDetailsMap] = useState({});
 
   // ********* SIDEBAR FILTER STATES *********
   const [keyword, setKeyword] = useState("");
@@ -750,387 +761,347 @@ const CandidatesList = () => {
   // ***************************************************
 
   return (
-    <div className="candidates-page-wrapper">
-      {/* Header */}
-      <RecruiterHeader />
-
-      {/* Main Layout */}
-      <div className="candidates-page-layout">
-        {/* Sidebar */}
-        <div className="sidebar-rec">
-          <h2 className="sidebar-rec-heading">Filter Candidates</h2>
-          <form className="filter-form" onSubmit={handleFilterSearch}>
-            {/* Keywords */}
-            <div className="form-field">
-              <label className="field-label">Keywords</label>
-              <input
-                type="text"
-                placeholder="Enter keywords..."
-                className="input-box"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-            </div>
-
-            {/* Experience */}
-            <div className="form-field">
-              <label className="field-label">Experience (Years)</label>
-              <div className="range-box">
-                <input
-                  type="number"
-                  placeholder="Min years"
-                  className="input-box"
-                  value={minExperience}
-                  onChange={(e) => setMinExperience(e.target.value)}
-                  min="0"
-                />
-                <span className="separator">to</span>
-                <input
-                  type="number"
-                  placeholder="Max years"
-                  className="input-box"
-                  value={maxExperience}
-                  onChange={(e) => setMaxExperience(e.target.value)}
-                  min="0"
-                />
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="form-field">
-              <label className="field-label">Location</label>
-              <input
-                type="text"
-                placeholder="Enter location"
-                className="input-box"
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-              />
-            </div>
-
-            {/* Relocation */}
-            <div className="checkbox-field">
-              <input
-                type="checkbox"
-                id="relocate"
-                checked={relocate}
-                onChange={(e) => setRelocate(e.target.checked)}
-              />
-              <label htmlFor="relocate">
-                Include candidates willing to relocate
-              </label>
-            </div>
-
-            {/* Salary */}
-            <div className="form-field">
-              <label className="field-label">Annual Salary (INR)</label>
-              <div className="range-box">
-                <input
-                  type="number"
-                  placeholder="Min salary"
-                  className="input-box"
-                  value={salaryMin}
-                  onChange={(e) => setSalaryMin(e.target.value)}
-                />
-                <span className="separator">to</span>
-                <input
-                  type="number"
-                  placeholder="Max salary"
-                  className="input-box"
-                  value={salaryMax}
-                  onChange={(e) => setSalaryMax(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Active In */}
-            <div className="form-field">
-              <label className="field-label">Active In</label>
-              <div className="tag-selection">
-                {["1 day", "15 days", "30 days", "3 months", "6 months"].map(
-                  (option) => (
-                    <span
-                      key={option}
-                      className={`tag ${activeIn === option ? "selected" : ""}`}
-                      onClick={() => setActiveIn(option)}
-                    >
-                      {option}
-                    </span>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Collapsible: Employment Details */}
-            <div className="collapsible-section">
-              <div
-                className="collapser"
-                onClick={() => toggleSection("employmentDetails")}
-              >
-                <h4 className="collapser-header">
-                  Employment Details
-                  <span className="expand-icon">
-                    {expandedSections.employmentDetails ? (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
-                      </svg>
-                    )}
-                  </span>
-                </h4>
-              </div>
-              {expandedSections.employmentDetails && (
-                <div className="collapsible-content">
-                  <div className="form-field">
-                    <label className="field-label">Company</label>
-                    <input
-                      type="text"
-                      placeholder="Enter company name"
-                      className="input-box"
-                      value={employmentFilter}
-                      onChange={(e) =>
-                        setEmploymentFilter(e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="field-label">Notice Period</label>
-                    <div className="tag-selection">
-                      {[
-                        "Any",
-                        "0-15 days",
-                        "1 month",
-                        "2 months",
-                        "3 months",
-                        "Serving Notice Period",
-                      ].map((period) => (
-                        <span
-                          key={period}
-                          className={`tag ${
-                            noticePeriod === period ? "selected" : ""
-                          }`}
-                          onClick={() => setNoticePeriod(period)}
-                        >
-                          {period}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Collapsible: Education Details */}
-            <div className="collapsible-section">
-              <div
-                className="collapser"
-                onClick={() => toggleSection("educationDetails")}
-              >
-                <h4 className="collapser-header">
-                  Education Details
-                  <span className="expand-icon">
-                    {expandedSections.educationDetails ? (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
-                      </svg>
-                    )}
-                  </span>
-                </h4>
-              </div>
-              {expandedSections.educationDetails && (
-                <div className="collapsible-content">
-                  <div className="form-field">
-                    <label className="field-label">University</label>
-                    <input
-                      type="text"
-                      placeholder="Search by university"
-                      className="input-box"
-                      value={educationFilter}
-                      onChange={(e) =>
-                        setEducationFilter(e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Collapsible: Diversity and Additional Info */}
-            <div className="collapsible-section">
-              <div
-                className="collapser"
-                onClick={() => toggleSection("diversityDetails")}
-              >
-                <h4 className="collapser-header">
-                  Diversity & Additional Info
-                  <span className="expand-icon">
-                    {expandedSections.diversityDetails ? (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
-                      </svg>
-                    )}
-                  </span>
-                </h4>
-              </div>
-              {expandedSections.diversityDetails && (
-                <div className="collapsible-content">
-                  <div className="form-field">
-                    <label className="field-label">Gender</label>
-                    <div className="tag-selection">
-                      {[
-                        "All Candidates",
-                        "Male Candidates",
-                        "Female Candidates",
-                      ].map((option) => (
-                        <span
-                          key={option}
-                          className={`tag ${
-                            gender === option ? "selected" : ""
-                          }`}
-                          onClick={() => setGender(option)}
-                        >
-                          {option}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="checkbox-field">
-                    <input
-                      type="checkbox"
-                      id="disability"
-                      checked={disability}
-                      onChange={(e) => setDisability(e.target.checked)}
-                    />
-                    <label htmlFor="disability">
-                      Only show candidates with disabilities
-                    </label>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Exclude Keyword */}
-            <div className="form-field">
-              <label className="field-label">Exclude Keyword</label>
-              <input
-                type="text"
-                placeholder="Exclude keyword"
-                className="input-box"
-                value={excludeKeyword}
-                onChange={(e) => setExcludeKeyword(e.target.value)}
-              />
-            </div>
-
-            {/* IT Skills */}
-            <div className="form-field">
-              <label className="field-label">IT Skills</label>
-              <input
-                type="text"
-                placeholder="Enter IT skills"
-                className="input-box"
-                value={itSkillsFilter}
-                onChange={(e) => setItSkillsFilter(e.target.value)}
-              />
-            </div>
-
-            <button type="submit" className="search-button-rec">
-              Search Candidates
-            </button>
-          </form>
-        </div>
-
-        {/* Main Content */}
-        <div className="main-content">
-          <h1 className="candidates-list-heading">Search Results</h1>
-          {loading && (
-            <div className="loader-container">
-              <ClipLoader size={50} color="#007bff" />
-              <p>Loading candidates...</p>
-            </div>
-          )}
-          {error && <p className="error-message">{error}</p>}
-          {!loading && !error && filteredAndSortedCandidates.length === 0 && (
-            <p>No candidates found matching your criteria.</p>
-          )}
-          {!loading && !error && filteredAndSortedCandidates.length > 0 && (
-            <>
-              <div className="candidates-grid">
-                {currentCandidates.map((candidate) => (
-                  <CandidateCard
-                    key={candidate.candidate_id}
-                    candidate={candidate}
-                    onOpenModal={handleOpenModal}
-                    onToggleFavorite={handleToggleFavorite}
-                    isFavorite={favorites.includes(candidate.candidate_id)}
-                    detailsMap={candidateDetailsMap}
-                  />
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <button
-                    onClick={() =>
-                      handlePageChange(
-                        currentPage > 1 ? currentPage - 1 : 1
-                      )
-                    }
-                    disabled={currentPage === 1}
-                    className="pagination-button"
-                  >
-                    Previous
-                  </button>
-                  {[...Array(totalPages)].map((_, index) => (
-                    <button
-                      key={index + 1}
-                      onClick={() => handlePageChange(index + 1)}
-                      className={`pagination-button ${
-                        currentPage === index + 1 ? "active" : ""
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() =>
-                      handlePageChange(
-                        currentPage < totalPages
-                          ? currentPage + 1
-                          : totalPages
-                      )
-                    }
-                    disabled={currentPage === totalPages}
-                    className="pagination-button"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-          {modalCandidate && (
-            <CandidateModal
-              candidate={modalCandidate}
-              onClose={handleCloseModal}
-              onToggleFavorite={handleToggleFavorite}
-              isFavorite={favorites.includes(modalCandidate.candidate_id)}
+    <div className="candidates-page-layout">
+      <div className="sidebar-rec">
+        <h2 className="sidebar-rec-heading">Filter Candidates</h2>
+        <form className="filter-form" onSubmit={handleFilterSearch}>
+          {/* Keywords */}
+          <div className="form-field">
+            <label className="field-label">Keywords</label>
+            <input
+              type="text"
+              placeholder="Enter keywords..."
+              className="input-box"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
             />
-          )}
-        </div>
+          </div>
+
+          {/* Experience */}
+          <div className="form-field">
+            <label className="field-label">Experience (Years)</label>
+            <div className="range-box">
+              <input
+                type="number"
+                placeholder="Min years"
+                className="input-box"
+                value={minExperience}
+                onChange={(e) => setMinExperience(e.target.value)}
+                min="0"
+              />
+              <span className="separator">to</span>
+              <input
+                type="number"
+                placeholder="Max years"
+                className="input-box"
+                value={maxExperience}
+                onChange={(e) => setMaxExperience(e.target.value)}
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="form-field">
+            <label className="field-label">Location</label>
+            <input
+              type="text"
+              placeholder="Enter location"
+              className="input-box"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+            />
+          </div>
+
+          {/* Relocation */}
+          <div className="checkbox-field">
+            <input
+              type="checkbox"
+              id="relocate"
+              checked={relocate}
+              onChange={(e) => setRelocate(e.target.checked)}
+            />
+            <label htmlFor="relocate">Include candidates willing to relocate</label>
+          </div>
+
+          {/* Salary */}
+          <div className="form-field">
+            <label className="field-label">Annual Salary (INR)</label>
+            <div className="range-box">
+              <input
+                type="number"
+                placeholder="Min salary"
+                className="input-box"
+                value={salaryMin}
+                onChange={(e) => setSalaryMin(e.target.value)}
+              />
+              <span className="separator">to</span>
+              <input
+                type="number"
+                placeholder="Max salary"
+                className="input-box"
+                value={salaryMax}
+                onChange={(e) => setSalaryMax(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Active In */}
+          <div className="form-field">
+            <label className="field-label">Active In</label>
+            <div className="tag-selection">
+              {["1 day", "15 days", "30 days", "3 months", "6 months"].map((option) => (
+                <span
+                  key={option}
+                  className={`tag ${activeIn === option ? "selected" : ""}`}
+                  onClick={() => setActiveIn(option)}
+                >
+                  {option}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Collapsible: Employment Details */}
+          <div className="collapsible-section">
+            <div className="collapser" onClick={() => toggleSection("employmentDetails")}>
+              <h4 className="collapser-header">
+                Employment Details
+                <span className="expand-icon">
+                  {expandedSections.employmentDetails ? (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
+                    </svg>
+                  )}
+                </span>
+              </h4>
+            </div>
+            {expandedSections.employmentDetails && (
+              <div className="collapsible-content">
+                <div className="form-field">
+                  <label className="field-label">Company</label>
+                  <input
+                    type="text"
+                    placeholder="Enter company name"
+                    className="input-box"
+                    value={employmentFilter}
+                    onChange={(e) => setEmploymentFilter(e.target.value)}
+                  />
+                </div>
+                <div className="form-field">
+                  <label className="field-label">Notice Period</label>
+                  <div className="tag-selection">
+                    {["Any", "0-15 days", "1 month", "2 months", "3 months", "Serving Notice Period"].map((period) => (
+                      <span
+                        key={period}
+                        className={`tag ${noticePeriod === period ? "selected" : ""}`}
+                        onClick={() => setNoticePeriod(period)}
+                      >
+                        {period}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible: Education Details */}
+          <div className="collapsible-section">
+            <div className="collapser" onClick={() => toggleSection("educationDetails")}>
+              <h4 className="collapser-header">
+                Education Details
+                <span className="expand-icon">
+                  {expandedSections.educationDetails ? (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
+                    </svg>
+                  )}
+                </span>
+              </h4>
+            </div>
+            {expandedSections.educationDetails && (
+              <div className="collapsible-content">
+                <div className="form-field">
+                  <label className="field-label">University</label>
+                  <input
+                    type="text"
+                    placeholder="Search by university"
+                    className="input-box"
+                    value={educationFilter}
+                    onChange={(e) => setEducationFilter(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible: Diversity and Additional Info */}
+          <div className="collapsible-section">
+            <div className="collapser" onClick={() => toggleSection("diversityDetails")}>
+              <h4 className="collapser-header">
+                Diversity & Additional Info
+                <span className="expand-icon">
+                  {expandedSections.diversityDetails ? (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M4.414,15.414L8,11.828L11.586,15.414L13,14L8,9L3,14L4.414,15.414Z" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path d="M11.586,0.586L8,4.172L4.414,0.586L3,2L8,7L13,2L11.586,0.586Z" />
+                    </svg>
+                  )}
+                </span>
+              </h4>
+            </div>
+            {expandedSections.diversityDetails && (
+              <div className="collapsible-content">
+                <div className="form-field">
+                  <label className="field-label">Gender</label>
+                  <div className="tag-selection">
+                    {["All Candidates", "Male Candidates", "Female Candidates"].map((option) => (
+                      <span
+                        key={option}
+                        className={`tag ${gender === option ? "selected" : ""}`}
+                        onClick={() => setGender(option)}
+                      >
+                        {option}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    id="disability"
+                    checked={disability}
+                    onChange={(e) => setDisability(e.target.checked)}
+                  />
+                  <label htmlFor="disability">Only show candidates with disabilities</label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Exclude Keyword */}
+          <div className="form-field">
+            <label className="field-label">Exclude Keyword</label>
+            <input
+              type="text"
+              placeholder="Exclude keyword"
+              className="input-box"
+              value={excludeKeyword}
+              onChange={(e) => setExcludeKeyword(e.target.value)}
+            />
+          </div>
+
+          {/* IT Skills */}
+          <div className="form-field">
+            <label className="field-label">IT Skills</label>
+            <input
+              type="text"
+              placeholder="Enter IT skills"
+              className="input-box"
+              value={itSkillsFilter}
+              onChange={(e) => setItSkillsFilter(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" className="search-button-rec">
+            Search Candidates
+          </button>
+        </form>
       </div>
 
-      {/* Footer */}
-      <RecruiterFooter />
+      <div className="main-content">
+        <h1 className="candidates-list-heading">Search Results</h1>
+        {/* Optional: You can add an additional small filter bar on top */}
+        <div className="filter-bar">
+          <input
+            type="text"
+            placeholder="Search by candidate name..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <select value={sortOption} onChange={handleSortChange} className="sort-select">
+            <option value="name-asc">Name Ascending</option>
+            <option value="name-desc">Name Descending</option>
+          </select>
+          <button onClick={handleResetFilters} className="reset-button">
+            Reset Filters
+          </button>
+        </div>
+        {loading && (
+          <div className="loader-container">
+            <ClipLoader size={50} color="#007bff" />
+            <p>Loading candidates...</p>
+          </div>
+        )}
+        {error && <p className="error-message">{error}</p>}
+        {!loading && !error && filteredAndSortedCandidates.length === 0 && (
+          <p>No candidates found matching your criteria.</p>
+        )}
+        {!loading && !error && filteredAndSortedCandidates.length > 0 && (
+          <>
+            <div className="candidates-grid">
+              {currentCandidates.map((candidate) => (
+                <CandidateCard
+                  key={candidate.candidate_id}
+                  candidate={candidate}
+                  onOpenModal={handleOpenModal}
+                  onToggleFavorite={handleToggleFavorite}
+                  isFavorite={favorites.includes(candidate.candidate_id)}
+                  detailsMap={candidateDetailsMap}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={() => handlePageChange(currentPage > 1 ? currentPage - 1 : 1)}
+                  disabled={currentPage === 1}
+                  className="pagination-button"
+                >
+                  Previous
+                </button>
+                {[...Array(totalPages)].map((_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    className={`pagination-button ${currentPage === index + 1 ? "active" : ""}`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handlePageChange(currentPage < totalPages ? currentPage + 1 : totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="pagination-button"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {modalCandidate && (
+          <CandidateModal
+            candidate={modalCandidate}
+            onClose={handleCloseModal}
+            onToggleFavorite={handleToggleFavorite}
+            isFavorite={favorites.includes(modalCandidate.candidate_id)}
+          />
+        )}
+      </div>
     </div>
   );
 };

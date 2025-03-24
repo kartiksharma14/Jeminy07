@@ -170,44 +170,32 @@
     white-space: nowrap; /* Prevents wrapping */
 }
 
-/* Uniform styling for both links and buttons */
-.profile-dropdown a,
-.profile-dropdown button {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 10px 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #333;
-  text-decoration: none;
-  text-align: left;
-  box-sizing: border-box;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  font-family: inherit; /* Inherit font from parent */
+/* Profile Dropdown Styling */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 8px); /* Positioned below the profile trigger */
+    right: 0;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px 0;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+    min-width: 180px;
 }
 
-/* Hover effect for both */
-.profile-dropdown a:hover,
-.profile-dropdown button:hover {
-  background-color: #f5f5f5;
-  color: #0073b1;
+.profile-dropdown a {
+    display: block;
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Reset default button styles and reapply consistent styles */
-.profile-dropdown button {
-  all: unset; /* Remove browser defaults */
-  display: block;
-  width: 100%;
-  padding: 10px 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #333;
-  text-align: left;
-  box-sizing: border-box;
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  font-family: inherit;
+.profile-dropdown a:hover {
+    background-color: #f5f5f5;
+    color: #0073b1;
 }
 
 /* Animations */

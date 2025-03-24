@@ -7,10 +7,6 @@ import { jwtDecode } from "jwt-decode";
 import PropTypes from "prop-types";
 
 const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
-  // Limits
-  const MAX_SKILLS = 10;
-  const MAX_WORDS_PER_SKILL = 2;
-
   const [skills, setSkills] = useState([]);
   const [initialSkills, setInitialSkills] = useState([]); // store original skills for comparison
   const [skillRecords, setSkillRecords] = useState([]);   // full keyskills objects from GET
@@ -20,33 +16,6 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
   const [userId, setUserId] = useState(null);
 
   const firstInputRef = useRef(null); // For focus management
-
-  // List of suggested skills
-  const suggestedSkills = [
-    "Java",
-    "SQL",
-    "Angular",
-    "JavaScript",
-    "Python",
-    "AWS",
-    "React.Js",
-    "HTML",
-    "REST",
-    "CSS",
-  ];
-
-  // Reset component state when modal is opened
-  useEffect(() => {
-    if (isOpen) {
-      setSkills([]);
-      setInitialSkills([]);
-      setSkillRecords([]);
-      setInputSkill("");
-      setError("");
-      setSuccessMessage("");
-      setUserId(null);
-    }
-  }, [isOpen]);
 
   // Function to decode JWT and extract userId
   const decodeToken = () => {
@@ -70,7 +39,7 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
     }
   };
 
-  // Decode token when modal is opened
+  // Fetch candidate profile (which now includes keyskills as an array)
   useEffect(() => {
     if (isOpen) {
       decodeToken();
@@ -78,7 +47,6 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Fetch candidate profile (which now includes keyskills as an array)
   useEffect(() => {
     if (userId && isOpen) {
       const fetchCandidateProfile = async () => {
@@ -120,44 +88,20 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
 
   // Handle adding a skill (on Enter key press)
   const handleSkillAddition = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && inputSkill.trim()) {
       e.preventDefault(); // Prevent form submission
-      const trimmedInput = inputSkill.trim();
-      if (!trimmedInput) return;
-
-      // Enforce word limit for each skill
-      const wordCount = trimmedInput.split(/\s+/).filter(Boolean).length;
-      if (wordCount > MAX_WORDS_PER_SKILL) {
-        setError(`Each skill can only have a maximum of ${MAX_WORDS_PER_SKILL} words.`);
-        return;
+      const newSkill = inputSkill.trim();
+      if (!skills.includes(newSkill)) {
+        setSkills((prev) => [...prev, newSkill]);
       }
-
-      // Enforce maximum number of skills
-      if (skills.length >= MAX_SKILLS) {
-        setError(`You can only add a maximum of ${MAX_SKILLS} skills.`);
-        return;
-      }
-
-      if (!skills.includes(trimmedInput)) {
-        setSkills((prev) => [...prev, trimmedInput]);
-        setError("");
-      } else {
-        setError("This skill is already added.");
-      }
-      setInputSkill("");
+      setInputSkill(""); // Clear input field after adding
     }
   };
 
   // Handle adding a suggested skill when clicked
   const handleSuggestedSkillClick = (skill) => {
-    // Enforce maximum number of skills
-    if (skills.length >= MAX_SKILLS) {
-      setError(`You can only add a maximum of ${MAX_SKILLS} skills.`);
-      return;
-    }
     if (!skills.includes(skill)) {
       setSkills((prev) => [...prev, skill]);
-      setError("");
     }
   };
 
@@ -191,7 +135,7 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
       } catch (err) {
         console.error("Error adding skill:", err);
         setError(`Failed to add skill: ${skill}`);
-        return;
+        return; // Optionally exit on error or continue with next skill
       }
     }
 
@@ -257,17 +201,14 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
               type="text"
               placeholder="Enter a skill and press Enter"
               value={inputSkill}
-              onChange={(e) => {
-                setInputSkill(e.target.value);
-                setError("");
-              }}
+              onChange={(e) => setInputSkill(e.target.value)}
               onKeyDown={handleSkillAddition}
               ref={firstInputRef}
             />
+            <button type="submit" className="add-btn">
+              Add
+            </button>
           </div>
-          <p className="input-note">
-            Each skill can have a maximum of {MAX_WORDS_PER_SKILL} words. You can add up to {MAX_SKILLS} skills.
-          </p>
         </form>
 
         <div className="skills-list">
@@ -295,32 +236,39 @@ const KeySkillsModal = ({ isOpen, toggleModal, refreshKeySkills }) => {
         <div className="suggested-skills">
           <p>Suggested Skills:</p>
           <div className="suggested-list">
-            {suggestedSkills
-              .filter((skill) => !skills.includes(skill))
-              .map((skill) => (
+            {[
+              "Java",
+              "SQL",
+              "Angular",
+              "JavaScript",
+              "Python",
+              "AWS",
+              "React.Js",
+              "HTML",
+              "REST",
+              "CSS",
+            ].map((skill) => (
+              <span
+                key={skill}
+                className="suggested-skill-tag"
+                onClick={() => handleSuggestedSkillClick(skill)}
+              >
+                {skill}{" "}
                 <span
-                  key={skill}
-                  className="suggested-skill-tag"
-                  onClick={() => handleSuggestedSkillClick(skill)}
+                  className="add-symbol"
                   style={{
                     cursor: "pointer",
+                    marginLeft: "5px",
+                    color: "green",
+                    fontWeight: "bold",
                   }}
                   aria-label={`Add ${skill}`}
                   role="button"
                 >
-                  {skill}{" "}
-                  <span
-                    className="add-symbol"
-                    style={{
-                      marginLeft: "5px",
-                      color: "green",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    +
-                  </span>
+                  +
                 </span>
-              ))}
+              </span>
+            ))}
           </div>
         </div>
 

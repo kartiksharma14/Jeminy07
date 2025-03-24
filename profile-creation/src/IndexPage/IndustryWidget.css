@@ -46,12 +46,11 @@
     position: relative;
   }
   
-  /* If Needed, Add Important to Other Styles */
-.industry-swiper-widget {
-  display: flex !important;
-  align-items: center !important;
-  padding-bottom: 40px !important;
-}
+  .industry-swiper-widget {
+    display: flex;
+    align-items: center;
+    padding-bottom: 40px; /* Space for navigation buttons */
+  }
   
   .tupple {
     background-color: #ffffff; /* Modern white box */
@@ -62,6 +61,8 @@
     margin-right: 16px; /* Space between slides */
     display: flex;
     flex-direction: column;
+    width: auto; /* Allow dynamic sizing */
+    max-width: 300px; /* Optional: set a reasonable max-width */
   }
   
   .tupple:last-child {
@@ -143,53 +144,30 @@
     transform: translateY(-8px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   }
-  /* Swiper Navigation Buttons */
-.swiper-button-next,
-.swiper-button-prev {
-    color: #2D9CDB !important; /* Primary color */
-    width: 44px !important;
-    height: 44px !important;
-    background-color: rgba(45, 156, 219, 0.1) !important;
-    border-radius: 50% !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    transition: background-color 0.3s ease !important;
-    position: absolute !important;
-    z-index: 10 !important;
-}
-.swiper-button-next {
-  right: -50px !important; /* Adjust position */
-}
-.swiper-button-prev {
-  left: -50px !important; /* Adjust position */
-}
   
-.swiper-button-next:hover,
-.swiper-button-prev:hover {
-    background-color: rgba(45, 156, 219, 0.2) !important;
-}
-.swiper-button-disabled {
-  opacity: 0.3 !important;
-  cursor: not-allowed !important;
-}
-/* Ensure Swiper Wrapper and Slides Are Styled */
-.swiper-container {
-  width: 100% !important;
-  height: auto !important;
-}
-
-.swiper-wrapper {
-  display: flex !important;
-  align-items: center !important;
-}
-
-
-/* Ensure Navigation Buttons Stay Visible */
-.swiper-button-next::after,
-.swiper-button-prev::after {
-  font-size: 18px !important;
-  color: #2D9CDB !important;
-}
+  /* Swiper Navigation Buttons */
+  .swiper-button-next,
+  .swiper-button-prev {
+    color: #2D9CDB; /* Primary color */
+    width: 44px;
+    height: 44px;
+    background-color: rgba(45, 156, 219, 0.1);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: background-color 0.3s ease;
+  }
+  
+  .swiper-button-next:hover,
+  .swiper-button-prev:hover {
+    background-color: rgba(45, 156, 219, 0.2);
+  }
+  
+  .swiper-button-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
   /* Responsive Design */
   @media (max-width: 1024px) {
     .tupple {
