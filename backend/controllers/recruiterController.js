@@ -1669,8 +1669,8 @@ exports.getMostRecentJob = async (req, res) => {
     // Get recruiter ID from auth token
     const recruiterId = req.recruiter.recruiter_id;
     
-    // Find the most recently updated job (both approved and rejected)
-    const job = await JobPost.findOne({
+    // Find the 5 most recently updated jobs (approved, rejected, and pending)
+    const jobs = await JobPost.findAll({
       where: {
         recruiter_id: recruiterId,
         status: {
@@ -1679,6 +1679,7 @@ exports.getMostRecentJob = async (req, res) => {
         is_active: true
       },
       order: [['updatedAt', 'DESC']], // Most recently updated first
+      limit: 5, // Limit to 5 records
       attributes: [
         'job_id',
         'jobTitle',
@@ -1690,43 +1691,47 @@ exports.getMostRecentJob = async (req, res) => {
       ]
     });
     
-    // If no job found, return appropriate response
-    if (!job) {
+    // If no jobs found, return appropriate response
+    if (!jobs || jobs.length === 0) {
       return res.status(404).json({
         success: false,
         message: "No recent jobs found"
       });
     }
     
-    // Get total number of applications for this job if it's approved
-    let applicationCount = 0;
-    if (job.status === 'approved') {
-      applicationCount = await JobApplication.count({
-        where: { job_id: job.job_id }
-      });
-    }
-    
-    // Format the date to DD/MM/YY
-    const jobData = job.toJSON();
-    
-    // Format updatedAt date
-    const updatedDate = new Date(jobData.updatedAt);
-    const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
-    
-    // Return the most recent job with application count and formatted date
-    return res.status(200).json({
-      success: true,
-      job: {
+    // Process each job to include application count and format dates
+    const processedJobs = await Promise.all(jobs.map(async (job) => {
+      // Get total number of applications for this job if it's approved
+      let applicationCount = 0;
+      if (job.status === 'approved') {
+        applicationCount = await JobApplication.count({
+          where: { job_id: job.job_id }
+        });
+      }
+      
+      const jobData = job.toJSON();
+      
+      // Format updatedAt date
+      const updatedDate = new Date(jobData.updatedAt);
+      const formattedDate = `${String(updatedDate.getDate()).padStart(2, '0')}/${String(updatedDate.getMonth() + 1).padStart(2, '0')}/${String(updatedDate.getFullYear()).slice(-2)}`;
+      
+      return {
         ...jobData,
         updatedAt: formattedDate,
         applicationCount
-      }
+      };
+    }));
+    
+    // Return the 5 most recent jobs
+    return res.status(200).json({
+      success: true,
+      jobs: processedJobs
     });
   } catch (error) {
-    console.error('Error fetching most recent job:', error);
+    console.error('Error fetching recent jobs:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error fetching most recent job',
+      message: 'Error fetching recent jobs',
       error: error.message
     });
   }
