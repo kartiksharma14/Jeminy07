@@ -12,7 +12,11 @@ const TempJobPost = require('../models/TempJobPost');
 const ClientSubscription = require('../models/clientSubscription');
 const ClientLoginDevice = require('../models/clientLoginDevice');
 const CVDownloadTracker = require('../models/cvDownloadTracker');
-const MasterClient = require('../models/masterClient'); // Adjust the path as needed
+const MasterClient = require('../models/masterClient'); 
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+const moment = require('moment');
 const { sequelize } = require('../db');
 const { Op } = require('sequelize');
 const cities = require('../data/cities.json');
@@ -149,51 +153,164 @@ exports.loginRecruiter = async (req, res) => {
   }
 };
 
-
-// Add a function to handle device logout
-exports.logoutDevice = async (req, res) => {
+// Get candidate profile details with user information and track the view
+exports.getCandidateProfile = async (req, res) => {
   try {
+    const { candidate_id } = req.params;
     const recruiterId = req.recruiter.recruiter_id;
-    const loginId = req.recruiter.login_id;
+    const { job_id } = req.query; // Optional job_id parameter
     
-    if (!loginId) {
+    if (!candidate_id) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid session identifier'
+        message: "Candidate ID is required"
       });
     }
-    
-    // Find the current device
-    const device = await ClientLoginDevice.findOne({
-      where: {
-        client_id: recruiterId,
-        login_id: loginId,
-        is_active: true
-      }
+
+    // First, check if this recruiter has any jobs that the candidate has applied to
+    const candidateApplications = await JobApplication.findOne({
+      where: { candidate_id },
+      include: [
+        {
+          model: JobPost,
+          where: { recruiter_id: recruiterId },
+          attributes: ['job_id']
+        }
+      ]
     });
-    
-    if (!device) {
+
+    if (!candidateApplications) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view profiles of candidates who have applied to your job postings"
+      });
+    }
+
+    // Get the candidate profile data
+    const candidateProfile = await CandidateProfile.findOne({
+      where: { candidate_id }
+    });
+
+    if (!candidateProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Device session not found'
+        message: "Candidate profile not found"
       });
     }
-    
-    // Deactivate the device
-    await device.update({
-      is_active: false,
-      end_date: new Date()
+
+    // Get user information from signin table
+    const userInfo = await User.findOne({
+      where: { candidate_id },
+      attributes: ['name', 'email']
     });
+
+    // Combine the candidate profile with user information
+    const profileData = candidateProfile.toJSON();
     
+    if (userInfo) {
+      // Add user info from signin table
+      profileData.name = userInfo.name;
+      profileData.email = userInfo.email;
+    }
+
+    // Check if recruiter has an active subscription with CV quota
+    const subscription = await ClientSubscription.findOne({
+      where: {
+        client_id: recruiterId,
+        is_active: true,
+        start_date: { [Op.lte]: new Date() },
+        end_date: { 
+          [Op.or]: [
+            { [Op.is]: null }, // No end date (unlimited)
+            { [Op.gte]: new Date() } // End date is in the future
+          ]
+        }
+      }
+    });
+
+    if (!subscription) {
+      return res.status(403).json({
+        success: false,
+        message: "You don't have an active subscription. Please contact admin.",
+        errorCode: 'NO_ACTIVE_SUBSCRIPTION'
+      });
+    }
+
+    // Check if recruiter has exceeded their CV view quota
+    // First, count how many CVs they've viewed this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const viewsThisMonth = await CVViewTracker.count({
+      where: {
+        recruiter_id: recruiterId,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    // Check if already viewed this CV this month to avoid double counting
+    const alreadyViewedThisMonth = await CVViewTracker.findOne({
+      where: {
+        recruiter_id: recruiterId,
+        candidate_id,
+        view_date: {
+          [Op.between]: [startOfMonth, endOfMonth]
+        }
+      }
+    });
+
+    if (!alreadyViewedThisMonth) {
+      // If haven't viewed this CV this month, check quota
+      if (viewsThisMonth >= subscription.cv_download_quota && subscription.cv_download_quota > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `You have reached your CV view limit (${subscription.cv_download_quota}) for this month. Please contact admin to increase your quota.`,
+          errorCode: 'CV_QUOTA_EXCEEDED',
+          quota: {
+            total: subscription.cv_download_quota,
+            used: viewsThisMonth,
+            remaining: 0
+          }
+        });
+      }
+
+      // Track this CV view
+      await CVViewTracker.create({
+        recruiter_id: recruiterId,
+        candidate_id,
+        job_id: job_id || candidateApplications.JobPost.job_id,
+        view_date: new Date()
+      });
+    }
+
+    // Calculate remaining quota
+    const remainingQuota = subscription.cv_download_quota > 0 
+      ? subscription.cv_download_quota - viewsThisMonth 
+      : null; // null means unlimited
+
+    // Return combined profile with quota information
     return res.status(200).json({
       success: true,
-      message: 'Successfully logged out'
+      candidateProfile: profileData,
+      quota: {
+        total: subscription.cv_download_quota,
+        used: viewsThisMonth,
+        remaining: remainingQuota
+      }
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Error fetching candidate profile:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error during logout',
+      message: "Error fetching candidate profile",
       error: error.message
     });
   }
@@ -1859,17 +1976,19 @@ exports.logoutSession = async (req, res) => {
     const recruiterId = req.recruiter.recruiter_id;
     const loginId = req.recruiter.login_id;
     
-    if (!loginId) {
+    // Get the recruiter to find their client_id
+    const recruiter = await RecruiterSignin.findByPk(recruiterId);
+    if (!recruiter || !recruiter.client_id) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid session identifier'
+        message: 'Unable to determine client ID for this session'
       });
     }
     
-    // Find the current session
+    // Find the current session using the correct client_id
     const session = await ClientLoginDevice.findOne({
       where: {
-        client_id: recruiterId,
+        client_id: recruiter.client_id,  // Use the client_id from the recruiter
         login_id: loginId,
         is_active: true
       }
@@ -2984,7 +3103,6 @@ exports.downloadCandidateCV = async (req, res) => {
     }
 
     const clientId = recruiter.client_id;
-
     // Check if recruiter's client has an active subscription with CV quota
     const subscription = await ClientSubscription.findOne({
       where: {
@@ -2999,7 +3117,6 @@ exports.downloadCandidateCV = async (req, res) => {
         }
       }
     });
-
     if (!subscription) {
       return res.status(403).json({
         success: false,
@@ -3007,7 +3124,6 @@ exports.downloadCandidateCV = async (req, res) => {
         errorCode: 'NO_ACTIVE_SUBSCRIPTION'
       });
     }
-
     // Check if recruiter has exceeded their CV download quota
     // First, count how many CVs they've downloaded this month
     const startOfMonth = new Date();
@@ -3095,29 +3211,18 @@ exports.downloadCandidateCV = async (req, res) => {
     });
   }
 };
-
-
-// Add to your requires at the top of the file
-const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
-const moment = require('moment');
-
 // Create directory for storing PDFs if it doesn't exist
 const pdfDirectory = path.join(__dirname, '../uploads/pdfs');
 if (!fs.existsSync(pdfDirectory)) {
   fs.mkdirSync(pdfDirectory, { recursive: true });
 }
-
 // Generate a PDF from candidate profile and return the file for download - with debug info
 exports.generateCandidatePDF = async (req, res) => {
   try {
     const { candidate_id } = req.params;
     const recruiterId = req.recruiter.recruiter_id;
-    
     // Get client_id either from the request or from the recruiter record
     let clientId = req.recruiter.client_id;
-    
     // If client_id is not in the request, fetch it from the database
     if (!clientId) {
       const recruiter = await RecruiterSignin.findByPk(recruiterId);
@@ -3129,26 +3234,22 @@ exports.generateCandidatePDF = async (req, res) => {
       }
       clientId = recruiter.client_id;
     }
-    
     if (!candidate_id) {
       return res.status(400).json({
         success: false,
         message: "Candidate ID is required"
       });
     }
-
     // Get the candidate profile data with all fields
     const candidateProfile = await CandidateProfile.findOne({
       where: { candidate_id }
     });
-
     if (!candidateProfile) {
       return res.status(404).json({
         success: false,
         message: "Candidate profile not found"
       });
     }
-
     // Log the profile data to see what's available
     console.log("Candidate profile data keys:", Object.keys(candidateProfile.toJSON()));
     console.log("Non-null profile fields:", 
@@ -3156,13 +3257,11 @@ exports.generateCandidatePDF = async (req, res) => {
         .filter(([key, value]) => value !== null && value !== undefined && value !== '')
         .map(([key]) => key)
     );
-
     // Get user information from signin table
     const userInfo = await User.findOne({
       where: { candidate_id },
       attributes: ['name', 'email']
     });
-
     // Check if recruiter has an active subscription with CV quota
     const subscription = await ClientSubscription.findOne({
       where: {
@@ -3177,7 +3276,6 @@ exports.generateCandidatePDF = async (req, res) => {
         }
       }
     });
-
     if (!subscription) {
       return res.status(403).json({
         success: false,
@@ -3185,17 +3283,14 @@ exports.generateCandidatePDF = async (req, res) => {
         errorCode: 'NO_ACTIVE_SUBSCRIPTION'
       });
     }
-
     // Check CV quota
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-
     const endOfMonth = new Date();
     endOfMonth.setMonth(endOfMonth.getMonth() + 1);
     endOfMonth.setDate(0);
     endOfMonth.setHours(23, 59, 59, 999);
-
     const downloadsThisMonth = await CVDownloadTracker.count({
       where: {
         recruiter_id: recruiterId,
@@ -3204,7 +3299,6 @@ exports.generateCandidatePDF = async (req, res) => {
         }
       }
     });
-
     // Check if already downloaded this CV this month to avoid double counting
     const alreadyDownloadedThisMonth = await CVDownloadTracker.findOne({
       where: {
@@ -3232,7 +3326,6 @@ exports.generateCandidatePDF = async (req, res) => {
         });
       }
     }
-
     // Get IP address for tracking
     let ip_address = req.ip || 
                    req.connection.remoteAddress || 
@@ -3272,7 +3365,6 @@ exports.generateCandidatePDF = async (req, res) => {
         file_type: 'pdf'
       });
     }
-
     // Create a unique filename
     const timestamp = moment().format('YYYYMMDD_HHmmss');
     const candidateName = (userInfo?.name || candidateProfile.name || 'candidate').replace(/\s+/g, '_');
@@ -3471,7 +3563,6 @@ exports.generateCandidatePDF = async (req, res) => {
         if (candidateProfile.fresher_experience) addField('Experience Level', candidateProfile.fresher_experience === 'fresher' ? 'Fresher' : 'Experienced');
       });
     }
-    
     // Education details
     if (candidateProfile.education) {
       addSection('Education', () => {
@@ -3500,7 +3591,6 @@ exports.generateCandidatePDF = async (req, res) => {
         }
       });
     }
-    
     // Experience details
     if (candidateProfile.experience) {
       addSection('Work Experience', () => {

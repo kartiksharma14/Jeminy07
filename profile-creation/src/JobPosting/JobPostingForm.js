@@ -4,17 +4,15 @@ import axios from "axios";
 import { Editor } from "react-draft-wysiwyg";
 import {
   EditorState,
-  convertToRaw,
   RichUtils,
   ContentState,
-  convertFromHTML,
 } from "draft-js";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import "./JobPostingForm.css";
 import RecruiterHeader from "../components/RecruiterHeader";
 import RecruiterFooter from "../components/RecruiterFooter";
 
-// Helper function to strip HTML tags (not used now but can be useful)
+// Helper function to strip HTML tags
 const stripHTML = (html) => {
   const div = document.createElement("div");
   div.innerHTML = html;
@@ -25,7 +23,7 @@ const JobPostingForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Use jobData from location.state if available; otherwise, use default empty values.
+  // Use jobData from location.state if available; otherwise, default values.
   const initialJobData = location.state?.jobData || {
     jobTitle: "",
     employmentType: "",
@@ -46,29 +44,25 @@ const JobPostingForm = () => {
     max_experience: "",
   };
 
-  // Rename state from formData to raw to avoid conflicts with FormData.
+  // The rest of the form data is stored in raw.
   const [raw, setRaw] = useState(initialJobData);
+  // Use a separate state for keySkills.
+  const [keySkills, setKeySkills] = useState(initialJobData.keySkills || []);
   const [skillInput, setSkillInput] = useState("");
 
-  // Initialize job description editor state.
-  // Here we assume raw.jobDescription is plain text.
+  // Initialize the editor state for job description.
   const initialJobDescEditorState = raw.jobDescription
     ? EditorState.createWithContent(ContentState.createFromText(raw.jobDescription))
     : EditorState.createEmpty();
-  const [jobDescEditorState, setJobDescEditorState] = useState(
-    initialJobDescEditorState
-  );
+  const [jobDescEditorState, setJobDescEditorState] = useState(initialJobDescEditorState);
 
-  // For company info, we assume raw.companyInfo is plain text.
+  // Initialize the editor state for company info.
   const initialCompanyEditorState = raw.companyInfo
     ? EditorState.createWithContent(ContentState.createFromText(raw.companyInfo))
     : EditorState.createEmpty();
-  const [companyEditorState, setCompanyEditorState] = useState(
-    initialCompanyEditorState
-  );
+  const [companyEditorState, setCompanyEditorState] = useState(initialCompanyEditorState);
 
-  // Handler for job description changes.
-  // We simply extract plain text from the editor.
+  // Handlers for job description changes.
   const handleJobDescEditorStateChange = (editorState) => {
     setJobDescEditorState(editorState);
     const plainText = editorState.getCurrentContent().getPlainText().trim();
@@ -76,7 +70,6 @@ const JobPostingForm = () => {
   };
 
   // Handler for company info changes.
-  // We extract plain text as well.
   const handleCompanyEditorStateChange = (editorState) => {
     setCompanyEditorState(editorState);
     const plainText = editorState.getCurrentContent().getPlainText().trim();
@@ -106,25 +99,26 @@ const JobPostingForm = () => {
 
   // Key skills handlers.
   const addSkill = (skill) => {
-    if (!raw.keySkills.includes(skill) && raw.keySkills.length < 20) {
-      setRaw((prev) => ({
-        ...prev,
-        keySkills: [...prev.keySkills, skill],
-      }));
+    if (!keySkills.includes(skill) && keySkills.length < 20) {
+      setKeySkills((prev) => {
+        const updatedSkills = [...prev, skill];
+        console.log("Updated keySkills:", updatedSkills);
+        return updatedSkills;
+      });
       setSkillInput("");
     }
   };
 
   const removeSkill = (skillToRemove) => {
-    setRaw((prev) => ({
-      ...prev,
-      keySkills: prev.keySkills.filter((skill) => skill !== skillToRemove),
-    }));
+    setKeySkills((prev) => prev.filter((skill) => skill !== skillToRemove));
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && skillInput.trim() && raw.keySkills.length < 20) {
+  // Use onKeyPress here as it was confirmed working in your logs.
+  const handleKeyPress = (e) => {
+    console.log("Key pressed (onKeyPress):", e.key);
+    if (e.key === "Enter" && skillInput.trim() && keySkills.length < 20) {
       e.preventDefault();
+      console.log("Enter pressed; adding skill:", skillInput.trim());
       addSkill(skillInput.trim());
     }
   };
@@ -157,22 +151,23 @@ const JobPostingForm = () => {
     document.getElementById("fileInput").click();
   };
 
-  // When previewing, we filter out empty fields and then send the payload.
+  // When previewing, update raw with keySkills.
   const handlePreview = async () => {
     console.log("handlePreview function started");
     try {
-      const jwtToken = localStorage.getItem("authToken");
+      const jwtToken = localStorage.getItem("RecruiterToken");
+      const updatedRaw = { ...raw, keySkills };
 
       const payload = Object.fromEntries(
-        Object.entries(raw).filter(([key, value]) => {
+        Object.entries(updatedRaw).filter(([key, value]) => {
           if (key === "keySkills") {
             return Array.isArray(value) && value.length > 0;
           }
           return value !== "";
         })
       );
-      if (raw.keySkills && raw.keySkills.length > 0) {
-        payload.keySkills = raw.keySkills.join(", ");
+      if (keySkills && keySkills.length > 0) {
+        payload.keySkills = keySkills.join(", ");
       }
       console.log("Payload being sent:", JSON.stringify(payload, null, 2));
 
@@ -189,7 +184,7 @@ const JobPostingForm = () => {
 
       if (response.data.success) {
         const session_id = response.data.session_id;
-        navigate("/preview", { state: { jobData: { ...raw, session_id } } });
+        navigate("/preview", { state: { jobData: { ...updatedRaw, session_id } } });
       } else {
         alert(response.data.message || "Failed to create job draft.");
       }
@@ -208,8 +203,9 @@ const JobPostingForm = () => {
     <div className="page-container">
       <RecruiterHeader />
       <div className="job-posting-form">
+        {/* Prevent default form submission */}
         <main className="main-content-job">
-          <form>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div>
               <h2 className="form-title">Post a Job - Hot Vacancy</h2>
             </div>
@@ -257,10 +253,10 @@ const JobPostingForm = () => {
                     placeholder="Add skills (press Enter to add)"
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onKeyPress={handleKeyPress}
                   />
                   <div className="skills-list">
-                    {raw.keySkills.map((skill, index) => (
+                    {keySkills.map((skill, index) => (
                       <div key={index} className="skill-tag">
                         {skill}
                         <button

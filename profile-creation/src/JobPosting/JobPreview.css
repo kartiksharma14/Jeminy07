@@ -1,211 +1,211 @@
-.job-preview-container {
-    min-height: 100vh;
-    background-color: #f3f4f6;
-    padding: 1.5rem;
-  }
-  
-  .preview-wrapper {
-    max-width: 56rem;
-    margin: 0 auto;
-  }
-  
-  .preview-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-  }
-  
-  .card {
-    background-color: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    margin-bottom: 1.5rem;
-  }
-  
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-  }
-  
-  .job-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
-  
-  .company-name {
-    color: #4b5563;
-    margin-bottom: 1rem;
-  }
-  
-  .job-meta {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    color: #4b5563;
-    margin-bottom: 1rem;
-  }
-  
-  .job-stats {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #4b5563;
-    margin-bottom: 1.5rem;
-  }
-  
-  .button-group {
-    display: flex;
-    gap: 1rem;
-  }
-  
-  .btn {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  .btn-primary {
-    background-color: #2563eb;
-    color: white;
-    border: none;
-  }
-  
-  .btn-secondary {
-    background-color: transparent;
-    color: #2563eb;
-    border: 1px solid #2563eb;
-  }
-  
-  .btn-link {
-    color: #2563eb;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-  }
-  
-  .subsection-title {
-    font-weight: 500;
-    margin-bottom: 0.75rem;
-  }
-  
-  .list-container {
-    list-style-type: disc;
-    padding-left: 1.25rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .list-item {
-    color: #4b5563;
-    margin-bottom: 0.5rem;
-  }
-  
-  .details-grid {
-    display: grid;
-    gap: 0.75rem;
-  }
-  
-  .detail-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .detail-label {
-    font-weight: 500;
-    width: 8rem;
-  }
-  
-  .detail-value {
-    color: #4b5563;
-  }
-  
-  .skills-container {
-    margin-top: 1.5rem;
-  }
-  
-  .skills-note {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 1rem;
-  }
-  
-  .skills-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  
-  .skill-tag {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.75rem;
-    background-color: #f3f4f6;
-    border-radius: 9999px;
-  }
-  
-  .social-links {
-    margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-  }
-  
-  .social-icon {
-    width: 1.5rem;
-    height: 1.5rem;
-    cursor: pointer;
-  }
-  
-  .facebook {
-    color: #2563eb;
-  }
-  
-  .twitter {
-    color: #60a5fa;
-  }
-  
-  .linkedin {
-    color: #1d4ed8;
-  }
-  
-  .bottom-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+.rc-job-preview-container {
+  min-height: 100vh;
+  background-color: #f3f4f6;
+}
 
-  .job-match-details {
-    display: flex;
-    justify-content: space-between;
-    color: #4b5563;
-    margin-bottom: 1rem;
-  }
+.rc-preview-wrapper {
+  max-width: 56rem;
+  margin: 0 auto;
+  margin-top: 15px;
+}
 
-  .company-address {
-    margin-top: 1rem;
-  }
+.rc-preview-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
 
-  .address-title {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-  }
+.rc-card {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+}
 
-  .education-section {
-    margin-top: 1.5rem;
-  }
+.rc-job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
 
-  .education-section p {
-    color: #4b5563;
-  }
+.rc-job-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.rc-company-name {
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.rc-job-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.rc-job-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+}
+
+.rc-button-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.rc-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.rc-btn-primary {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+}
+
+.rc-btn-secondary {
+  background-color: transparent;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.rc-btn-link {
+  color: #2563eb;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.rc-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.rc-subsection-title {
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.rc-list-container {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.rc-list-item {
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.rc-details-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rc-detail-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rc-detail-label {
+  font-weight: 500;
+  width: 8rem;
+}
+
+.rc-detail-value {
+  color: #4b5563;
+}
+
+.rc-skills-container {
+  margin-top: 1.5rem;
+}
+
+.rc-skills-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.rc-skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.rc-skill-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #f3f4f6;
+  border-radius: 9999px;
+}
+
+.rc-social-links {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.rc-social-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+
+.rc-facebook {
+  color: #2563eb;
+}
+
+.rc-twitter {
+  color: #60a5fa;
+}
+
+.rc-linkedin {
+  color: #1d4ed8;
+}
+
+.rc-bottom-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rc-job-match-details {
+  display: flex;
+  justify-content: space-between;
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.rc-company-address {
+  margin-top: 1rem;
+}
+
+.rc-address-title {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.rc-education-section {
+  margin-top: 1.5rem;
+}
+
+.rc-education-section p {
+  color: #4b5563;
+}

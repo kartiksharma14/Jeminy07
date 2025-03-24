@@ -8,11 +8,16 @@ import AdminSidebar from './AdminSidebar';
 
 const ManageJobs = () => {
   const navigate = useNavigate();
-  const [allJobs, setAllJobs] = useState([]); // full list from "all" endpoint
-  const [jobs, setJobs] = useState([]); // filtered jobs
+  const [jobs, setJobs] = useState([]); // jobs for the current page
+  const [totalCount, setTotalCount] = useState(0); // overall total jobs count
+  const [pageSize, setPageSize] = useState(0); // constant page size from first page
   const [error, setError] = useState(null);
   // statusFilter: 'all', 'pending', 'approved', or 'rejected'
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // State for modals
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -33,11 +38,35 @@ const ManageJobs = () => {
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
-  // Fetch all jobs from the "all" endpoint
-  const fetchAllJobs = async () => {
+  // Fetch jobs with pagination and filtering from different endpoints
+  // based on the current filter.
+  const fetchJobs = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch('http://localhost:5000/api/admin/jobs', {
+      let baseUrl = '';
+
+      // Select the appropriate endpoint based on statusFilter.
+      switch (statusFilter) {
+        case 'all':
+          baseUrl = 'http://localhost:5000/api/admin/jobs';
+          break;
+        case 'pending':
+          baseUrl = 'http://localhost:5000/api/admin/jobs/pending';
+          break;
+        case 'rejected':
+          baseUrl = 'http://localhost:5000/api/admin/jobs/rejected';
+          break;
+        case 'approved':
+          baseUrl = 'http://localhost:5000/api/admin/jobs/approved';
+          break;
+        default:
+          baseUrl = 'http://localhost:5000/api/admin/jobs';
+      }
+
+      const url = `${baseUrl}?page=${currentPage}`;
+      console.log("Fetching jobs via:", url);
+
+      const res = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -45,9 +74,15 @@ const ManageJobs = () => {
         }
       });
       const data = await res.json();
-      const jobsList = Array.isArray(data) ? data : data.jobs;
-      if (jobsList) {
-        setAllJobs(jobsList);
+      if (data.jobs) {
+        setJobs(data.jobs);
+        setCurrentPage(data.currentPage);
+        setTotalPages(data.totalPages);
+        setTotalCount(data.totalCount);
+        // Only update pageSize if we're on page 1 (or if pageSize is not set)
+        if (currentPage === 1) {
+          setPageSize(data.count || data.jobs.length);
+        }
         setError(null);
       } else {
         setError(data.error || data.message || "Failed to fetch jobs");
@@ -57,24 +92,25 @@ const ManageJobs = () => {
     }
   };
 
-  // Filter the full list based on the selected status
-  const filterJobs = () => {
-    if (statusFilter === 'all') {
-      setJobs(allJobs);
-    } else {
-      const filtered = allJobs.filter(job => job.status.toLowerCase() === statusFilter);
-      setJobs(filtered);
-    }
+  // Re-fetch jobs whenever the filter or page changes.
+  useEffect(() => {
+    fetchJobs();
+  }, [statusFilter, currentPage]);
+
+  // Pagination handlers
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  useEffect(() => {
-    fetchAllJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
-  useEffect(() => {
-    filterJobs();
-  }, [statusFilter, allJobs]);
+  // Calculate the job indices for the current page summary.
+  // Use the constant pageSize from page 1.
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalCount);
+  const statusLabel = statusFilter === 'all' ? 'jobs' : `${formatStatus(statusFilter)} jobs`;
 
   // Approve job handler (only for pending jobs)
   const handleApproveJob = async (jobId) => {
@@ -90,7 +126,7 @@ const ManageJobs = () => {
       const data = await res.json();
       if (data.success || (data.message && data.message.toLowerCase().includes("approved successfully"))) {
         setNotificationMessage("Job approved successfully");
-        setAllJobs(prev => prev.filter(job => job.job_id !== jobId));
+        fetchJobs();
       } else {
         setError(data.error || data.message || "Failed to approve job.");
       }
@@ -112,7 +148,7 @@ const ManageJobs = () => {
       const data = await res.json();
       if (data.success || (data.message && data.message.toLowerCase().includes("deleted successfully"))) {
         setNotificationMessage("Job deleted successfully");
-        setAllJobs(prev => prev.filter(job => job.job_id !== jobId));
+        fetchJobs();
       } else {
         setError(data.error || data.message || "Failed to delete job.");
       }
@@ -164,7 +200,7 @@ const ManageJobs = () => {
       if (data.success || (data.message && data.message.toLowerCase().includes("rejected successfully"))) {
         setShowRejectModal(false);
         setNotificationMessage("Job rejected successfully");
-        setAllJobs(prev => prev.filter(job => job.job_id !== selectedJob.job_id));
+        fetchJobs();
       } else {
         setError(data.error || data.message || "Failed to reject job.");
       }
@@ -190,31 +226,31 @@ const ManageJobs = () => {
     navigate(-1);
   };
 
-  // Render filter buttons
+  // Render filter buttons; reset page to 1 when changing filter.
   const renderFilters = () => {
     return (
       <div className="mj-filters">
         <button
           className={`mj-filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('all')}
+          onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
         >
           All Jobs
         </button>
         <button
           className={`mj-filter-btn ${statusFilter === 'pending' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('pending')}
+          onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }}
         >
           Pending
         </button>
         <button
           className={`mj-filter-btn ${statusFilter === 'approved' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('approved')}
+          onClick={() => { setStatusFilter('approved'); setCurrentPage(1); }}
         >
           Approved
         </button>
         <button
           className={`mj-filter-btn ${statusFilter === 'rejected' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('rejected')}
+          onClick={() => { setStatusFilter('rejected'); setCurrentPage(1); }}
         >
           Rejected
         </button>
@@ -233,7 +269,9 @@ const ManageJobs = () => {
             <h2 className="mj-title">Manage Jobs</h2>
             {renderFilters()}
             <div className="mj-summary">
-              <p>Total Jobs: {jobs.length}</p>
+              <p>
+                Showing {startIndex} - {endIndex} of {totalCount} {statusLabel}
+              </p>
             </div>
             {error && <div className="mj-error">{error}</div>}
             <div className="mj-table-container">
@@ -284,6 +322,14 @@ const ManageJobs = () => {
                 <p className="mj-no-data">No jobs found.</p>
               )}
             </div>
+            {/* Render pagination only if more than one page exists */}
+            {totalPages > 1 && (
+              <div className="mj-pagination">
+                <button onClick={handlePrevPage} disabled={currentPage === 1}>Previous</button>
+                <span>Page {currentPage} of {totalPages}</span>
+                <button onClick={handleNextPage} disabled={currentPage === totalPages}>Next</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -373,10 +419,7 @@ const ManageJobs = () => {
             <h2>Confirm Deletion</h2>
             <p>Are you sure you want to delete job #{selectedJob.job_id}?</p>
             <div className="mj-modal-actions">
-              <button className="mj-modal-btn" onClick={() => {
-                handleDeleteJob(selectedJob.job_id);
-                setShowDeleteModal(false);
-              }}>
+              <button className="mj-modal-btn" onClick={handleConfirmDelete}>
                 Confirm
               </button>
               <button className="mj-modal-btn cancel-btn" onClick={() => setShowDeleteModal(false)}>

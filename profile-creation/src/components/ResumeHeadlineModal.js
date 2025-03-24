@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./ResumeHeadlineModal.css";
 import axiosInstance from "../axiosInstance";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import PropTypes from "prop-types";
 
 const ResumeHeadlineModal = ({ isOpen, toggleModal, refreshResumeHeadline }) => {
@@ -52,9 +52,7 @@ const ResumeHeadlineModal = ({ isOpen, toggleModal, refreshResumeHeadline }) => 
           const response = await axiosInstance.get(
             `/candidate-profile/user-details/${userId}`
           );
-
           const data = response.data.data;
-
           if (data && data.resume_headline) {
             setHeadline(data.resume_headline);
             setOriginalHeadline(data.resume_headline);
@@ -78,12 +76,31 @@ const ResumeHeadlineModal = ({ isOpen, toggleModal, refreshResumeHeadline }) => 
     }
   }, [isOpen]);
 
+  // Handler to enforce 300 word limit on change
+  const handleHeadlineChange = (e) => {
+    const input = e.target.value;
+    const words = input.trim().split(/\s+/).filter(Boolean);
+    if (words.length <= 300) {
+      setHeadline(input);
+    } else {
+      // Limit to the first 300 words if exceeded
+      const truncated = words.slice(0, 300).join(" ");
+      setHeadline(truncated);
+    }
+  };
+
   const handleSave = async () => {
     setError("");
     setSuccessMessage("");
 
+    const wordCount = headline.trim().split(/\s+/).filter(Boolean).length;
     if (headline.trim() === "") {
       setError("Resume headline cannot be empty.");
+      return;
+    }
+
+    if (wordCount > 300) {
+      setError("Resume headline cannot exceed 300 words.");
       return;
     }
 
@@ -156,9 +173,12 @@ const ResumeHeadlineModal = ({ isOpen, toggleModal, refreshResumeHeadline }) => 
           <textarea
             placeholder="Enter your resume headline"
             value={headline}
-            onChange={(e) => setHeadline(e.target.value)}
+            onChange={handleHeadlineChange}
             ref={textareaRef}
           ></textarea>
+          <div className="word-count">
+            {headline.trim().split(/\s+/).filter(Boolean).length} / 300 words
+          </div>
         </div>
 
         {/* Modal Footer */}

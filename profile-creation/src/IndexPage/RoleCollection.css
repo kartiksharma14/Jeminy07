@@ -1,208 +1,217 @@
-/* src/components/RoleCollection/RoleCollection.css */
-
 .role-collection-section {
-    padding: 60px 20px;
-    background-color: #ffffff;
-    display: flex;
+  padding: 60px 20px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInSection 1.5s ease-in-out;
+}
+
+@keyframes fadeInSection {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.left-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.role-img {
+  width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.heading {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 10px;
+}
+
+.sub-heading {
+  font-size: 1rem;
+  color: #555555;
+}
+
+.right-section {
+  flex: 2;
+  min-width: 300px;
+}
+
+/* Swiper Slider Container */
+.role-swiper {
+  width: 100%;
+  position: relative; /* Ensures nav buttons position correctly */
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  grid-template-rows: repeat(3, auto); /* 3 rows */
+  gap: 20px;
+}
+
+.role-chip {
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.role-chip:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-5px);
+}
+
+.chip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.chip-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d9cdb;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.chip-heading:hover {
+  color: #1b7dc1;
+}
+
+.chip-count {
+  font-size: 0.9rem;
+  color: #555555;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.arrow-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.role-chip:hover .arrow-icon {
+  transform: translateX(4px);
+}
+
+.view-all-comp {
+  margin-top: 30px;
+  font-size: 1rem;
+  color: #2d9cdb;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.view-all-comp:hover {
+  color: #1b7dc1;
+}
+
+/* Swiper Navigation Buttons scoped to .role-swiper */
+.role-swiper .swiper-button-next,
+.role-swiper .swiper-button-prev {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10 !important;
+  color: #2d9cdb !important;
+  width: 44px !important;
+  height: 44px !important;
+  background-color: rgba(45, 156, 219, 0.1) !important;
+  border-radius: 50% !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.role-swiper .swiper-button-next:hover,
+.role-swiper .swiper-button-prev:hover {
+  background-color: rgba(45, 156, 219, 0.2) !important;
+}
+
+.role-swiper .swiper-button-next {
+  right: 10px !important;
+}
+
+.role-swiper .swiper-button-prev {
+  left: 10px !important;
+}
+
+.swiper-button-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .card-container {
+    gap: 20px;
+  }
+
+  .role-chip {
+    padding: 12px;
+  }
+
+  .heading {
+    font-size: 1.6rem;
+  }
+
+  .sub-heading {
+    font-size: 0.95rem;
+  }
+
+  .role-grid {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-container {
     flex-direction: column;
     align-items: center;
-    animation: fadeInSection 1.5s ease-in-out;
   }
-  
-  @keyframes fadeInSection {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .card-container {
-    width: 100%;
-    max-width: 1200px;
-    display: flex;
-    gap: 40px;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-  
-  .left-section {
-    flex: 1;
-    min-width: 300px;
-  }
-  
-  .role-img {
-    width: 100%;
-    height: auto;
-    margin-bottom: 20px;
-  }
-  
-  .heading {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #333333;
-    margin-bottom: 10px;
-  }
-  
-  .sub-heading {
-    font-size: 1rem;
-    color: #555555;
-  }
-  
+
+  .left-section,
   .right-section {
-    flex: 2;
-    min-width: 300px;
+    max-width: 100%;
   }
-  
+
   .role-swiper {
     width: 100%;
   }
-  
+
   .role-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 columns */
-    grid-template-rows: repeat(3, auto); /* 3 rows */
-    gap: 20px;
+    grid-template-columns: 1fr; /* Single column on small screens */
+    grid-template-rows: repeat(6, auto); /* 6 rows */
   }
-  
+
   .role-chip {
-    background-color: #f0f0f0;
-    border-radius: 12px;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+    width: 100%;
   }
-  
-  .role-chip:hover {
-    background-color: #e0e0e0;
-    transform: translateY(-5px);
-  }
-  
-  .chip-text {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  .chip-heading {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #2d9cdb;
-    text-decoration: none;
-    transition: color 0.3s ease;
-  }
-  
-  .chip-heading:hover {
-    color: #1b7dc1;
-  }
-  
-  .chip-count {
-    font-size: 0.9rem;
-    color: #555555;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  
-  .arrow-icon {
-    width: 16px;
-    height: 16px;
-    transition: transform 0.3s ease;
-  }
-  
-  .role-chip:hover .arrow-icon {
-    transform: translateX(4px);
-  }
-  
+
   .view-all-comp {
-    margin-top: 30px;
-    font-size: 1rem;
-    color: #2d9cdb;
-    text-decoration: none;
-    transition: color 0.3s ease;
+    font-size: 0.95rem;
   }
-  
-  .view-all-comp:hover {
-    color: #1b7dc1;
-  }
-  
-  /* Swiper Navigation Buttons */
-  .swiper-button-next,
-  .swiper-button-prev {
-    color: #2d9cdb;
-    width: 44px;
-    height: 44px;
-    background-color: rgba(45, 156, 219, 0.1);
-    border-radius: 50%;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: background-color 0.3s ease;
-  }
-  
-  .swiper-button-next:hover,
-  .swiper-button-prev:hover {
-    background-color: rgba(45, 156, 219, 0.2);
-  }
-  
-  .swiper-button-disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    .card-container {
-      gap: 20px;
-    }
-  
-    .role-chip {
-      padding: 12px;
-    }
-  
-    .heading {
-      font-size: 1.6rem;
-    }
-  
-    .sub-heading {
-      font-size: 0.95rem;
-    }
-  
-    .role-grid {
-      gap: 15px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .card-container {
-      flex-direction: column;
-      align-items: center;
-    }
-  
-    .left-section,
-    .right-section {
-      max-width: 100%;
-    }
-  
-    .role-swiper {
-      width: 100%;
-    }
-  
-    .role-grid {
-      grid-template-columns: 1fr; /* Single column on small screens */
-      grid-template-rows: repeat(6, auto); /* 6 rows */
-    }
-  
-    .role-chip {
-      width: 100%;
-    }
-  
-    .view-all-comp {
-      font-size: 0.95rem;
-    }
-  }
-  
+}
