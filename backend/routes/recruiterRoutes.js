@@ -94,6 +94,7 @@ router.get('/applications/:application_id', authenticateToken, recruiterControll
 router.patch('/applications/:application_id/status', authenticateToken, recruiterController.updateApplicationStatus);
 // Add to your recruiterRoutes.js
 router.get('/test-email', authenticateToken, recruiterController.testEmail);
+router.post('/logout', authenticateToken, recruiterController.logoutSession);
 
 
 // Add this to your routes file (e.g., routes/recruiterRoutes.js)

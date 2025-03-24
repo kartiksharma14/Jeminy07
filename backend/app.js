@@ -122,7 +122,6 @@ app.use('/api', candidateProfileRoutes);
 app.use("/api/candidate", candidateProfileRoutes);
 app.use('/api/recruiter', recruiterRoutes);
 
-
 //app.use('/api/job-approval', jobApprovalRoutes);
 
 app.post("/upload", upload.single("resume"), (req, res) => {
@@ -133,6 +132,7 @@ app.post("/upload", upload.single("resume"), (req, res) => {
 app.get("/", (req, res) => {
     res.status(200).send("Welcome to the Job Portal Backend API");
 });
+
 
 // Log controllers for debugging
 console.log("authController:", authController);

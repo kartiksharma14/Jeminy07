@@ -199,7 +199,7 @@ router.get('/jobs/search/designation', verifyToken, searchJobsByDesignation);
 //router.get('/jobs/search/education', verifyToken, searchJobsByEducation);
 router.get('/jobs/search', verifyToken, searchJobs);
 router.get('/search-all', verifyToken, searchJobsWithAllParameter);
-
+router.get('/jobs/search-by-experience', verifyToken, searchJobsByExperience);
 // ==================== Job Application Routes ====================
 
 // Candidate applies for a job

@@ -382,27 +382,28 @@ exports.searchJobsBySalary = async (req, res) => {
 // Search jobs by experience
 exports.searchJobsByExperience = async (req, res) => {
     try {
-        const { min_experience, max_experience } = req.query;
-        if (!min_experience && !max_experience) {
+        // Extract max_experience from query (user can use either parameter name)
+        const maxExperience = req.query.max_experience || req.query.experience;
+        
+        if (!maxExperience) {
             return res.status(400).json({
                 success: false,
-                message: 'At least one experience parameter is required'
+                message: 'Experience parameter is required'
             });
         }
-
+        
+        // Parse the experience value to integer
+        const parsedMaxExperience = parseInt(maxExperience);
+        
+        // Base where clause
         const whereClause = {
             status: 'approved',
             is_active: true
         };
 
-        if (min_experience) {
-            whereClause.min_experience = { [Op.gte]: parseInt(min_experience) };
-        }
-
-        if (max_experience) {
-            whereClause.max_experience = { [Op.lte]: parseInt(max_experience) };
-        }
-
+        // Find jobs where the user's experience is >= the minimum experience required
+        whereClause.min_experience = { [Op.lte]: parsedMaxExperience };
+        
         const jobs = await JobPost.findAll({
             where: whereClause,
             order: [['job_creation_date', 'DESC']]
