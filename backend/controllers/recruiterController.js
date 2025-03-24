@@ -1388,48 +1388,60 @@ exports.updateJobPost = async (req, res) => {
 
 // Delete a job post (soft delete by setting is_active to false)
 exports.deleteJobPost = async (req, res) => {
-    const transaction = await sequelize.transaction();
-    
-    try {
-        const jobId = req.params.id;
-        const recruiter_id = req.recruiter.recruiter_id;
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const jobId = req.params.id;
+    const recruiter_id = req.recruiter.recruiter_id;
 
-        // Find the job ensuring it belongs to this recruiter
-        const job = await JobPost.findOne({
-            where: {
-                job_id: jobId,
-                recruiter_id: recruiter_id
-            }
-        });
-        
-        if (!job) {
-            await transaction.rollback();
-            return res.status(404).json({
-                success: false,
-                message: "Job post not found or not authorized to delete"
-            });
-        }
-        
-        // Soft delete by setting is_active to false
-        await job.update({ is_active: false }, { transaction });
-        
-        // Commit the transaction
-        await transaction.commit();
-        
-        return res.status(200).json({
-            success: true,
-            message: "Job post deleted successfully"
-        });
-    } catch (error) {
-        // Rollback transaction in case of error
-        await transaction.rollback();
-        console.error('Error deleting job post:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete job post.",
-            error: error.message
-        });
+    // Find the job ensuring it belongs to this recruiter
+    const job = await JobPost.findOne({
+      where: {
+        job_id: jobId,
+        recruiter_id: recruiter_id
+      }
+    });
+    
+    if (!job) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Job post not found or not authorized to delete"
+      });
     }
+    
+    // First, delete all saved job references
+    await SavedJob.destroy({
+      where: { job_id: jobId },
+      transaction
+    });
+    
+    // Also delete all job applications
+    await JobApplication.destroy({
+      where: { job_id: jobId },
+      transaction
+    });
+    
+    // Soft delete the job by setting is_active to false
+    await job.update({ is_active: false }, { transaction });
+    
+    // Commit the transaction
+    await transaction.commit();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Job post and related saved references deleted successfully"
+    });
+  } catch (error) {
+    // Rollback transaction in case of error
+    await transaction.rollback();
+    console.error('Error deleting job post:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete job post.",
+      error: error.message
+    });
+  }
 };
 
 
