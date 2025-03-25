@@ -68,6 +68,12 @@ router.delete('/jobs/draft/:sessionId', authenticateToken, recruiterController.d
 // Get all draft jobs for a recruiter
 router.get('/job-drafts', authenticateToken, recruiterController.getAllJobDrafts);
 
+// Direct job posting routes (no admin approval)
+router.post('/direct-job-post', authenticateToken, recruiterController.createDirectJobPost);
+router.post('/direct-job-from-draft', authenticateToken, recruiterController.createDirectJobFromDraft);
+
+
+
 // Job Post routes 
 router.post('/jobs', authenticateToken, recruiterController.createJobPost);
 router.get('/jobs', authenticateToken, recruiterController.getJobPosts);
