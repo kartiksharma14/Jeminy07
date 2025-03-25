@@ -3989,3 +3989,263 @@ exports.generateCandidatePDF = async (req, res) => {
     });
   }
 };
+
+
+// New route handler for direct job posting (without admin approval)
+exports.createDirectJobPost = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Extract data from request body
+    const {
+      jobTitle, employmentType, keySkills, department, workMode, locations, industry, diversityHiring, jobDescription,
+      multipleVacancies, companyName, companyInfo, companyAddress, min_salary, max_salary, min_experience, max_experience,
+      end_date
+    } = req.body;
+
+    // Validate required fields
+    if (!jobTitle || !employmentType || !keySkills || !department || !workMode || !locations || !jobDescription) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
+    }
+
+    // Validate location against cities.json
+    const validatedLocation = validateCity(locations);
+    if (!validatedLocation) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location. Please provide a valid city name."
+      });
+    }
+
+    // Get the recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      await transaction.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+
+    // Validate character limits
+    const jobDescriptionValidation = validateTextLength(
+      jobDescription, 
+      'Job description'
+    );
+    
+    if (!jobDescriptionValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: jobDescriptionValidation.message
+      });
+    }
+    
+    const companyInfoValidation = validateTextLength(
+      companyInfo, 
+      'Company information'
+    );
+    
+    if (!companyInfoValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: companyInfoValidation.message
+      });
+    }
+
+    // Format the end date or use default (30 days from now)
+    let formattedEndDate;
+    if (end_date) {
+      formattedEndDate = formatDateToDDMMYY(end_date);
+    } else {
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+      formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+    }
+
+    // Create the job post with "approved" status (bypass admin approval)
+    const newJob = await JobPost.create({
+      recruiter_id,
+      jobTitle, 
+      employmentType, 
+      keySkills, 
+      department, 
+      workMode, 
+      locations: validatedLocation,
+      industry, 
+      diversityHiring, 
+      jobDescription,
+      multipleVacancies, 
+      companyName, 
+      companyInfo, 
+      companyAddress, 
+      min_salary, 
+      max_salary, 
+      min_experience, 
+      max_experience,
+      job_creation_date: new Date(),
+      end_date: formattedEndDate,
+      is_active: true,
+      status: "approved"  // Set status as approved by default
+    }, { transaction });
+
+    // Commit the transaction
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Job created successfully and is now live!",
+      job: newJob
+    });
+  } catch (error) {
+    // Rollback transaction in case of error
+    await transaction.rollback();
+    console.error('Error creating direct job post:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create job post.",
+      error: error.message
+    });
+  }
+};
+
+// New route handler to convert an existing draft to a direct job post
+exports.createDirectJobFromDraft = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { session_id, end_date } = req.body;
+    
+    if (!session_id) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Session ID is required"
+      });
+    }
+    
+    // Find the job draft
+    const jobDraft = await TempJobPost.findOne({
+      where: { session_id }
+    });
+    
+    if (!jobDraft) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Job draft not found"
+      });
+    }
+
+    // Get recruiter_id from the authenticated user
+    const recruiter_id = req.recruiter.recruiter_id;
+    if (!recruiter_id) {
+      await transaction.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+
+    // Validate location against cities.json
+    const validatedLocation = validateCity(jobDraft.locations);
+    if (!validatedLocation) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location in draft. Please provide a valid city name."
+      });
+    }
+
+    // Validate character limits
+    const jobDescriptionValidation = validateTextLength(
+      jobDraft.jobDescription, 
+      'Job description'
+    );
+    
+    if (!jobDescriptionValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: jobDescriptionValidation.message
+      });
+    }
+    
+    const companyInfoValidation = validateTextLength(
+      jobDraft.companyInfo, 
+      'Company information'
+    );
+    
+    if (!companyInfoValidation.valid) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: companyInfoValidation.message
+      });
+    }
+
+    // Format the end date or use default (30 days from now)
+    let formattedEndDate;
+    if (end_date) {
+      formattedEndDate = formatDateToDDMMYY(end_date);
+    } else {
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30); // Default 30 days from now
+      formattedEndDate = formatDateToDDMMYY(defaultEndDate);
+    }
+
+    // Create the permanent job post with "approved" status
+    const newJob = await JobPost.create({
+      recruiter_id,
+      jobTitle: jobDraft.jobTitle,
+      employmentType: jobDraft.employmentType,
+      keySkills: jobDraft.keySkills,
+      department: jobDraft.department,
+      workMode: jobDraft.workMode,
+      locations: validatedLocation,
+      industry: jobDraft.industry,
+      diversityHiring: jobDraft.diversityHiring,
+      jobDescription: jobDraft.jobDescription,
+      multipleVacancies: jobDraft.multipleVacancies,
+      companyName: jobDraft.companyName,
+      companyInfo: jobDraft.companyInfo,
+      companyAddress: jobDraft.companyAddress,
+      min_salary: jobDraft.min_salary,
+      max_salary: jobDraft.max_salary,
+      min_experience: jobDraft.min_experience,
+      max_experience: jobDraft.max_experience,
+      job_creation_date: new Date(),
+      end_date: formattedEndDate,
+      is_active: true,
+      status: "approved"  // Set as "approved" for direct posting
+    }, { transaction });
+
+    // Delete the draft after creating the permanent job
+    await jobDraft.destroy({ transaction });
+    
+    // Commit the transaction
+    await transaction.commit();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Job created successfully from draft and is now live!",
+      job: newJob
+    });
+  } catch (error) {
+    // Rollback transaction in case of error
+    await transaction.rollback();
+    console.error('Error creating direct job from draft:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create job from draft.",
+      error: error.message
+    });
+  }
+};
+
