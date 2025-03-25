@@ -1,4 +1,3 @@
-// src/components/JobCard.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./JobCard.css";
@@ -53,9 +52,17 @@ const JobCard = ({ job, savedJobs, onToggleSave }) => {
     return `${min} - ${max} years`;
   };
 
-  // Navigate to job preview page when clicking the card.
+  // Navigate to job preview page and send all state data
   const handleViewJob = () => {
-    navigate("/job-preview", { state: { jobData: job } });
+    navigate("/job-preview", {
+      state: {
+        jobData: job,
+        isSaved,
+        isApplied,
+        isApplying,
+        applyError,
+      },
+    });
   };
 
   // Handle applying to a job.
@@ -71,7 +78,7 @@ const JobCard = ({ job, savedJobs, onToggleSave }) => {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${authToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
       });
       const result = await response.json();

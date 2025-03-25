@@ -749,7 +749,7 @@ exports.createJobFromDraft = async (req, res) => {
       });
     }
 
-    // Validate character limits
+    // Validate character limits for job description and company info
     const jobDescriptionValidation = validateTextLength(
       jobDraft.jobDescription, 
       'Job description'
@@ -786,7 +786,7 @@ exports.createJobFromDraft = async (req, res) => {
       formattedEndDate = formatDateToDDMMYY(defaultEndDate);
     }
 
-    // Create the permanent job post
+    // Create the permanent job post with status set to "approved"
     const newJob = await JobPost.create({
       recruiter_id,
       jobTitle: jobDraft.jobTitle,
@@ -809,7 +809,7 @@ exports.createJobFromDraft = async (req, res) => {
       job_creation_date: new Date(),
       end_date: formattedEndDate, // Add the end_date field
       is_active: true,
-      status: "pending"  // Set default status to pending
+      status: "approved"  // Directly approved instead of pending
     }, { transaction });
 
     // Delete the draft after creating the permanent job
@@ -834,6 +834,7 @@ exports.createJobFromDraft = async (req, res) => {
     });
   }
 };
+
 
 // Create a job draft
 exports.createJobDraft = async (req, res) => {
