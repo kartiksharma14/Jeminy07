@@ -1754,6 +1754,8 @@ exports.getMostRecentJob = async (req, res) => {
     });
   }
 };
+
+
 // Get all jobs for a recruiter regardless of status with formatted dates
 exports.getAllJobs = async (req, res) => {
   try {

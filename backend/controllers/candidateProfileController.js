@@ -2,7 +2,6 @@ const OTP = require("../models/otp");
 const TemporaryUsers = require("../models/temporaryUsers");
 const User = require("../models/user");
 
-// candidateProfileController.js
 const { sequelize } = require("../db");
 const Signin = require("../models/user");
 const CandidateProfile = require("../models/candidateProfile");

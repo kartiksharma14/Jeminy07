@@ -382,7 +382,7 @@ exports.searchJobsBySalary = async (req, res) => {
 // Search jobs by experience
 exports.searchJobsByExperience = async (req, res) => {
     try {
-        // Extract max_experience from query (user can use either parameter name)
+        // Extract experience from query parameters
         const maxExperience = req.query.max_experience || req.query.experience;
         
         if (!maxExperience) {
@@ -393,16 +393,15 @@ exports.searchJobsByExperience = async (req, res) => {
         }
         
         // Parse the experience value to integer
-        const parsedMaxExperience = parseInt(maxExperience);
+        const parsedExperience = parseInt(maxExperience);
         
         // Base where clause
         const whereClause = {
             status: 'approved',
-            is_active: true
+            is_active: true,
+            // User's experience must be >= the job's minimum required experience
+            min_experience: { [Op.lte]: parsedExperience }
         };
-
-        // Find jobs where the user's experience is >= the minimum experience required
-        whereClause.min_experience = { [Op.lte]: parsedMaxExperience };
         
         const jobs = await JobPost.findAll({
             where: whereClause,
@@ -423,6 +422,7 @@ exports.searchJobsByExperience = async (req, res) => {
         });
     }
 };
+
 
 // Search jobs by employment type
 exports.searchJobsByEmploymentType = async (req, res) => {
