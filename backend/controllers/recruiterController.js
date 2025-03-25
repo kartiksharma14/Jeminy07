@@ -517,64 +517,68 @@ function formatDate(date) {
 
 // Update Recruiter Password (by recruiter themselves)
 exports.updateRecruiterPassword = async (req, res) => {
-    const recruiterId = req.recruiter.recruiter_id; // Get recruiter ID from JWT token
-    const { currentPassword, newPassword } = req.body;
-  
-    try {
-      // Input validation
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Current password and new password are required"
-        });
-      }
-  
-      // Password strength validation
-      if (newPassword.length < 8) {
-        return res.status(400).json({
-          success: false,
-          message: "New password must be at least 8 characters long"
-        });
-      }
-  
-      // Find the recruiter by ID - using RecruiterSignin model, not Recruiter
-      const recruiter = await RecruiterSignin.findByPk(recruiterId);
-      if (!recruiter) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Recruiter not found" 
-        });
-      }
-  
-      // Verify current password
-      const isMatch = await bcrypt.compare(currentPassword, recruiter.password);
-      if (!isMatch) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Current password is incorrect" 
-        });
-      }
-  
-      // Hash the new password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
-  
-      // Update password
-      recruiter.password = hashedPassword;
-      await recruiter.save();
-  
-      res.status(200).json({
-        success: true,
-        message: "Password updated successfully"
-      });
-    } catch (err) {
-      console.error('Error updating recruiter password:', err);
-      res.status(500).json({ 
-        success: false, 
-        error: err.message 
+  try {
+    const recruiterId = req.recruiter.recruiter_id;
+    let { currentPassword, newPassword } = req.body;
+    
+    // Trim whitespace from both passwords
+    currentPassword = currentPassword ? currentPassword.trim() : "";
+    newPassword = newPassword ? newPassword.trim() : "";
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required"
       });
     }
-  };
+    
+    // Enforce password strength (minimum length 8)
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters long"
+      });
+    }
+    
+    // Find the recruiter using the RecruiterSignin model
+    const recruiter = await RecruiterSignin.findByPk(recruiterId);
+    if (!recruiter) {
+      return res.status(404).json({
+        success: false,
+        message: "Recruiter not found"
+      });
+    }
+    
+    // Verify that the provided current password matches the stored hash
+    const isMatch = await bcrypt.compare(currentPassword, recruiter.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect"
+      });
+    }
+    
+    // Instead of hashing here, assign the plain text password.
+    // The model's beforeSave hook will hash it before saving.
+    recruiter.password = newPassword;
+    await recruiter.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+  } catch (err) {
+    console.error("Error updating recruiter password:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating recruiter password",
+      error: err.message
+    });
+  }
+};
+
+
 
 // Get job draft preview
 exports.getJobDraftPreview = async (req, res) => {
@@ -1754,8 +1758,6 @@ exports.getMostRecentJob = async (req, res) => {
     });
   }
 };
-
-
 // Get all jobs for a recruiter regardless of status with formatted dates
 exports.getAllJobs = async (req, res) => {
   try {
@@ -2313,67 +2315,6 @@ function formatDate(date) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-
-// Update Recruiter Password (by recruiter themselves)
-exports.updateRecruiterPassword = async (req, res) => {
-  const recruiterId = req.recruiter.recruiter_id; // Get recruiter ID from JWT token
-  const { currentPassword, newPassword } = req.body;
-
-  try {
-    // Input validation
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password and new password are required"
-      });
-    }
-
-    // Password strength validation
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be at least 8 characters long"
-      });
-    }
-
-    // Find the recruiter by ID - using RecruiterSignin model, not Recruiter
-    const recruiter = await RecruiterSignin.findByPk(recruiterId);
-    if (!recruiter) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Recruiter not found" 
-      });
-    }
-
-    // Verify current password
-    const isMatch = await bcrypt.compare(currentPassword, recruiter.password);
-    if (!isMatch) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Current password is incorrect" 
-      });
-    }
-
-    // Hash the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Update password
-    recruiter.password = hashedPassword;
-    await recruiter.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Password updated successfully"
-    });
-  } catch (err) {
-    console.error('Error updating recruiter password:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
-    });
-  }
-};
 
 
 // Application Management Functions

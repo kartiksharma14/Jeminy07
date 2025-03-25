@@ -2,22 +2,23 @@ import React, { useState, useEffect } from "react";
 import "./JobStatus.css";
 
 const JobPostingsCard = () => {
-  const [jobData, setJobData] = useState(null);
+  const [jobData, setJobData] = useState([]);
+  const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Get the bearer token from local storage
+  const fetchJobs = (page = 1) => {
     const token = localStorage.getItem("RecruiterToken");
 
-    // Ensure you have a token before making the call
     if (!token) {
       setError("Authentication token not found.");
       setLoading(false);
       return;
     }
 
-    fetch("http://localhost:5000/api/recruiter/jobs/most-recent", {
+    setLoading(true);
+
+    fetch(`http://localhost:5000/api/recruiter/jobs/most-recent?page=${page}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -32,18 +33,23 @@ const JobPostingsCard = () => {
       })
       .then((data) => {
         if (data.success) {
-          setJobData(data.job);
+          setJobData(data.jobs);
+          setPagination(data.pagination);
         } else {
           throw new Error("API returned unsuccessful response");
         }
       })
       .catch((err) => {
         console.error("Fetch error:", err);
-        setError("");
+        setError(err.message);
       })
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchJobs();
   }, []);
 
   if (loading) {
@@ -54,48 +60,69 @@ const JobPostingsCard = () => {
     return <div className="job-postings-card">{error}</div>;
   }
 
-  if (!jobData) {
+  if (!jobData.length) {
     return <div className="job-postings-card">No job data available.</div>;
   }
 
   return (
     <div className="job-postings-card">
-      {/* Card Header */}
       <div className="job-postings-header">
         <h3>Job Postings</h3>
       </div>
 
-      {/* Job Metrics */}
       <div className="job-postings-metrics">
-        <div className="metric">
-          <span className="metric-label">Job Title</span>
-          <span className="metric-value">{jobData.jobTitle}</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Company Name</span>
-          <span className="metric-value">{jobData.companyName}</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Location</span>
-          <span className="metric-value">{jobData.locations}</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Last Updated</span>
-          <span className="metric-value">{jobData.updatedAt}</span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Status</span>
-          <span className="metric-value">
-          {jobData.status.charAt(0).toUpperCase() + jobData.status.slice(1)}
-        </span>
-        </div>
-        <div className="metric">
-          <span className="metric-label">Application Count</span>
-          <span className="metric-value">{jobData.applicationCount}</span>
-        </div>
+        {jobData.map((job) => (
+          <div key={job.job_id} className="job-item">
+            <div className="metric">
+              <span className="metric-label">Job ID</span>
+              <span className="metric-value">{job.job_id}</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Job Title</span>
+              <span className="metric-value">{job.jobTitle}</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Company Name</span>
+              <span className="metric-value">{job.companyName}</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Location</span>
+              <span className="metric-value">{job.locations}</span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Status</span>
+              <span className="metric-value">
+                {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+              </span>
+            </div>
+            <div className="metric">
+              <span className="metric-label">Application Count</span>
+              <span className="metric-value">{job.applicationCount}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Footer: Post Job on left, Manage Jobs on right */}
+      <div className="pagination-controls">
+        <button
+          className="paginate-btn"
+          disabled={!pagination.hasPreviousPage}
+          onClick={() => fetchJobs(pagination.currentPage - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination.currentPage} of {pagination.totalPages}
+        </span>
+        <button
+          className="paginate-btn"
+          disabled={!pagination.hasNextPage}
+          onClick={() => fetchJobs(pagination.currentPage + 1)}
+        >
+          Next
+        </button>
+      </div>
+
       <div className="job-postings-footer">
         <a className="post-job-link" href="/post-job">
           Post Job

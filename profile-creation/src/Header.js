@@ -9,7 +9,7 @@ function Header() {
 
   // Search states
   const [keyword, setKeyword] = useState("");
-  const [experience, setExperience] = useState("0");
+  const [experience, setExperience] = useState(""); // Default is empty string (not "0")
   const [location, setLocation] = useState("");
   const [showSearchPanel, setShowSearchPanel] = useState(false);
 
@@ -48,7 +48,8 @@ function Header() {
     const query = {};
     if (keyword.trim() !== "") query.keywords = keyword;
     if (location.trim() !== "") query.locations = location;
-    if (experience !== "0") query.experience = experience;
+    // Add experience if user has made a selection (even if it's "0")
+    if (experience !== "") query.experience = experience;
     navigate("/job-list", { state: { query } });
   };
 
@@ -57,11 +58,13 @@ function Header() {
     localStorage.removeItem("authToken");
     navigate("/candidate/login");
   };
+
   const toggleMenu = () => {
     setShowProfileMenu((prev) => !prev);
   };
-   // Clear any pending hide timer and show the menu on mouse enter
-   const handleMouseEnter = () => {
+
+  // Clear any pending hide timer and show the menu on mouse enter
+  const handleMouseEnter = () => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
@@ -92,61 +95,59 @@ function Header() {
 
         {/* Center Section: Minimal Search Bar */}
         <div className="header-center">
-      {!showSearchPanel && (
-        <div className="minimal-search" onClick={handleExpandSearch}>
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              placeholder="Search jobs here"
-              className="minimal-input"
-              readOnly
-            />
-            <button className="search-button-cad">
-              <FaSearch />
-            </button>
-          </div>
+          {!showSearchPanel && (
+            <div className="minimal-search" onClick={handleExpandSearch}>
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search jobs here"
+                  className="minimal-input"
+                  readOnly
+                />
+                <button className="search-button-cad">
+                  <FaSearch />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
 
         {/* Right Section: Profile Icon & Dropdown Menu */}
         <div
-      className="header-right"
-      ref={profileMenuRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <button
-        type="button"
-        className="profile-icon-button"
-        onClick={toggleMenu}
-        aria-haspopup="true"
-        aria-expanded={showProfileMenu}
-        aria-label="User menu"
-      >
-        <div className="profile-icon-placeholder" href='' aria-hidden="true">
-          
-        </div>
-      </button>
-      {showProfileMenu && (
-        <div className="profile-menu-dropdown" role="menu">
-          <Link to="/homepage" className="profile-menu-item" role="menuitem">
-            Homepage
-          </Link>
-          <Link to="/home" className="profile-menu-item" role="menuitem">
-            Candidate Profile
-          </Link>
+          className="header-right"
+          ref={profileMenuRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           <button
             type="button"
-            onClick={handleLogout}
-            className="profile-menu-item"
-            role="menuitem"
+            className="profile-icon-button"
+            onClick={toggleMenu}
+            aria-haspopup="true"
+            aria-expanded={showProfileMenu}
+            aria-label="User menu"
           >
-            Logout
+            <div className="profile-icon-placeholder" aria-hidden="true"></div>
           </button>
+          {showProfileMenu && (
+            <div className="profile-menu-dropdown" role="menu">
+              <Link to="/homepage" className="profile-menu-item" role="menuitem">
+                Homepage
+              </Link>
+              <Link to="/home" className="profile-menu-item" role="menuitem">
+                Candidate Profile
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="profile-menu-item"
+                role="menuitem"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
       </header>
 
       {/* Expanded Search Panel */}
@@ -168,6 +169,7 @@ function Header() {
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
               >
+                <option value="">Select number of years</option>
                 <option value="0">0 Years</option>
                 <option value="1">1 Year</option>
                 <option value="2">2 Years</option>

@@ -64,17 +64,28 @@ const JobPostingForm = () => {
 
   // Handlers for job description changes.
   const handleJobDescEditorStateChange = (editorState) => {
-    setJobDescEditorState(editorState);
     const plainText = editorState.getCurrentContent().getPlainText().trim();
-    setRaw((prev) => ({ ...prev, jobDescription: plainText }));
+    if (plainText.length <= 1000) {
+      setJobDescEditorState(editorState);
+      setRaw((prev) => ({ ...prev, jobDescription: plainText }));
+    } else {
+      alert("Job description cannot exceed 1000 characters.");
+    }
   };
+  
 
   // Handler for company info changes.
   const handleCompanyEditorStateChange = (editorState) => {
-    setCompanyEditorState(editorState);
     const plainText = editorState.getCurrentContent().getPlainText().trim();
-    setRaw((prev) => ({ ...prev, companyInfo: plainText }));
+    if (plainText.length <= 500) {
+      setCompanyEditorState(editorState);
+      setRaw((prev) => ({ ...prev, companyInfo: plainText }));
+    } else {
+      // Optionally, you can display a warning or handle the overflow here.
+      alert("Company description cannot exceed 1000 characters.");
+    }
   };
+  
 
   // Inline and block style handlers.
   const handleCompanyInlineStyle = (style) => {
@@ -284,6 +295,7 @@ const JobPostingForm = () => {
                   value={raw.department}
                   onChange={handleInputChange}
                 >
+                  <option>Select Department</option>
                   <option>IT - Software Developer</option>
                   <option>IT - Web Developer</option>
                   <option>IT - Mobile App Developer</option>
@@ -331,6 +343,7 @@ const JobPostingForm = () => {
                   value={raw.workMode}
                   onChange={handleInputChange}
                 >
+                  <option>Select Work Mode</option>
                   <option>In office</option>
                   <option>Remote</option>
                   <option>Hybrid</option>
@@ -530,9 +543,9 @@ Perks and benefits:
                   editorClassName="rich-text-editor"
                 />
                 <div className="textarea-counter">
-                  {1000 - jobDescEditorState.getCurrentContent().getPlainText().length}{" "}
-                  Characters Remaining
+                    {Math.max(0, 1000 - jobDescEditorState.getCurrentContent().getPlainText().length)} Characters Remaining
                 </div>
+
               </div>
             </div>
             {/* Additional Options */}
@@ -631,9 +644,9 @@ Perks and benefits:
                     editorClassName="rich-text-editor"
                   />
                   <div className="textarea-counter">
-                    {500 - companyEditorState.getCurrentContent().getPlainText().length}{" "}
-                    Characters Remaining
+                    {Math.max(0, 500 - companyEditorState.getCurrentContent().getPlainText().length)} Characters Remaining
                   </div>
+
                 </div>
                 <div className="mt-4">
                   <label className="form-label">Company Address</label>

@@ -1,5 +1,5 @@
 // src/components/RecruiterAuth.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./RecruiterAuth.css";
@@ -10,57 +10,109 @@ const RecruiterAuth = () => {
   const [otp, setOtp] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpError, setOtpError] = useState(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
   const navigate = useNavigate();
+
+  // Redirect immediately if a token exists
+  useEffect(() => {
+    const token = localStorage.getItem("RecruiterToken");
+    if (token) {
+      navigate("/recruiter");
+    }
+  }, [navigate]);
 
   // Function to handle recruiter login (send OTP)
   const handleLogin = async () => {
+    // Refresh user state and clear previous errors when login is clicked again
+    setOtpError(null);
+    setOtp("");
+    setShowOtpModal(false);
+    setIsLoggingIn(true);
     try {
       const response = await axios.post("http://localhost:5000/api/recruiter/signin", { email, password });
       console.log("Login response:", response.data);
 
-      // Check if the otpSent flag is true
-      if (response.data.otpSent) {
-        // Optionally update email if backend returns a sanitized version
-        if (response.data.email) {
-          setEmail(response.data.email);
-        }
-        setShowOtpModal(true);
-      } else {
-        console.error("Unexpected response:", response.data);
+      if (response.data.success === false) {
         setOtpError(response.data.message || "Unexpected response.");
+        setIsLoggingIn(false);
+        return;
       }
+
+      if (response.data.email) {
+        setEmail(response.data.email);
+      }
+      if (response.data.otp) {
+        setOtp(response.data.otp);
+      }
+      setShowOtpModal(true);
     } catch (error) {
       console.error("Login error:", error);
       alert("Login failed. Please check your credentials.");
     }
+    setIsLoggingIn(false);
   };
 
   // Function to verify OTP
   const handleVerifyOtp = async () => {
-    const payload = { 
-      email: email.trim(), 
-      otp: otp.trim() 
-    };
+    setIsVerifyingOtp(true);
+    const payload = { email: email.trim(), otp: otp.trim() };
     console.log("Verifying OTP with payload:", payload);
     
     try {
       const response = await axios.post("http://localhost:5000/api/recruiter/verify-otp", payload);
       console.log("OTP verification response:", response.data);
       
-      // Use the verified flag or check if the message includes 'successful'
       if (response.data.verified || (response.data.message && response.data.message.toLowerCase().includes("successful"))) {
-        localStorage.setItem("RecruiterToken", response.data.token); // Store token
-        navigate("/recruiter"); // Redirect to recruiter dashboard
+        localStorage.setItem("RecruiterToken", response.data.token);
+        navigate("/recruiter");
       } else {
         setOtpError(response.data.message);
       }
     } catch (error) {
       console.error("OTP verification error:", error.response ? error.response.data : error);
-      setOtpError("Invalid OTP. Please try again.");
+      if (
+        error.response &&
+        error.response.status === 403 &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setOtpError(error.response.data.message);
+      } else {
+        setOtpError("Invalid OTP. Please try again.");
+      }
     }
+    setIsVerifyingOtp(false);
   };
-  
-  
+
+  // Function to resend OTP by re-calling the signin endpoint
+  const handleResendOtp = async () => {
+    setIsResendingOtp(true);
+    setOtpError(null);
+    setOtp("");
+    try {
+      const response = await axios.post("http://localhost:5000/api/recruiter/signin", { email, password });
+      console.log("Resend OTP response:", response.data);
+      
+      if (response.data.success === false) {
+        setOtpError(response.data.message || "Unexpected response.");
+        setIsResendingOtp(false);
+        return;
+      }
+      if (response.data.email) {
+        setEmail(response.data.email);
+      }
+      if (response.data.otp) {
+        setOtp(response.data.otp);
+      }
+      // Optionally, you might add a user notification that the OTP has been resent.
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      alert("Resend OTP failed. Please try again.");
+    }
+    setIsResendingOtp(false);
+  };
 
   // Recruiter login form
   const renderRecruiterLoginForm = () => (
@@ -89,8 +141,13 @@ const RecruiterAuth = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
-      <button type="button" className="rcb_submit_btn" onClick={handleLogin}>
-        Log In
+      <button 
+        type="button" 
+        className="rcb_submit_btn" 
+        onClick={handleLogin}
+        disabled={isLoggingIn}
+      >
+        {isLoggingIn ? "Logging in..." : "Log In"}
       </button>
     </form>
   );
@@ -108,11 +165,25 @@ const RecruiterAuth = () => {
           className="otp-input-r"
           placeholder="Enter OTP"
           value={otp}
-          onChange={(e) => setOtp(e.target.value)}
+          onChange={(e) => {
+            setOtp(e.target.value);
+            setOtpError(null);
+          }}
         />
         {otpError && <p className="otp-error-r">{otpError}</p>}
-        <button className="otp-submit-btn-r" onClick={handleVerifyOtp}>
-          Verify OTP
+        <button 
+          className="otp-submit-btn-r" 
+          onClick={handleVerifyOtp}
+          disabled={isVerifyingOtp}
+        >
+          {isVerifyingOtp ? "Verifying OTP..." : "Verify OTP"}
+        </button>
+        <button 
+          className="otp-submit-btn-r" 
+          onClick={handleResendOtp}
+          disabled={isResendingOtp}
+        >
+          {isResendingOtp ? "Resending OTP..." : "Resend OTP"}
         </button>
       </div>
     </div>

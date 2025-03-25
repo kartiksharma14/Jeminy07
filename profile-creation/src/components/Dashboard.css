@@ -179,5 +179,233 @@
   background-color: #0073b1;
   color: #fff;
 }
+/* Progress Bar Styles */
+.progress-bar-container {
+  background: #e2e2e2;
+  border-radius: 4px;
+  height: 20px;
+  margin: 10px 0;
+  overflow: hidden;
+}
 
+.progress-bar {
+  background-color: #28a745;
+  height: 100%;
+  border-radius: 4px;
+  text-align: center;
+  color: #fff;
+  line-height: 20px;
+  font-size: 14px;
+}
 
+/* Job Postings Card Container */
+.job-postings-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Specific styles for the CV Quota card */
+.quota-card {
+  position: relative;
+}
+
+/* Header */
+.job-postings-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Quota Info Layout */
+.quota-info {
+  margin-top: 15px;
+}
+
+/* Quota values row */
+.quota-values {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.quota-value {
+  flex: 1;
+  text-align: center;
+}
+
+.quota-value .label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.quota-value .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Modern Progress Bar Styles */
+.progress-bar-wrapper {
+  margin: 10px 0;
+}
+
+.progress-bar-bg {
+  background: #e2e2e2;
+  border-radius: 50px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, #28a745, #85e085);
+  height: 100%;
+  width: 0;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  transition: width 0.5s ease-in-out;
+}
+
+.progress-text {
+  font-size: 12px;
+  line-height: 20px;
+}
+
+/* Subscription Details Styles */
+.subscription-details {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e2e2;
+}
+
+.subscription-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.subscription-dates {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #666;
+}
+
+.subscription-dates span {
+  display: block;
+}
+
+/* Sidebar and other styles remain unchanged */
+/* ... (your existing styles for sidebar, dashboard header, etc.) ... */
+/* Quota Card */
+.quota-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Header */
+.quota-card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Error Text */
+.error-text {
+  color: #d9534f;
+}
+
+/* Quota Stats Row */
+.quota-stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.quota-stat {
+  text-align: center;
+  flex: 1;
+}
+
+.quota-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.quota-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Naukri-like Progress Bar */
+.naukri-progress-container {
+  margin-bottom: 15px;
+}
+
+.naukri-progress-bg {
+  background: #f2f5ff;
+  border-radius: 50px;
+  height: 10px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.naukri-progress-fill {
+  background: linear-gradient(to right, #0064cf, #0099ff);
+  height: 100%;
+  width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 50px;
+  transition: width 0.6s ease;
+  position: relative;
+}
+
+.naukri-progress-label {
+  position: absolute;
+  top: -22px;
+  right: 0;
+  background: #0064cf;
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Subscription Validity */
+.quota-subscription {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+}
+
+.quota-subscription-text {
+  line-height: 1.4;
+}
+
+/* Existing Styles for .job-postings-card, etc., can remain if needed */
+/* ... Additional styling for your dashboard layout, sidebar, etc. ... */

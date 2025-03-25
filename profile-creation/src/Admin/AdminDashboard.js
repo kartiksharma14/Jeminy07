@@ -14,8 +14,12 @@ const AdminDashboard = () => {
   const [recentRecruiters, setRecentRecruiters] = useState([]);
   const [loadingRecruiters, setLoadingRecruiters] = useState(true);
 
-  // State for recent pending jobs
-  const [pendingJobs, setPendingJobs] = useState([]);
+  // State for recent clients
+  const [recentClients, setRecentClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+
+  // State for recent approved (posted) jobs
+  const [recentJobs, setRecentJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
 
   const [error, setError] = useState(null);
@@ -70,30 +74,54 @@ const AdminDashboard = () => {
     fetchRecentRecruiters();
   }, []);
 
-  // Fetch recent pending jobs
+  // Fetch recent clients
   useEffect(() => {
-    const fetchPendingJobs = async () => {
+    const fetchRecentClients = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/jobs/pending', {
+        const res = await fetch('http://localhost:5000/api/admin/clients/recent', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
           }
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          // Extract the jobs array from the response payload
-          setPendingJobs(data.jobs || []);
+          setRecentClients(data.data);
         } else {
-          setError(data.message || 'Failed to fetch pending jobs');
+          setError(data.message || 'Failed to fetch recent clients');
         }
       } catch (err) {
-        setError('Error fetching pending jobs');
+        setError('Error fetching recent clients');
+      } finally {
+        setLoadingClients(false);
+      }
+    };
+
+    fetchRecentClients();
+  }, []);
+
+  // Fetch recent approved jobs (Recent Posted Jobs)
+  useEffect(() => {
+    const fetchApprovedJobs = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/jobs/approved', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setRecentJobs(data.jobs);
+        } else {
+          setError(data.message || 'Failed to fetch recent jobs');
+        }
+      } catch (err) {
+        setError('Error fetching recent jobs');
       } finally {
         setLoadingJobs(false);
       }
     };
 
-    fetchPendingJobs();
+    fetchApprovedJobs();
   }, []);
 
   return (
@@ -127,6 +155,7 @@ const AdminDashboard = () => {
           </div>
           <div className="enterprise-content">
             <div className="enterprise-card-section">
+              {/* Recent Recruiters */}
               <div className="enterprise-card">
                 <h3>Recent Recruiters</h3>
                 {loadingRecruiters ? (
@@ -143,25 +172,62 @@ const AdminDashboard = () => {
                   <p>No recent recruiters.</p>
                 )}
               </div>
+              {/* Recent Clients */}
               <div className="enterprise-card">
-                <h3>Recent Pending Jobs</h3>
-                {loadingJobs ? (
+                <h3>Recent Clients</h3>
+                {loadingClients ? (
                   <p>Loading...</p>
-                ) : pendingJobs.length > 0 ? (
+                ) : recentClients.length > 0 ? (
                   <ul>
-                    {pendingJobs.map((job) => (
-                      <li key={job.job_id}>
-                        <strong>{job.jobTitle || "N/A"}</strong> – {job.locations}
-                        {job.Recruiter && ` (Recruiter: ${job.Recruiter.name || "N/A"})`}
+                    {recentClients.map((client) => (
+                      <li key={client.client_id}>
+                        <strong>{client.client_name || "N/A"}</strong> – {client.email} ({client.contact_person || "N/A"})
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p>No pending jobs.</p>
+                  <p>No recent clients.</p>
                 )}
               </div>
-              {/* Additional cards or dashboard components can be added here */}
             </div>
+            {/* Recent Posted Jobs */}
+            <div className="enterprise-card-job">
+                <h3>Recent Posted Jobs</h3>
+                {loadingJobs ? (
+                  <p>Loading...</p>
+                ) : recentJobs.length > 0 ? (
+                  <ul>
+                    {recentJobs.map((job) => (
+                      <li key={job.job_id} className="job-item-admin">
+                      <div className="job-info-admin">
+                        <div className="job-title-admin">{job.jobTitle || "N/A"}</div>
+                        <div className="job-details-admin">
+                          <span className="job-department-admin">{job.department || "N/A"}</span>
+                          <span className="separator-admin">|</span>
+                          <span className="job-location">{job.locations || "N/A"}</span>
+                          <span className="separator-admin">|</span>
+                          <span className="job-employment">{job.employmentType || "N/A"}</span>
+                          <span className="separator-admin">|</span>
+                          <span className="job-created">
+                            {job.job_creation_date
+                              ? new Date(job.job_creation_date).toLocaleDateString()
+                              : "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="job-recruiter-admin">
+                        {job.Recruiter ? `(Recruiter: ${job.Recruiter.name || "N/A"})` : ""}
+                      </div>
+                      <div className="job-status-admin">
+                        <span>{job.status}</span>
+                      </div>
+                    </li>                                        
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No recent jobs.</p>
+                )}
+              </div>
           </div>
         </main>
       </div>

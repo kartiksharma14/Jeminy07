@@ -1,8 +1,111 @@
 import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import JobStatus from "./JobStatus";
 import UpdatePasswordModal from "./UpdatePasswordModal";
+
+/** Helper function to format 'YYYY-MM-DD' into 'DD Mon YYYY' */
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const dateObj = new Date(dateStr);
+  const options = { year: "numeric", month: "short", day: "numeric" };
+  return dateObj.toLocaleDateString("en-GB", options); // e.g. "24 Mar 2025"
+}
+
+// Enhanced CVQuotaCard Component with refined progress bar
+const CVQuotaCard = () => {
+  const [quotaData, setQuotaData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchQuota = async () => {
+      try {
+        const token = localStorage.getItem("RecruiterToken");
+        const response = await fetch("http://localhost:5000/api/recruiter/cv-quota", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setQuotaData(data);
+        } else {
+          setError("Failed to load quota.");
+        }
+      } catch (err) {
+        console.error("Error fetching quota:", err);
+        setError("Error fetching data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuota();
+  }, []);
+
+  if (loading) {
+    return <div className="quota-card">Loading quota...</div>;
+  }
+
+  if (error) {
+    return <div className="quota-card error-text">{error}</div>;
+  }
+
+  const { quota, subscription } = quotaData;
+  const { total, used, remaining, unlimited } = quota;
+  const progressPercentage = unlimited ? 100 : (used / total) * 100;
+
+  return (
+    <div className="quota-card">
+      <div className="quota-card-header">
+        <h3>Quota Usage</h3>
+      </div>
+
+      {/* Row of Quota Stats */}
+      <div className="quota-stats-row">
+        <div className="quota-stat">
+          <span className="quota-label">Total</span>
+          <span className="quota-value">{unlimited ? "∞" : total}</span>
+        </div>
+        <div className="quota-stat">
+          <span className="quota-label">Used</span>
+          <span className="quota-value">{used}</span>
+        </div>
+        <div className="quota-stat">
+          <span className="quota-label">Remaining</span>
+          <span className="quota-value">{unlimited ? "∞" : remaining}</span>
+        </div>
+      </div>
+
+      {/* Naukri-like Progress Bar */}
+      <div className="naukri-progress-container">
+        <div className="naukri-progress-bg">
+          <div
+            className="naukri-progress-fill"
+            style={{ width: `${progressPercentage}%` }}
+          >
+            {!unlimited && (
+              <span className="naukri-progress-label">
+                {Math.round(progressPercentage)}%
+              </span>
+            )}
+            {unlimited && (
+              <span className="naukri-progress-label">Unlimited</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Subscription Validity */}
+      <div className="quota-subscription">
+        <span className="quota-subscription-text">
+          Valid from <strong>{formatDate(subscription.start_date)}</strong> to{" "}
+          <strong>{formatDate(subscription.end_date)}</strong>
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const Sidebar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +168,6 @@ const Sidebar = () => {
           <p className="hd">Administration</p>
           <ul className="leftNav">
             <li>
-              {/* Instead of linking to another page, open the modal */}
               <a href="#" onClick={openModal}>
                 Change Password
               </a>
@@ -81,7 +183,6 @@ const Sidebar = () => {
   );
 };
 
-
 const Dashboard = () => {
   const token = localStorage.getItem("authToken");
   let companyName = "";
@@ -93,6 +194,7 @@ const Dashboard = () => {
       console.error("Error decoding token:", error);
     }
   }
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-main">
@@ -106,12 +208,15 @@ const Dashboard = () => {
             {companyName && <span className="company-name">💼 {companyName}</span>}
           </div>
 
-          {/* Job Status Section */}
+          {/* CV Quota Section (above Job Status) */}
           <section className="dashboard-section">
-            <JobStatus/>
+            <CVQuotaCard />
           </section>
 
-          {/* Add additional sections here as needed */}
+          {/* Job Status Section */}
+          <section className="dashboard-section">
+            <JobStatus />
+          </section>
         </main>
       </div>
     </div>

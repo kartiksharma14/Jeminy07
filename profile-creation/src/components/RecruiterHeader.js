@@ -1,7 +1,7 @@
 // src/components/RecruiterHeader.js
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
+import {jwtDecode} from "jwt-decode";
 import "./RecruiterHeader.css";
 
 const RecruiterHeader = () => {
@@ -23,19 +23,35 @@ const RecruiterHeader = () => {
     }
   };
 
+  // Retrieve the token from local storage using key "RecruiterLogin"
   const token = localStorage.getItem("RecruiterToken");
-  let nmae = "";
+  let name = "";
   if (token) {
     try {
       const decoded = jwtDecode(token);
-      nmae = decoded.name || "N/A"; // Adjust key if necessary
+      name = decoded.name || "N/A"; // Adjust key if necessary
     } catch (error) {
       console.error("Error decoding token:", error);
     }
   }
 
-  // Logout function: clear authToken and navigate to recruiter login
-  const handleLogout = () => {
+  // Logout function: call the logout endpoint with the bearer token,
+  // then remove the token from local storage and navigate to login.
+  const handleLogout = async () => {
+    const token = localStorage.getItem("RecruiterToken");
+    if (token) {
+      try {
+        await fetch("http://localhost:5000/api/recruiter/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error("Logout API call failed", error);
+      }
+    }
     localStorage.removeItem("RecruiterToken");
     navigate("/recruiter/login");
   };
@@ -100,8 +116,7 @@ const RecruiterHeader = () => {
       </nav>
 
       {/* 3. Search Bar */}
-      <div className="search-bar-container">
-      </div>
+      <div className="search-bar-container"></div>
 
       {/* 4. Profile Section */}
       <div
@@ -115,7 +130,7 @@ const RecruiterHeader = () => {
             alt="Recruiter Profile"
             className="profile-image"
           />
-          <span className="profile-name">{nmae}</span>
+          <span className="profile-name">{name}</span>
         </div>
         {(openDropdown === "profile" || debug) && (
           <div className="dropdown profile-dropdown">

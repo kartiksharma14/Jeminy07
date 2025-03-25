@@ -198,14 +198,17 @@ const RecentJobs = () => {
         <h2 className="section-heading">Recent Jobs</h2>
         {jobs.length > 0 ? (
           <>
-            {jobs.map((job) => (
+            {jobs
+            .filter((job) => !savedJobs.some((saved) => saved.job_id === job.job_id))
+            .map((job) => (
               <JobCard
                 key={job.job_id}
                 job={job}
                 savedJobs={savedJobs}
                 onToggleSave={handleToggleSave}
               />
-            ))}
+          ))}
+
             {/* Render pagination only if more than one page exists */}
             {totalPages > 1 && (
               <div className="hp-pagination">

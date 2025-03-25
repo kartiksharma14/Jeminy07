@@ -5,7 +5,7 @@ import "./JobResultsSidebar.css";
 const JobResultsSidebar = ({ onFilterChange }) => {
   // Local state for filters using keys that match our API query parameters.
   const [keywords, setKeywords] = useState("");
-  const [experience, setExperience] = useState("0");
+  const [experience, setExperience] = useState("");
   const [locations, setLocations] = useState("");
 
   const handleKeywordsChange = (e) => {
@@ -17,7 +17,8 @@ const JobResultsSidebar = ({ onFilterChange }) => {
   const handleExperienceChange = (e) => {
     const newVal = e.target.value;
     setExperience(newVal);
-    onFilterChange({ keywords, experience: newVal, locations });
+    // If "0" is selected, pass an empty value to avoid making a query with "0"
+    onFilterChange({ keywords, experience: newVal === "0" ? "" : newVal, locations });
   };
 
   const handleLocationsChange = (e) => {
@@ -46,6 +47,7 @@ const JobResultsSidebar = ({ onFilterChange }) => {
           value={experience}
           onChange={handleExperienceChange}
         >
+          <option value="">Select number of years</option>
           <option value="0">0 Years</option>
           <option value="1">1 Year</option>
           <option value="2">2 Years</option>

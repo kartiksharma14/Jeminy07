@@ -1,0 +1,406 @@
+/* src/components/ManageClients.css */
+
+.manage-clients {
+    background: #f7f9fc;
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  /* Layout container: using flex to display sidebar and content side by side */
+  .layout {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  /* Fixed sidebar width (can also be defined in AdminSidebar.css) */
+  .as-sidebar {
+    width: 180px;
+    flex-shrink: 0;
+  }
+  
+  /* Content area takes up remaining space */
+  .content-recruiter {
+    flex: 1;
+    padding: 20px;
+  }
+  
+  /* Back Button */
+  .back-button-recruiter {
+    background: #2c3e50;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 25px;
+    transition: background 0.3s, transform 0.2s;
+  }
+  
+  .back-button-recruiter:hover {
+    background: #1f2a38;
+    transform: translateY(-2px);
+  }
+  
+  /* Title styling */
+  .content-recruiter h2 {
+    text-align: center;
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 25px;
+    font-weight: 500;
+  }
+  
+  /* Form styling for client, subscription, and recruiter forms */
+  .client-form,
+  .subscription-form,
+  .recruiter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .client-form input,
+  .subscription-form input,
+  .recruiter-form input {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #e0e6ed;
+    border-radius: 6px;
+    transition: border 0.2s;
+  }
+  
+  .client-form input:focus,
+  .subscription-form input:focus,
+  .recruiter-form input:focus {
+    border-color: #2c3e50;
+    outline: none;
+  }
+  
+  .client-form button,
+  .subscription-form button,
+  .recruiter-form button {
+    padding: 12px;
+    font-size: 16px;
+    background-color: #2c3e50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .client-form button:hover,
+  .subscription-form button:hover,
+  .recruiter-form button:hover {
+    background-color: #1f2a38;
+  }
+  
+  .error {
+    color: #e74c3c;
+    font-size: 14px;
+    text-align: center;
+  }
+  
+  /* Table container */
+  .table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+  }
+  
+  /* Clients and Recruiters table styling */
+  .clients-table,
+  .recruiters-table {
+    width: 100%;
+    border-collapse: collapse;
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  .clients-table th,
+  .clients-table td,
+  .recruiters-table th,
+  .recruiters-table td {
+    padding: 14px;
+    text-align: left;
+    border: 1px solid #e0e6ed;
+    white-space: nowrap;
+  }
+  .client-button-table{
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    text-align: left;
+    border: 1px solid #e0e6ed;
+  }
+  
+  .clients-table th,
+  .recruiters-table th {
+    background-color: #f1f3f7;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  
+  .clients-table tr:nth-child(even),
+  .recruiters-table tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+  .clients-table thead{
+    white-space: nowrap;
+  }
+  
+  
+  /* Action buttons inside tables */
+  .action-btn {
+    margin-right: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+  
+  .edit-btn {
+    background-color: #40739e;
+    color: #fff;
+  }
+  
+  .edit-btn:hover {
+    background-color: #2f3542;
+    transform: translateY(-2px);
+  }
+  
+  .delete-btn {
+    background-color: #e84118;
+    color: #fff;
+  }
+  
+  .delete-btn:hover {
+    background-color: #c23616;
+    transform: translateY(-2px);
+  }
+  
+  /* No Data */
+  .no-data {
+    text-align: center;
+    color: #777;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+  
+  /* Pagination Controls */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .pagination button {
+    padding: 8px 16px;
+    background-color: #2c3e50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+  
+  .pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .pagination button:hover:not(:disabled) {
+    background-color: #1f2a38;
+    transform: translateY(-2px);
+  }
+  
+  .pagination span {
+    font-size: 14px;
+    color: #333;
+  }
+  
+  /* Summary text */
+  .summary {
+    margin: 20px 0;
+    font-size: 16px;
+    color: #333;
+    text-align: center;
+  }
+  
+  /* Fade in Animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Additional sections for Subscription and Recruiter management */
+  /* (Not used now since both are in the modal) */
+  .subscription-section,
+  .recruiter-section {
+    margin-top: 40px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  .subscription-section h3,
+  .recruiter-section h3 {
+    text-align: center;
+    font-size: 24px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+  
+  /* Modal styles for Client Edit/Delete */
+  .client-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+  }
+  
+  .client-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  .client-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #333;
+  }
+  
+  /* Modal overlay for Subscription & Recruiter modal */
+  .sub-client-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1200;
+  }
+  
+  .sub-client-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  .sub-client-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #333;
+  }
+  
+  /* Tab Navigation inside Manage Modal */
+  .modal-tabs {
+    display: flex;
+    justify-content: center;
+    margin: 15px;
+  }
+  .modal-tabs button {
+    padding: 8px 16px;
+    border: none;
+    background: #e0e6ed;
+    cursor: pointer;
+    margin: 0 5px;
+    border-radius: 4px;
+    transition: background 0.3s;
+  }
+  .modal-tabs button.active-tab,
+  .modal-tabs button:hover {
+    background: #2c3e50;
+    color: #fff;
+  }
+  .sub-client-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;    /* Set maximum height relative to viewport */
+    overflow-y: auto;    /* Enable vertical scrolling */
+    position: relative;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+    animation: fadeIn 0.5s ease-in;
+  }
+  /* Professional styling for subscription details */
+.subscription-details {
+    background-color: #f9fafb;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .detail-label {
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .detail-value {
+    font-size: 16px;
+    color: #555;
+  }
+  
+  .subscription-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  .subscription-actions button {
+    padding: 8px 16px;
+    background-color: #2c3e50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .subscription-actions button:hover {
+    background-color: #1f2a38;
+  }
+  
+    

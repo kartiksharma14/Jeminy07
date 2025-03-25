@@ -62,7 +62,7 @@ const JobSuccess = () => {
           <div className="success-actions">
             <button 
               className="view-jobs-button" 
-              onClick={() => navigate("/manage-jobs-responses")}
+              onClick={() => navigate("/manage-responses")}
             >
               View All Jobs
             </button>

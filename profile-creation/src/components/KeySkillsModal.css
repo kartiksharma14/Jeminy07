@@ -46,7 +46,7 @@
   
   .add-btn {
     background-color: transparent;
-    color: var(--primary-color);
+    color: #007bff;
     border: none;
     padding: 10px 20px;
     font-size: 14px;

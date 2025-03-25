@@ -201,7 +201,7 @@
 .toolbar-button {
   padding: 4px;
   border: none;
-  background: none;
+  background: darkgray;
   cursor: pointer;
   border-radius: 4px;
 }

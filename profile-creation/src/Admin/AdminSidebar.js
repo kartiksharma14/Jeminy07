@@ -19,10 +19,10 @@ const AdminSidebar = () => {
           Dashboard
         </NavLink>
         <NavLink 
-          to="/admin/recruiters" 
+          to="/admin/clients" 
           className={({ isActive }) => `as-nav-link ${isActive ? 'active' : ''}`}
         >
-          Manage Recruiters
+          Manage Clients
         </NavLink>
         <NavLink 
           to="/admin/jobs" 

@@ -266,55 +266,64 @@ const QuickLinks = () => {
       {/* Content Section */}
       <div className="content-section">
         {/* Resume Section */}
-        <div id="resume-section" className="resume-card">
-          <div className="title">Resume</div>
-          <div className="upload-section">
-            <div className="uploadCont">
-              <div>
-                <div className="uploadBtn">
-                  <section>
-                    <div className="action">
-                      <div className="uploadContainer">
-                        <input
-                          type="file"
-                          id="attachCV"
-                          className="fileUpload"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              alert(`File uploaded: ${file.name}`);
-                              setFileUploaded(true);
-                            }
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <div id="result"></div>
-                        <div className="dummyUploadNew">
-                          {fileUploaded
-                            ? "Want to upload latest resume? "
-                            : "Already have a resume? "}
-                          <label
-                            htmlFor="attachCV"
-                            className="dummyUploadNewCTA"
-                            style={{ cursor: "pointer" }}
-                          >
-                            {fileUploaded ? "Update resume" : "Upload resume"}
-                          </label>
-                        </div>
-                        <br />
-                        {fileUploaded ? resume + ".pdf" : ""}
-                      </div>
+        <div>
+        <div id="resume-section" className="resume-section">
+  <div className="card">
+    <div className="widgetHead">
+      <span className="widgetTitle-cad typ-16Bold">Resume</span>
+    </div>
+    <div className="widgetCont">
+      <div className="upload-section">
+        <div className="uploadCont">
+          <div>
+            <div className="uploadBtn">
+              <section>
+                <div className="action">
+                  <div className="uploadContainer">
+                    <input
+                      type="file"
+                      id="attachCV"
+                      className="fileUpload"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          alert(`File uploaded: ${file.name}`);
+                          setFileUploaded(true);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div id="result"></div>
+                    <div className="dummyUploadNew">
+                      {fileUploaded
+                        ? "Want to upload latest resume? "
+                        : "Already have a resume? "}
+                      <label
+                        htmlFor="attachCV"
+                        className="dummyUploadNewCTA"
+                        style={{ cursor: "pointer" }}
+                      >
+                        {fileUploaded ? "Update resume" : "Upload resume"}
+                      </label>
                     </div>
-                  </section>
-                  <ul id="results_resumeParser"></ul>
+                    <br />
+                    {fileUploaded ? resume + ".pdf" : ""}
+                  </div>
                 </div>
-                <div className="format typ-14Medium">
-                  Supported Formats: doc, docx, rtf, pdf, up to 2 MB
-                </div>
-              </div>
+              </section>
+              <ul id="results_resumeParser"></ul>
+            </div>
+            <div className="format typ-14Medium">
+              Supported Formats: doc, docx, rtf, pdf, up to 2 MB
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
           {/* Resume Headline Section */}
           <div id="headline-section" className="resume-card headline-card">

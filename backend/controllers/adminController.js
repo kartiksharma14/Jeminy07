@@ -28,6 +28,7 @@ const keyskills = require('../models/keyskills');
 const itSkills = require('../models/itSkills');
 const EmploymentDetails = require('../models/employmentdetails');
 const Education = require('../models/education');
+const RecruiterSignin = require('../models/recruiterSignin');
 require('dotenv').config();
 
 
@@ -1961,14 +1962,19 @@ exports.getRecentRecruiters = async (req, res) => {
   }
 };
 
-// Update Recruiter Details (PATCH method)
 exports.updateRecruiter = async (req, res) => {
   const { recruiterId } = req.params;
-  const { name, password, email, companyName } = req.body;
-  
+  let { name, password, email, companyName } = req.body;
+
   try {
-    // Find the recruiter by ID
-    const recruiter = await Recruiter.findByPk(recruiterId);
+    // Trim inputs
+    name = name ? name.trim() : undefined;
+    password = password ? password.trim() : undefined;
+    email = email ? email.trim() : undefined;
+    companyName = companyName ? companyName.trim() : undefined;
+
+    // Use the RecruiterSignin model (which includes the beforeSave hook)
+    const recruiter = await RecruiterSignin.findByPk(recruiterId);
     if (!recruiter) {
       return res.status(404).json({ 
         success: false, 
@@ -1976,13 +1982,12 @@ exports.updateRecruiter = async (req, res) => {
       });
     }
 
-    // Check if email is being updated and validate it
+    // Check if email is updated and validate uniqueness
     if (email && email !== recruiter.email) {
-      // Check if email is already in use by another recruiter
-      const existingRecruiter = await Recruiter.findOne({ 
+      const existingRecruiter = await RecruiterSignin.findOne({ 
         where: { 
-          email: email,
-          recruiter_id: { [Sequelize.Op.ne]: recruiterId } // Not equal to current recruiter
+          email,
+          recruiter_id: { [Sequelize.Op.ne]: recruiterId }
         } 
       });
       
@@ -1992,38 +1997,36 @@ exports.updateRecruiter = async (req, res) => {
           message: "Email is already in use by another recruiter" 
         });
       }
+      recruiter.email = email;
     }
 
-    // Create an object to store fields to update
-    const updateFields = {};
+    // Update other fields if provided
+    if (name) recruiter.name = name;
+    if (companyName) recruiter.company_name = companyName;
     
-    // Only update fields that are provided in the request
-    if (name) updateFields.name = name;
-    if (companyName) updateFields.company_name = companyName;
-    if (email) updateFields.email = email;
-    
-    // If password is provided, hash it before saving
+    // If password is provided, validate length and assign the plain text
+    // The beforeSave hook in the model will hash it automatically.
     if (password) {
-      const salt = await bcrypt.genSalt(10);
-      updateFields.password = await bcrypt.hash(password, salt);
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 8 characters long"
+        });
+      }
+      recruiter.password = password; // Do not hash here; let the hook handle it.
     }
-    
-    console.log('Updating recruiter with fields:', updateFields);
-    
-    // Update the recruiter with the new values
-    await recruiter.update(updateFields);
-    
-    // Fetch the latest data after update
-    const refreshedRecruiter = await Recruiter.findByPk(recruiterId);
-    
-    // Return the updated recruiter (excluding password)
+
+    // Save the updated recruiter instance
+    await recruiter.save();
+
+    // Return updated recruiter details (excluding sensitive fields)
     const updatedRecruiter = {
-      recruiter_id: refreshedRecruiter.recruiter_id,
-      name: refreshedRecruiter.name,
-      email: refreshedRecruiter.email,
-      company_name: refreshedRecruiter.company_name,
+      recruiter_id: recruiter.recruiter_id,
+      name: recruiter.name,
+      email: recruiter.email,
+      company_name: recruiter.company_name,
     };
-    
+
     res.status(200).json({
       success: true,
       message: "Recruiter details updated successfully",
@@ -2031,13 +2034,16 @@ exports.updateRecruiter = async (req, res) => {
     });
     
   } catch (err) {
-    console.error('Error updating recruiter:', err);
+    console.error("Error updating recruiter:", err);
     res.status(500).json({ 
       success: false, 
       error: err.message 
     });
   }
 };
+
+
+
 
 
 exports.bulkUploadJobs = async (req, res) => {

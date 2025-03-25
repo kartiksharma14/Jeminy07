@@ -94,3 +94,74 @@
 .enterprise-card li:last-child {
   border-bottom: none;
 }
+
+.enterprise-card-job {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  flex: 1 1 300px;
+  margin-top: 10px;
+}
+
+/* List styling for dynamic content in cards */
+.enterprise-cardjob ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.enterprise-card-job li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e6ed;
+  font-size: 14px;
+  color: #333;
+}
+
+.enterprise-card-job li:last-child {
+  border-bottom: none;
+}
+.job-item-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.job-info-admin {
+  flex-grow: 1;
+}
+
+.job-title-admin {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.job-details-admin {
+  display: flex;
+  gap: 5px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.separator-admin {
+  margin: 0 5px;
+}
+
+.job-recruiter-admin {
+  margin-left: 15px;
+  font-size: 0.9em;
+  color: #007bff;
+  white-space: nowrap;
+}
+
+.job-status-admin {
+  margin-left: 15px;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+

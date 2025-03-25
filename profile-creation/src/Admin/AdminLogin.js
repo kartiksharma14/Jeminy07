@@ -1,5 +1,5 @@
 // src/components/AdminLogin.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminLogin.css';
@@ -11,12 +11,21 @@ import RecruiterHomeFooter from '../RecruiterHomeFooter';
 const AdminLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
   // Show Sign In form first
   const [step, setStep] = useState("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+
+  // Auto-redirect if adminToken exists
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      navigate('/admin/dashboard');
+    }
+  }, [navigate]);
 
   // Signup handler
   const handleSignup = async (e) => {
@@ -31,11 +40,11 @@ const AdminLogin = () => {
       console.log("Signup response:", data);
       // Check if the response indicates that OTP was sent
       if (data.message && data.message.toLowerCase().includes("otp sent")) {
-         setStep("verify");
-         setError(null);
+        setStep("verify");
+        setError(null);
       } else {
-         // Check for error property or fallback to message
-         setError(data.error || data.message);
+        // Check for error property or fallback to message
+        setError(data.error || data.message);
       }
     } catch (err) {
       setError("Error during signup.");
@@ -53,10 +62,10 @@ const AdminLogin = () => {
       const data = await res.json();
       console.log("Verify OTP response:", data);
       if (data.success || (data.message && data.message.toLowerCase().includes("verified"))) {
-         setStep("signin");
-         setError(null);
+        setStep("signin");
+        setError(null);
       } else {
-         setError(data.error || data.message);
+        setError(data.error || data.message);
       }
     } catch (err) {
       setError("Error during OTP verification.");
@@ -74,10 +83,10 @@ const AdminLogin = () => {
       });
       const data = await res.json();
       if (data.token) {
-         localStorage.setItem('adminToken', data.token);
-         window.location.href = "/admin/dashboard";
+        localStorage.setItem('adminToken', data.token);
+        navigate("/admin/dashboard");
       } else {
-         setError(data.error || data.message);
+        setError(data.error || data.message);
       }
     } catch (err) {
       setError("Error during signin.");

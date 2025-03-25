@@ -24,41 +24,37 @@ const JobList = () => {
       const token = localStorage.getItem("authToken");
       let baseUrl = "";
       let params = {};
-      // Check if any filter is provided
-      const hasFilters =
-        (customQuery.keywords && customQuery.keywords.trim() !== "") ||
-        (customQuery.locations && customQuery.locations.trim() !== "") ||
-        (customQuery.experience && customQuery.experience !== "0");
-
-      if (!hasFilters) {
+  
+      // Determine if any filters are provided
+      const hasKeywords =
+        customQuery.keywords && customQuery.keywords.trim() !== "";
+      const hasLocations =
+        customQuery.locations && customQuery.locations.trim() !== "";
+      // Change: Now, even if experience === "0", it counts as provided.
+      const hasExperience = customQuery.experience !== "";
+  
+      if (!hasKeywords && !hasLocations && !hasExperience) {
+        // No filters provided at all
         baseUrl = "http://localhost:5000/api/search-all";
-        params = {
-          keywords: "",
-          locations: "",
-          experience: "0",
-          page: page,
-        };
-      } else if (
-        (!customQuery.keywords || customQuery.keywords.trim() === "") &&
-        (!customQuery.locations || customQuery.locations.trim() === "") &&
-        customQuery.experience &&
-        customQuery.experience !== "0"
-      ) {
+        params = { keywords: "", locations: "", page };
+      } else if (!hasKeywords && !hasLocations && hasExperience) {
+        // Only experience filter provided (including "0")
         baseUrl = "http://localhost:5000/api/jobs/search/experience";
-        params = {
-          max_experience: customQuery.experience,
-          page: page,
-        };
+        params = { max_experience: customQuery.experience, page };
       } else {
+        // For any other combination, include keywords and locations.
         baseUrl = "http://localhost:5000/api/search-all";
         params = {
           keywords: customQuery.keywords || "",
           locations: customQuery.locations || "",
-          experience: customQuery.experience || "0",
-          page: page,
+          page,
         };
+        // Add experience if provided (even if it's "0")
+        if (hasExperience) {
+          params.experience = customQuery.experience;
+        }
       }
-
+  
       const queryParams = new URLSearchParams(params).toString();
       const url = `${baseUrl}?${queryParams}`;
       console.log("Fetching jobs via:", url);
@@ -69,10 +65,10 @@ const JobList = () => {
         },
       });
       const data = await res.json();
+  
       // Expect response to have a "jobs" array or "results" array.
       const fetchedJobs = data.jobs || data.results || [];
       setResults(fetchedJobs);
-      // Update pagination info if provided by backend
       setCurrentPage(data.currentPage || page);
       setTotalPages(data.totalPages || 1);
       setError("");
@@ -82,7 +78,7 @@ const JobList = () => {
       setResults([]);
     }
   };
-
+  
   useEffect(() => {
     // Use the query from Header (or empty object if none) and current page
     fetchJobs(query || {}, currentPage);

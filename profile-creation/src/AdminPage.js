@@ -1,20 +1,20 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import AdminDashboard from "./Admin/AdminDashboard";
-import ManageRecruiters from "./Admin/ManageRecruiters";
+import ManageClients from "./Admin/ManageClients"; // Updated component: now handles clients & recruiters
 import ManageJobs from "./Admin/ManageJobs";
 import UploadCandidates from "./Admin/UploadCandidates";
-import AdminReports from "./Admin/AdminReports"; // Import the new Reports component
+import AdminReports from "./Admin/AdminReports"; // New Reports component
 
 function AdminPage() {
   return (
     <div>
       <Routes>
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="recruiters" element={<ManageRecruiters />} />
+        <Route path="clients" element={<ManageClients />} />
         <Route path="jobs" element={<ManageJobs />} />
         <Route path="upload-candidates" element={<UploadCandidates />} />
-        <Route path="admin-reports" element={<AdminReports />} /> {/* New Reports route */}
+        <Route path="admin-reports" element={<AdminReports />} />
       </Routes>
     </div>
   );

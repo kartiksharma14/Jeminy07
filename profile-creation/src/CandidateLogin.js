@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+// src/components/CandidateLogin.js
+import React, { useState, useEffect } from "react";
 import axiosInstance from "./axiosInstance";
 import { useNavigate } from "react-router-dom";
 import LoginHeader from "./components/LoginHeader"; // Reusing the existing login header
 import "./CandidateLogin.css"; // Login-specific styles
 import ForgotPasswordModal from "./components/ForgotPasswordModal";
-import { jwtDecode } from "jwt-decode"; 
-
+import {jwtDecode} from "jwt-decode"; // Note: using default import
 
 function CandidateLogin() {
   const [email, setEmail] = useState("");
@@ -13,45 +13,47 @@ function CandidateLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState(null); 
+  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
+
+  // Auto-redirect if a token already exists in localStorage
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      navigate("/homepage", { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-  
+
     try {
       const response = await axiosInstance.post("/auth/signin", {
         email,
         password,
       });
       const { token, userId } = response.data;
-      console.log("API Response:", response);  // Debugging response
+      console.log("API Response:", response);
       console.log(token);
       if (response.status === 200 && token) {
-        // localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("authToken", token);
         localStorage.setItem("userId", userId);
         fetchUserProfile(token);
         navigate("/homepage", { replace: true });
-       
       } else {
         setError(response.data.message || "Invalid email or password.");
       }
     } catch (err) {
       console.error("Error during login:", err);
-  
       if (err.response) {
-        // Server responded with a status code out of 2xx
         console.error("Response Data:", err.response.data);
         setError(err.response.data.message || "Invalid email or password.");
       } else if (err.request) {
-        // Request was made but no response
         console.error("No response received:", err.request);
         setError("No response from the server.");
       } else {
-        // Other errors
         console.error("Error", err.message);
         setError("Something went wrong. Please try again.");
       }
@@ -59,30 +61,28 @@ function CandidateLogin() {
       setLoading(false);
     }
   };
+
   const fetchUserProfile = async (token) => {
     try {
       // Decode the token to get the user ID
-      const decodedToken = jwtDecode(token); // Use jwtDecode to decode the token
-      const userId = decodedToken.userId; // Extract the user ID from the decoded token
-  
-      // Now, fetch the user data using the user ID
+      const decodedToken = jwtDecode(token);
+      const userId = decodedToken.userId;
+      // Fetch the user data using the user ID
       const response = await axiosInstance.get(`/auth/user/${userId}`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Send the token in the Authorization header
+          Authorization: `Bearer ${token}`,
         },
       });
-  
-      setUserProfile(response.data); // Set user profile data
+      setUserProfile(response.data);
       console.log("User profile fetched:", response.data);
     } catch (err) {
       console.error("Error fetching user profile:", err);
       setError("Failed to fetch user profile.");
     }
   };
-  
+
   const openModal = () => setIsModalOpen(true); // Open the modal
   const closeModal = () => setIsModalOpen(false); // Close the modal
-  
 
   return (
     <div className="candidate-login">
@@ -168,7 +168,7 @@ function CandidateLogin() {
                     </div>
                     <a
                       href="#"
-                      onClick={openModal} // Open modal on click
+                      onClick={openModal}
                       className="forgot-password-link"
                     >
                       Forgot Password?
@@ -199,36 +199,27 @@ function CandidateLogin() {
             <div>
               <ul>
                 <li>
-                  <a href="//www.stl.tech/" target="_blank">
+                  <a href="//www.stl.tech/" target="_blank" rel="noopener noreferrer">
                     About Us
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="https://www.stl.tech/stl/mn_contactus.php"
-                    target="_blank"
-                  >
+                  <a href="https://www.stl.tech/stl/mn_contactus.php" target="_blank" rel="noopener noreferrer">
                     Contact Us
                   </a>
                 </li>
                 <li>
-                  <a href="//www.stl.tech/faq/faq.php" target="_blank">
+                  <a href="//www.stl.tech/faq/faq.php" target="_blank" rel="noopener noreferrer">
                     FAQs
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="https://www.stl.tech/termsconditions"
-                    target="_blank"
-                  >
+                  <a href="https://www.stl.tech/termsconditions" target="_blank" rel="noopener noreferrer">
                     Terms and Conditions
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="https://www.stl.tech/privacypolicy"
-                    target="_blank"
-                  >
+                  <a href="https://www.stl.tech/privacypolicy" target="_blank" rel="noopener noreferrer">
                     Privacy Policy
                   </a>
                 </li>

@@ -1,13 +1,3 @@
-/* ========== CSS Variables for Consistency ========== */
-:root {
-  --primary-color: #007bff;
-  --primary-hover: #0056b3;
-  --bg-color: #f9f9f9;
-  --card-bg: #ffffff;
-  --border-radius: 12px;
-  --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-}
-
 /* ========== Base Styles ========== */
 body {
   margin: 0;
@@ -28,13 +18,23 @@ body {
 
 /* ========== Sidebar Styles ========== */
 .sidebar-cad {
-  flex: 0 0 280px;
-  max-width: 280px;
-  background-color: var(--card-bg);
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
   position: sticky;
-  top: 60px;
+  top: 80px; /* Adjust according to header height */
+  height: fit-content;
+  max-height: calc(100vh - 100px); /* Prevents overflow */
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.card-quickLink {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+}
+.collection {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .card.quickLink ul {
@@ -44,23 +44,14 @@ body {
 }
 
 .collection-header {
+  font-weight: bold;
   font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-  list-style: none;
+  margin-bottom: 10px;
 }
 
-
 .collection-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  font-size: 15px;
-  color: #444;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  padding: 8px 0;
+
 }
 
 .collection-item:hover {
@@ -68,15 +59,15 @@ body {
 }
 
 .action-link {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary-color);
   text-decoration: none;
-  transition: color 0.3s ease;
+  color: #007bff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .action-link:hover {
-  color: var(--primary-hover);
+  color: #0056b3;
 }
 
 /* ========== Content Section ========== */
@@ -142,7 +133,7 @@ body {
 
 .dummyUploadNewCTA {
   font-weight: bold;
-  color: var(--primary-color);
+  color: #007bff;
   cursor: pointer;
   transition: color 0.3s ease;
 }
@@ -175,7 +166,7 @@ body {
 .edit-btn-resume,
 .add-btn {
   background-color: transparent;
-  color: var(--primary-color);
+  color: #007bff;
   border: none;
   font-size: 14px;
   font-weight: bold;
@@ -185,7 +176,7 @@ body {
 
 .edit-btn-resume:hover,
 .add-btn-resume:hover {
-  color: var(--primary-hover);
+  color: #0056b3;
   transform: scale(1.05);
 }
 
@@ -219,7 +210,7 @@ body {
 .add.no-outline {
   font-size: 14px;
   font-weight: bold;
-  color: var(--primary-color);
+  color: #007bff;
   cursor: pointer;
   transition: color 0.3s ease;
 }
@@ -266,7 +257,7 @@ body {
 
 .edit.icon {
   font-size: 14px;
-  color: var(--primary-color);
+  color: #007bff;
   cursor: pointer;
   transition: color 0.3s ease;
 }
