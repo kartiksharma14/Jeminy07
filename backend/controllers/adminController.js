@@ -427,8 +427,255 @@ exports.getCandidateReport = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+// Add these two functions to your adminController (or reportController) file:
 
+// Download the current page's subscriptions as an XLS file
+exports.downloadSubscriptionsCurrentPageXls = async (req, res) => {
+  try {
+    // Get pagination parameters from query string (default: page 1, limit 10)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
+    // Fetch subscriptions with associated client details
+    const result = await ClientSubscription.findAndCountAll({
+      include: [
+        {
+          model: MasterClient,
+          as: 'client', // Ensure this alias matches your association
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ],
+      offset,
+      limit,
+      order: [['subscription_id', 'DESC']]
+    });
+    const subscriptions = result.rows;
+
+    // Build an array-of-arrays (AOA) for XLSX data with headers
+    const wsData = [
+      [
+        "Subscription ID",
+        "Client ID",
+        "Client Name",
+        "CV Download Quota",
+        "Logins Allowed",
+        "Start Date",
+        "End Date",
+        "Is Active",
+        "Created At"
+      ]
+    ];
+
+    subscriptions.forEach(sub => {
+      const { subscription_id, client_id, cv_download_quota, login_allowed, start_date, end_date, is_active, createdAt } = sub.dataValues;
+      const clientName = sub.client ? sub.client.client_name : "";
+      // Format dates (adjust formatting as needed)
+      const startDateFormatted = start_date ? new Date(start_date).toLocaleDateString() : "";
+      const endDateFormatted = end_date ? new Date(end_date).toLocaleDateString() : "";
+      const createdAtFormatted = createdAt ? new Date(createdAt).toLocaleDateString() : "";
+      wsData.push([
+        subscription_id,
+        client_id,
+        clientName,
+        cv_download_quota,
+        login_allowed,
+        startDateFormatted,
+        endDateFormatted,
+        is_active ? "Yes" : "No",
+        createdAtFormatted
+      ]);
+    });
+
+    // Create a new workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Subscriptions');
+
+    // Write workbook to binary string and convert to Buffer
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers and send the file
+    res.setHeader('Content-Disposition', 'attachment; filename="subscriptions_current_page.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error("Error downloading subscriptions (current page) XLS:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Download the full subscriptions report as an XLS file
+exports.downloadSubscriptionsFullXls = async (req, res) => {
+  try {
+    // Fetch all subscriptions with associated client details
+    const subscriptions = await ClientSubscription.findAll({
+      include: [
+        {
+          model: MasterClient,
+          as: 'client', // Ensure this alias matches your association
+          attributes: ['client_id', 'client_name', 'email', 'phone']
+        }
+      ],
+      order: [['subscription_id', 'DESC']]
+    });
+
+    // Build an array-of-arrays (AOA) with headers
+    const wsData = [
+      [
+        "Subscription ID",
+        "Client ID",
+        "Client Name",
+        "CV Download Quota",
+        "Logins Allowed",
+        "Start Date",
+        "End Date",
+        "Is Active",
+        "Created At"
+      ]
+    ];
+
+    subscriptions.forEach(sub => {
+      const { subscription_id, client_id, cv_download_quota, login_allowed, start_date, end_date, is_active, createdAt } = sub.dataValues;
+      const clientName = sub.client ? sub.client.client_name : "";
+      const startDateFormatted = start_date ? new Date(start_date).toLocaleDateString() : "";
+      const endDateFormatted = end_date ? new Date(end_date).toLocaleDateString() : "";
+      const createdAtFormatted = createdAt ? new Date(createdAt).toLocaleDateString() : "";
+      wsData.push([
+        subscription_id,
+        client_id,
+        clientName,
+        cv_download_quota,
+        login_allowed,
+        startDateFormatted,
+        endDateFormatted,
+        is_active ? "Yes" : "No",
+        createdAtFormatted
+      ]);
+    });
+
+    // Create a new workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Subscriptions');
+
+    // Write workbook to binary string then convert to a Buffer
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers for file download and send the file
+    res.setHeader('Content-Disposition', 'attachment; filename="subscriptions_full_report.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error("Error downloading full subscriptions XLS:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+// Download the current page's client XLS file
+exports.downloadClientsCurrentPageXls = async (req, res) => {
+  try {
+    // Get pagination parameters from query string (defaults: page 1, limit 10)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Fetch clients with pagination (using MasterClient)
+    const result = await MasterClient.findAndCountAll({
+      offset,
+      limit,
+      order: [['client_id', 'DESC']]
+    });
+    const clients = result.rows;
+
+    // Build an array-of-arrays (AOA) for XLSX data with headers.
+    const wsData = [
+      ["Client ID", "Client Name", "Address", "Contact Person", "Email", "Phone", "Created At"]
+    ];
+
+    clients.forEach(client => {
+      const { client_id, client_name, address, contact_person, email, phone, createdAt } = client.dataValues;
+      const createdAtFormatted = createdAt ? new Date(createdAt).toLocaleDateString() : "";
+      wsData.push([
+        client_id,
+        client_name,
+        address || "",
+        contact_person || "",
+        email || "",
+        phone || "",
+        createdAtFormatted
+      ]);
+    });
+
+    // Create a new workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Clients');
+
+    // Write workbook to binary string then convert to a Buffer.
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers for file download.
+    res.setHeader('Content-Disposition', 'attachment; filename="clients_current_page.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    
+    // Send the file.
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error("Error downloading current page clients XLS:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Download the full clients XLS file (all clients)
+exports.downloadClientsFullXls = async (req, res) => {
+  try {
+    // Fetch all clients from MasterClient
+    const clients = await MasterClient.findAll({
+      order: [['client_id', 'DESC']]
+    });
+
+    // Build an array-of-arrays (AOA) for XLSX data with headers.
+    const wsData = [
+      ["Client ID", "Client Name", "Address", "Contact Person", "Email", "Phone", "Created At"]
+    ];
+
+    clients.forEach(client => {
+      const { client_id, client_name, address, contact_person, email, phone, createdAt } = client.dataValues;
+      const createdAtFormatted = createdAt ? new Date(createdAt).toLocaleDateString() : "";
+      wsData.push([
+        client_id,
+        client_name,
+        address || "",
+        contact_person || "",
+        email || "",
+        phone || "",
+        createdAtFormatted
+      ]);
+    });
+
+    // Create a new workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Clients');
+
+    // Write workbook to binary string then convert to a Buffer.
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    const buf = Buffer.from(wbout, 'binary');
+
+    // Set response headers for file download.
+    res.setHeader('Content-Disposition', 'attachment; filename="clients_full_report.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    // Send the file.
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error("Error downloading full clients XLS:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 
 exports.getCandidateProfilePdf = async (req, res) => {

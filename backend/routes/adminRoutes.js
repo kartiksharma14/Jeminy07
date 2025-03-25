@@ -24,7 +24,14 @@ router.post('/verify-otp', adminController.verifyOtp); // OTP verification route
 router.post('/signin', adminController.signin);
 // Admin password update route
 router.post('/update-password', adminAuth, adminController.updatePassword);
+// Route for downloading current page subscriptions XLS
+router.get('/subscriptions/download',adminAuth,adminController.downloadSubscriptionsCurrentPageXls);
 
+// Route for downloading full subscriptions XLS (you could use a query param or a separate endpoint)
+router.get('/subscriptions/download/full', adminAuth,adminController.downloadSubscriptionsFullXls);
+// Routes for client XLS downloads
+router.get('/clients/download', adminAuth, adminController.downloadClientsCurrentPageXls);
+router.get('/clients/download/full', adminAuth, adminController.downloadClientsFullXls);
 // Client management routes
 router.post('/clients', adminAuth, adminController.createClient);
 router.get('/clients', adminAuth, adminController.getAllClients);
@@ -46,7 +53,6 @@ router.get('/clients/:clientId/subscription', adminAuth, adminController.getClie
 router.patch('/subscriptions/:subscriptionId', adminAuth, adminController.updateClientSubscription);
 router.post('/subscriptions/:subscriptionId/deactivate', adminAuth, adminController.deactivateClientSubscription);
 router.post('/subscriptions/:subscriptionId/renew', adminAuth, adminController.renewClientSubscription);
-
 
 // Device management routes
 router.get('/recruiters/devices', adminAuth, adminController.getRecruitersDeviceUsage);
