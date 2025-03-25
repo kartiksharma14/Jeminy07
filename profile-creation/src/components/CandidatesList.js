@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import "./CandidatesList.css";
-import { FaBriefcase, FaWallet, FaMapMarkerAlt } from "react-icons/fa"; // Icons
+import { FaBriefcase, FaWallet, FaMapMarkerAlt, FaCheckCircle } from "react-icons/fa";
 import RecruiterHeader from "../components/RecruiterHeader";
 import RecruiterFooter from "../components/RecruiterFooter";
 
@@ -307,8 +307,6 @@ const CandidateModal = ({ candidate, onClose, onToggleFavorite, isFavorite }) =>
   );
 };
 
-// CandidateCard: Displays candidate info on a card.
-// Uses cached details for the name if available.
 const CandidateCard = ({
   candidate,
   onOpenModal,
@@ -316,10 +314,73 @@ const CandidateCard = ({
   isFavorite,
   detailsMap,
 }) => {
-  const handleCardClick = () => {
-    onOpenModal(candidate);
+  const [showPhone, setShowPhone] = useState(false);
+  const [downloadCounted, setDownloadCounted] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  // Helper function that calls the download-CV API.
+  // Returns true if the download limit is reached.
+  const recordDownload = async () => {
+    const authToken = localStorage.getItem("RecruiterToken");
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/recruiter/download-cv/${candidate.candidate_id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      const result = await response.json();
+      console.log(result.message);
+      if (result.message && result.message.includes("not counted toward quota")) {
+        setDownloadCounted(true);
+        return false; // Limit not reached.
+      } else if (
+        result.message &&
+        result.message.includes("You have reached your CV download limit")
+      ) {
+        setShowLimitModal(true);
+        return true; // Limit reached.
+      } else {
+        setDownloadCounted(false);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error tracking CV download:", error);
+      return false;
+    }
   };
 
+  // When the candidate card is clicked, record download and then open the modal if allowed.
+  const handleCardClick = async () => {
+    const limitReached = await recordDownload();
+    if (!limitReached) {
+      onOpenModal(candidate);
+    }
+  };
+
+  // When "View Profile" is clicked, record download and then open the modal.
+  const handleViewProfile = async (e) => {
+    e.stopPropagation();
+    const limitReached = await recordDownload();
+    if (!limitReached) {
+      onOpenModal(candidate);
+    }
+  };
+
+  // When "View Phone Number" is clicked, record download but only reveal phone number.
+  const handleViewPhone = async (e) => {
+    e.stopPropagation();
+    const limitReached = await recordDownload();
+    if (!limitReached) {
+      setShowPhone(true);
+    }
+  };
+
+  // Favorite button click.
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
     onToggleFavorite(candidate.candidate_id);
@@ -330,104 +391,153 @@ const CandidateCard = ({
     candidate.name ||
     (detailsMap && detailsMap[candidate.candidate_id]?.name) ||
     "Unnamed Candidate";
-  // Helper function to format the date string
-  function formatAvailabilityDate(dateStr) {
+
+  // Helper function to format dates (if needed).
+  const formatAvailabilityDate = (dateStr) => {
     if (!dateStr || isNaN(new Date(dateStr).getTime())) return dateStr;
     const date = new Date(dateStr);
     const month = date.toLocaleString("default", { month: "short" });
     const year = date.getFullYear();
     return `${month} ${year}`;
-  }
-const totalExperience = candidate.EmploymentDetails.reduce(
-  (acc, job) => {
-    acc.years += job.experience_in_year || 0;
-    acc.months += job.experience_in_months || 0;
-    return acc;
-  },
-  { years: 0, months: 0 }
-);
-totalExperience.years += Math.floor(totalExperience.months / 12);
-totalExperience.months = totalExperience.months % 12;
-const experienceText =
-  totalExperience.years === 0 && totalExperience.months === 0
-    ? "Fresher"
-    : `${totalExperience.years} yrs ${totalExperience.months} months`;
-    const currentSalary = candidate.EmploymentDetails?.[0]?.current_salary || "Not Available";
-const [showPhone, setShowPhone] = useState(false);
+  };
+
+  // Calculate total experience from EmploymentDetails.
+  const totalExperience = candidate.EmploymentDetails.reduce(
+    (acc, job) => {
+      acc.years += job.experience_in_year || 0;
+      acc.months += job.experience_in_months || 0;
+      return acc;
+    },
+    { years: 0, months: 0 }
+  );
+  totalExperience.years += Math.floor(totalExperience.months / 12);
+  totalExperience.months = totalExperience.months % 12;
+  const experienceText =
+    totalExperience.years === 0 && totalExperience.months === 0
+      ? "Fresher"
+      : `${totalExperience.years} yrs ${totalExperience.months} months`;
+
+  const currentSalary =
+    candidate.EmploymentDetails?.[0]?.current_salary || "Not Available";
 
   return (
-    <div className="candidate-card" onClick={handleCardClick}>
-      {/* Left Section: Name, Current Position, Previous Position, Education, Key Skills */}
-      <div className="card-left">
-        <div className="card-header">
-          <h3 className="candidate-name">{displayName}</h3>
-          <button
-            className={`favorite-button ${candidate.isFavorite ? "favorited" : ""}`}
-            onClick={handleFavoriteClick}
-          >
-            {candidate.isFavorite ? "★" : "☆"}
+    <>
+      <div className="candidate-card-rec" onClick={handleCardClick}>
+        {/* Green tick overlay if the download is already counted */}
+        {downloadCounted && (
+          <div className="downloaded-tick">
+            <FaCheckCircle color="green" size={20} />
+          </div>
+        )}
+
+        {/* Left Section: Candidate Details */}
+        <div className="card-left">
+          <div className="card-header">
+            <h3 className="candidate-name">{displayName}</h3>
+            <button
+              className={`favorite-button ${isFavorite ? "favorited" : ""}`}
+              onClick={handleFavoriteClick}
+            >
+              {isFavorite ? "★" : "☆"}
+            </button>
+          </div>
+          <div className="candidate-info">
+            <span>
+              <FaBriefcase /> {experienceText}
+            </span>
+            <span>
+              <FaWallet /> {currentSalary}
+            </span>
+            <span>
+              <FaMapMarkerAlt /> {candidate.location || "N/A"}
+            </span>
+          </div>
+          <div className="candidate-details">
+            <p>
+              <strong>Current:</strong>{" "}
+              {candidate.EmploymentDetails.length > 0
+                ? `${candidate.EmploymentDetails[0].current_job_title} at ${candidate.EmploymentDetails[0].current_company_name}`
+                : "N/A"}
+            </p>
+            <p>
+              <strong>Previous:</strong>{" "}
+              {candidate.EmploymentDetails.length > 1
+                ? `${candidate.EmploymentDetails[1].current_job_title} at ${candidate.EmploymentDetails[1].current_company_name}`
+                : "N/A"}
+            </p>
+            <p>
+              <strong>Education:</strong>{" "}
+              {candidate.Education.length > 0
+                ? `${candidate.Education[0].education_level} at ${candidate.Education[0].university}`
+                : "N/A"}
+            </p>
+            <p>
+              <strong>Key Skills:</strong>{" "}
+              {candidate.keyskills.length > 0
+                ? candidate.keyskills.map((skill) => skill.keyskillsname).join(", ")
+                : "N/A"}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Section: Profile Picture and Action Buttons */}
+        <div className="candidate-sidebar">
+          {candidate.image && (
+            <img
+              src={candidate.image}
+              alt="Candidate"
+              className="candidate-image"
+            />
+          )}
+          <button className="view-phone-button" onClick={handleViewPhone}>
+            {showPhone ? candidate.phone : "View Phone Number"}
+          </button>
+          <button className="view-profile-button" onClick={handleViewProfile}>
+            View Profile
           </button>
         </div>
-
-        {/* Work Experience, Salary, Location */}
-        <div className="candidate-info">
-          <span><FaBriefcase /> {experienceText}</span>
-          <span><FaWallet/>{currentSalary}</span>
-         <span><FaMapMarkerAlt /> {candidate.location || "N/A"}</span>
-        </div>
-
-        {/* Candidate Details */}
-        <div className="candidate-details">
-        <p><strong>Current:</strong>{" "}{candidate.EmploymentDetails.length > 0 ? `${candidate.EmploymentDetails[0].current_job_title} at ${candidate.EmploymentDetails[0].current_company_name}`: "N/A"}</p>
-        <p><strong>Previous:</strong>{" "}{candidate.EmploymentDetails.length > 1 ? `${candidate.EmploymentDetails[1].current_job_title} at ${candidate.EmploymentDetails[1].current_company_name}`: "N/A"}</p>
-        <p><strong>Education:</strong>{" "}{candidate.Education.length > 0 ? `${candidate.Education[0].education_level} at ${candidate.Education[0].university}`: "N/A"}</p>
-          <p><strong>Key Skills:</strong>{candidate.keyskills.length > 0 ? candidate.keyskills.map(skill => skill.keyskillsname).join(", ") : "N/A"}</p>
-        </div>
       </div>
 
-      {/* Right Section: Profile Picture + Buttons */}
-      <div className="candidate-sidebar">
-        {candidate.image && (
-          <img src={candidate.image} alt="Candidate" className="candidate-image" />
-        )}
-        <button
-        className="view-phone-button"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevents modal from opening
-            setShowPhone(true);
-        }}
-        >
-        {showPhone ? candidate.phone : "View Phone Number"}
-        </button>
-        <button
-          className="view-profile-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenModal(candidate);
-          }}
-        >
-          View Profile
-        </button>
-      </div>
-    </div>
+      {/* Modal to show download limit reached message */}
+      {showLimitModal && (
+        <div className="limit-modal-overlay">
+          <div className="limit-modal">
+            <h2>Download Limit Reached</h2>
+            <p>
+              You have reached your CV download limit (10). Please contact admin to increase your quota.
+            </p>
+            <button onClick={() => setShowLimitModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
+
 
 const CandidatesList = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const AUTH_TOKEN = localStorage.getItem("RecruiterToken");
+
   // Candidate list states.
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Remove client-side modal/prefetch details if you no longer need them,
+  // but here we’re keeping it intact as before.
   const [modalCandidate, setModalCandidate] = useState(null);
-  // Pagination, sorting, and filtering (for candidate grid).
+  const [favorites, setFavorites] = useState([]);
+  const [candidateDetailsMap, setCandidateDetailsMap] = useState({});
+
+  // Pagination, sorting, and filtering states.
+  // Note: since the server handles pagination, the currentPage and sortOption
+  // are now passed as query parameters.
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortOption, setSortOption] = useState("name-asc");
+  const [sortOption, setSortOption] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const candidatesPerPage = 8;
-  const [favorites, setFavorites] = useState([]);  const [candidateDetailsMap, setCandidateDetailsMap] = useState({});
+  const [totalPages, setTotalPages] = useState(1);
 
   // ********* SIDEBAR FILTER STATES *********
   const [keyword, setKeyword] = useState("");
@@ -456,146 +566,87 @@ const CandidatesList = () => {
   };
   // ********************************************
 
-  // Build endpoints from URL query parameters.
-  const buildEndpoints = () => {
-    let endpoints = [];
-    const q = new URLSearchParams(location.search);
-    if (q.get("location")) {
-      endpoints.push({
-        name: "location",
-        url: `http://localhost:5000/api/candidate-profile/search-by-city?location=${encodeURIComponent(q.get("location"))}`,
-      });
+  // Build the query parameters for the API call.
+  // (All filtering, sorting and pagination info is now sent to the server.)
+  const buildQueryParams = () => {
+    const params = new URLSearchParams(location.search);
+
+    // Pagination parameters
+    params.set("page", currentPage);
+
+    
+    // Global search term
+    if (searchTerm.trim() !== "") {
+      params.set("search", searchTerm);
     }
-    if (q.get("notice_period")) {
-      endpoints.push({
-        name: "notice_period",
-        url: `http://localhost:5000/api/candidates/search/notice-period?notice_period=${encodeURIComponent(q.get("notice_period"))}`,
-      });
-    }
-    if (q.get("exclude")) {
-      endpoints.push({
-        name: "exclude",
-        url: `http://localhost:5000/api/candidates/search-by-excluding-keyword?exclude=${encodeURIComponent(q.get("exclude"))}`,
-      });
-    }
-    if (q.get("days")) {
-      endpoints.push({
-        name: "active_in",
-        url: `http://localhost:5000/api/candidates/search-by-active-in?days=${encodeURIComponent(q.get("days"))}`,
-      });
-    }
-    if (q.get("skills")) {
-      endpoints.push({
-        name: "itSkills",
-        url: `http://localhost:5000/api/candidates/search/it-skills?skills=${encodeURIComponent(q.get("skills"))}`,
-      });
-    }
-    if (q.get("differently_abled")) {
-      endpoints.push({
-        name: "disability",
-        url: `http://localhost:5000/api/candidates/search/disability?differently_abled=yes`,
-      });
-    }
-    if (q.get("min_salary") || q.get("max_salary")) {
-      const minVal = q.get("min_salary") || 0;
-      const maxVal = q.get("max_salary") || 9999999;
-      endpoints.push({
-        name: "salary",
-        url: `http://localhost:5000/api/candidates/search/salary?min_salary=${encodeURIComponent(minVal)}&max_salary=${encodeURIComponent(maxVal)}`,
-      });
-    }
-    if (q.get("gender")) {
-      endpoints.push({
-        name: "gender",
-        url: `http://localhost:5000/api/candidates/search/gender?gender=${encodeURIComponent(q.get("gender"))}`,
-      });
-    }
-    if (q.get("university")) {
-      endpoints.push({
-        name: "education",
-        url: `http://localhost:5000/api/candidates/search/education?university=${encodeURIComponent(q.get("university"))}`,
-      });
-    }
-    if (q.get("current_company_name")) {
-      endpoints.push({
-        name: "employment",
-        url: `http://localhost:5000/api/candidates/search/employment?current_company_name=${encodeURIComponent(q.get("current_company_name"))}`,
-      });
-    }
-    if (q.get("min_experience") || q.get("max_experience")) {
-      const minE = q.get("min_experience") || 0;
-      const maxE = q.get("max_experience") || 100;
-      endpoints.push({
-        name: "experience_range",
-        url: `http://localhost:5000/api/candidate-profile/candidates/experience/range?min_experience=${encodeURIComponent(minE)}&max_experience=${encodeURIComponent(maxE)}`,
-      });
-    }
-    if (q.get("keyword")) {
-      endpoints.push({
-        name: "keyword",
-        url: `http://localhost:5000/api/candidates/search/keyword?keyword=${encodeURIComponent(q.get("keyword"))}`,
-      });
-    }
-    return endpoints;
+
+    // Sidebar filters (if provided, add them to the params)
+    if (locationFilter) params.set("location", locationFilter);
+    if (noticePeriod && noticePeriod !== "Any") params.set("notice_period", noticePeriod);
+    if (excludeKeyword) params.set("exclude", excludeKeyword);
+
+    // Map activeIn to days.
+    const activeMap = { "1 day": 1, "15 days": 15, "30 days": 30, "3 months": 90, "6 months": 180 };
+    if (activeIn && activeMap[activeIn]) params.set("days", activeMap[activeIn]);
+
+    if (itSkillsFilter) params.set("skills", itSkillsFilter);
+    if (disability) params.set("differently_abled", "yes");
+    if (salaryMin) params.set("min_salary", salaryMin);
+    if (salaryMax) params.set("max_salary", salaryMax);
+
+    const genderMap = { "All Candidates": "", "Male Candidates": "male", "Female Candidates": "female" };
+    if (gender && genderMap[gender]) params.set("gender", genderMap[gender]);
+    if (educationFilter) params.set("university", educationFilter);
+    if (employmentFilter) params.set("current_company_name", employmentFilter);
+    if (minExperience) params.set("min_experience", minExperience);
+    if (maxExperience) params.set("max_experience", maxExperience);
+    if (keyword) params.set("keyword", keyword);
+    if (relocate) params.set("relocate", "true");
+
+    return params;
   };
 
-  // Fetch candidate list based on query parameters.
+  // Fetch candidate list based on query parameters from the URL.
+  // This now uses a single endpoint that returns the paginated JSON response.
   useEffect(() => {
     const fetchCandidates = async () => {
       setLoading(true);
       setError(null);
-      const endpoints = buildEndpoints();
-      if (endpoints.length === 0) {
-        setCandidates([]);
-        setLoading(false);
-        return;
-      }
       try {
-        const fetches = endpoints.map((ep) =>
-          fetch(ep.url, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${AUTH_TOKEN}`,
-            },
-          }).then(async (res) => {
-            if (!res.ok) {
-              throw new Error(
-                `Error from ${ep.name} endpoint: ${res.status} ${res.statusText}`
-              );
-            }
-            const data = await res.json();
-            return data.data || [];
-          })
-        );
-        const allResults = await Promise.all(fetches);
-        let intersection = allResults[0].map((c) => c.candidate_id);
-        for (let i = 1; i < allResults.length; i++) {
-          const currentIds = allResults[i].map((c) => c.candidate_id);
-          intersection = intersection.filter((id) => currentIds.includes(id));
-        }
-        let candidateMap = {};
-        allResults.forEach((arr) => {
-          arr.forEach((cand) => {
-            if (!candidateMap[cand.candidate_id]) {
-              candidateMap[cand.candidate_id] = cand;
-            }
-          });
+        // Build query parameters including pagination, filters, and sort.
+        const params = buildQueryParams();
+        // Assuming the new endpoint is updated to accept these query params.
+        const url = `http://localhost:5000/api/candidates/search/?${params.toString()}`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
         });
-        const finalCandidates = intersection.map((id) => candidateMap[id]);
-        setCandidates(finalCandidates);
-        setCurrentPage(1);
+        if (!res.ok) {
+          throw new Error(`Error fetching candidates: ${res.status} ${res.statusText}`);
+        }
+        const json = await res.json();
+        if (json.success) {
+          setCandidates(json.data);
+          setTotalPages(json.totalPages);
+          // Optionally update current page if backend sends a different value.
+          // setCurrentPage(json.currentPage);
+        } else {
+          throw new Error("API returned unsuccessful response");
+        }
       } catch (err) {
-        console.error("Error fetching:", err);
+        console.error("Error fetching candidates:", err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
     fetchCandidates();
-  }, [location.search]);
+  }, [location.search, currentPage, sortOption, searchTerm]); // re-fetch if these change
 
-  // Pre-fetch candidate details for names.
+  // Pre-fetch candidate details for names (if still needed).
   useEffect(() => {
     if (candidates.length === 0) return;
     Promise.all(
@@ -628,72 +679,7 @@ const CandidatesList = () => {
     });
   }, [candidates, AUTH_TOKEN]);
 
-  // Filtering and sorting for candidate grid.
-  const filteredAndSortedCandidates = useMemo(() => {
-    let filtered = candidates;
-    if (searchTerm.trim() !== "") {
-      filtered = filtered.filter((candidate) => {
-        const name =
-          candidate.signin?.name ||
-          candidate.name ||
-          (candidateDetailsMap[candidate.candidate_id] &&
-            candidateDetailsMap[candidate.candidate_id].name) ||
-          "Unnamed Candidate";
-        return name.toLowerCase().includes(searchTerm.toLowerCase());
-      });
-    }
-    if (sortOption === "name-asc") {
-      filtered.sort((a, b) => {
-        const nameA = (
-          a.signin?.name ||
-          a.name ||
-          (candidateDetailsMap[a.candidate_id] &&
-            candidateDetailsMap[a.candidate_id].name) ||
-          "Unnamed Candidate"
-        ).toLowerCase();
-        const nameB = (
-          b.signin?.name ||
-          b.name ||
-          (candidateDetailsMap[b.candidate_id] &&
-            candidateDetailsMap[b.candidate_id].name) ||
-          "Unnamed Candidate"
-        ).toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-    } else if (sortOption === "name-desc") {
-      filtered.sort((a, b) => {
-        const nameA = (
-          a.signin?.name ||
-          a.name ||
-          (candidateDetailsMap[a.candidate_id] &&
-            candidateDetailsMap[a.candidate_id].name) ||
-          "Unnamed Candidate"
-        ).toLowerCase();
-        const nameB = (
-          b.signin?.name ||
-          b.name ||
-          (candidateDetailsMap[b.candidate_id] &&
-            candidateDetailsMap[b.candidate_id].name) ||
-          "Unnamed Candidate"
-        ).toLowerCase();
-        return nameB.localeCompare(nameA);
-      });
-    }
-    return filtered;
-  }, [candidates, searchTerm, sortOption, candidateDetailsMap]);
-
-  // Pagination calculations.
-  const indexOfLastCandidate = currentPage * candidatesPerPage;
-  const indexOfFirstCandidate = indexOfLastCandidate - candidatesPerPage;
-  const currentCandidates = filteredAndSortedCandidates.slice(
-    indexOfFirstCandidate,
-    indexOfLastCandidate
-  );
-  const totalPages = Math.ceil(
-    filteredAndSortedCandidates.length / candidatesPerPage
-  );
-
-  // Handlers for candidate grid.
+  // Handlers for search, sorting and pagination remain similar.
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
@@ -706,8 +692,8 @@ const CandidatesList = () => {
   };
   const handleResetFilters = () => {
     setSearchTerm("");
-    setSortOption("name-asc");
     setCurrentPage(1);
+    // Clear sidebar filters if desired.
   };
   const handleOpenModal = (candidate) => {
     setModalCandidate(candidate);
@@ -724,11 +710,11 @@ const CandidatesList = () => {
   // *********** SIDEBAR FILTER HANDLER ***********
   const handleFilterSearch = (e) => {
     e.preventDefault();
+    // Build new query parameters from sidebar filter state.
     const params = new URLSearchParams();
     if (locationFilter) params.set("location", locationFilter);
     if (noticePeriod && noticePeriod !== "Any") params.set("notice_period", noticePeriod);
     if (excludeKeyword) params.set("exclude", excludeKeyword);
-    // Map activeIn to days.
     const activeMap = { "1 day": 1, "15 days": 15, "30 days": 30, "3 months": 90, "6 months": 180 };
     if (activeIn && activeMap[activeIn]) params.set("days", activeMap[activeIn]);
     if (itSkillsFilter) params.set("skills", itSkillsFilter);
@@ -743,6 +729,9 @@ const CandidatesList = () => {
     if (maxExperience) params.set("max_experience", maxExperience);
     if (keyword) params.set("keyword", keyword);
     if (relocate) params.set("relocate", "true");
+
+    // Preserve sort and search parameters if needed.
+    if (searchTerm.trim() !== "") params.set("search", searchTerm);
 
     // Navigate with new query params.
     navigate(`/candidates?${params.toString()}`);
@@ -891,9 +880,7 @@ const CandidatesList = () => {
                       placeholder="Enter company name"
                       className="input-box"
                       value={employmentFilter}
-                      onChange={(e) =>
-                        setEmploymentFilter(e.target.value)
-                      }
+                      onChange={(e) => setEmploymentFilter(e.target.value)}
                     />
                   </div>
                   <div className="form-field">
@@ -953,9 +940,7 @@ const CandidatesList = () => {
                       placeholder="Search by university"
                       className="input-box"
                       value={educationFilter}
-                      onChange={(e) =>
-                        setEducationFilter(e.target.value)
-                      }
+                      onChange={(e) => setEducationFilter(e.target.value)}
                     />
                   </div>
                 </div>
@@ -1060,13 +1045,13 @@ const CandidatesList = () => {
             </div>
           )}
           {error && <p className="error-message">{error}</p>}
-          {!loading && !error && filteredAndSortedCandidates.length === 0 && (
+          {!loading && !error && candidates.length === 0 && (
             <p>No candidates found matching your criteria.</p>
           )}
-          {!loading && !error && filteredAndSortedCandidates.length > 0 && (
+          {!loading && !error && candidates.length > 0 && (
             <>
               <div className="candidates-grid">
-                {currentCandidates.map((candidate) => (
+                {candidates.map((candidate) => (
                   <CandidateCard
                     key={candidate.candidate_id}
                     candidate={candidate}
@@ -1081,9 +1066,7 @@ const CandidatesList = () => {
                 <div className="pagination">
                   <button
                     onClick={() =>
-                      handlePageChange(
-                        currentPage > 1 ? currentPage - 1 : 1
-                      )
+                      handlePageChange(currentPage > 1 ? currentPage - 1 : 1)
                     }
                     disabled={currentPage === 1}
                     className="pagination-button"
@@ -1104,9 +1087,7 @@ const CandidatesList = () => {
                   <button
                     onClick={() =>
                       handlePageChange(
-                        currentPage < totalPages
-                          ? currentPage + 1
-                          : totalPages
+                        currentPage < totalPages ? currentPage + 1 : totalPages
                       )
                     }
                     disabled={currentPage === totalPages}
@@ -1134,5 +1115,6 @@ const CandidatesList = () => {
     </div>
   );
 };
+
 
 export default CandidatesList;
